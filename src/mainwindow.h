@@ -21,6 +21,7 @@ class QLabel;
 class QGroupBox;
 class QComboBox;
 class QPushButton;
+class Worker;
 class MainWindow : public QWidget
 {
     Q_OBJECT
@@ -32,8 +33,11 @@ protected:
     void retranslateUi();
 private:
     QGroupBox *m_mtgahelperGroup;
-    QLabel *m_tokenLabel;
-    QLineEdit *m_tokenEdit;
+    QLabel *m_usernameLabel;
+    QLineEdit *m_usernameEdit;
+    QLabel *m_pwdLabel;
+    QLineEdit *m_pwdEdit;
+    QPushButton *m_mtgahLoginButton;
     QLabel *m_setsLabel;
     QListView *m_setsView;
     QStandardItemModel *m_setsModel;
@@ -41,8 +45,11 @@ private:
     QLabel *m_formatLabel;
     QGroupBox *m_downloadGroup;
     QPushButton *m_startButton;
-    void fillSets();
-    void translateSets();
+    Worker *m_worker;
+private slots:
+    void doLogin();
+    void fillSets(const QStringList& sets);
+    void fillSetNames(const QHash<QString,QString>& setNames);
 };
 
 #endif

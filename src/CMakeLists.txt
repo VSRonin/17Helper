@@ -4,15 +4,17 @@ set(ui_SRCS
     mainwindow.cpp
     mainwindow.h
 )
-set(17_SRCS
+set(backend_SRCS
     seventeencard.cpp
     seventeencard.h
+    worker.h
+    worker.cpp
 )
 source_group(UI FILES ${ui_SRCS})
-source_group(17Lands FILES ${17_SRCS})
+source_group(Backend FILES ${backend_SRCS})
 set(17Helper_SRCS
     ${ui_SRCS}
-    ${17_SRCS}
+    ${backend_SRCS}
 )
 qt6_create_translation(17Helper_QM_FILES ${17Helper_SRCS} 17Helper_en.ts)
 add_library(17HelperLib STATIC ${17Helper_SRCS} ${17Helper_QM_FILES})

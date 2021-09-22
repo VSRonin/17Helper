@@ -12,52 +12,68 @@
 \****************************************************************************/
 
 #include "mainwindow.h"
+#include "worker.h"
 #include <QEvent>
 #include <QLineEdit>
 #include <QStandardItemModel>
 #include <QListView>
 #include <QLabel>
 #include <QGroupBox>
-#include <QFormLayout>
+#include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QGridLayout>
 #include <QComboBox>
 #include <QPushButton>
-void MainWindow::fillSets()
+
+void MainWindow::doLogin()
 {
-    m_setsModel->insertColumn(0);
-    m_setsModel->insertRows(0,4);
-    for(int i=0;i<m_setsModel->rowCount();++i)
-        m_setsModel->setItem(i,0,new QStandardItem);
-    int i=0;
-    m_setsModel->item(i++)->setData(QStringLiteral("MID"), Qt::UserRole);
-    m_setsModel->item(i++)->setData(QStringLiteral("AFR"), Qt::UserRole);
-    m_setsModel->item(i++)->setData(QStringLiteral("STX"), Qt::UserRole);
-    m_setsModel->item(i++)->setData(QStringLiteral("KHM"), Qt::UserRole);
-    for(i=0;i<m_setsModel->rowCount();++i){
-        QStandardItem* item = m_setsModel->item(i);
-        item->setData(i==0 ? Qt::Checked : Qt::Unchecked, Qt::CheckStateRole);
-        item->setFlags(Qt::ItemIsUserCheckable | Qt::ItemIsEnabled | Qt::ItemNeverHasChildren);
-    }
+    m_worker->tryLogin(m_usernameEdit->text(), m_pwdEdit->text());
 }
 
-void MainWindow::translateSets()
+void MainWindow::fillSets(const QStringList &sets)
 {
-    int i=0;
-    m_setsModel->item(i++)->setData(tr("Innistrad: Midnight Hunt"), Qt::DisplayRole);
-    m_setsModel->item(i++)->setData(tr("D&D: Adventures in the Forgotten Realms"), Qt::DisplayRole);
-    m_setsModel->item(i++)->setData(tr("Strixhaven: School of Mages"), Qt::DisplayRole);
-    m_setsModel->item(i++)->setData(tr("Kaldheim"), Qt::DisplayRole);
+    m_setsModel->removeRows(0,m_setsModel->rowCount());
+    m_setsModel->insertRows(0,sets.size());
+    for(int i=sets.size()-1;i>=0;--i){
+        auto item = new QStandardItem;
+        item->setData(sets.at(i),Qt::UserRole);
+        item->setData(i==0 ? Qt::Checked : Qt::Unchecked, Qt::CheckStateRole);
+        item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsUserCheckable);
+    }
+    m_worker->downloadSetsScryfall(sets);
+}
+
+void MainWindow::fillSetNames(const QHash<QString,QString>& setNames)
+{
+    for(int i=0, iEnd = m_setsModel->rowCount();i<iEnd;++i){
+        const QString setToFind = m_setsModel->index(i,0).data(Qt::UserRole).toString();
+        auto nameIter = setNames.constFind(setToFind);
+        if(nameIter==setNames.constEnd())
+            m_setsModel->setData(m_setsModel->index(i,0),setToFind);
+        else
+            m_setsModel->setData(m_setsModel->index(i,0),nameIter.value());
+    }
 }
 
 MainWindow::MainWindow(QWidget *parent)
     : QWidget(parent)
 {
+    m_worker = new Worker(this);
+
     m_mtgahelperGroup = new QGroupBox(this);
-    m_tokenLabel = new QLabel(this);
-    m_tokenEdit = new QLineEdit(this);
-    QFormLayout *mtgahelperLay = new QFormLayout(m_mtgahelperGroup);
-    mtgahelperLay->addRow(m_tokenLabel, m_tokenEdit);
+    m_usernameLabel = new QLabel(this);
+    m_usernameEdit = new QLineEdit(this);
+    m_pwdLabel = new QLabel(this);
+    m_pwdEdit = new QLineEdit(this);
+    m_pwdEdit->setEchoMode(QLineEdit::Password);
+    m_pwdEdit->setInputMethodHints(Qt::ImhHiddenText | Qt::ImhSensitiveData | Qt::ImhNoAutoUppercase | Qt::ImhNoPredictiveText | Qt::ImhNoEditMenu);
+    m_mtgahLoginButton = new QPushButton(this);
+    QHBoxLayout *mtgahelperLay = new QHBoxLayout(m_mtgahelperGroup);
+    mtgahelperLay->addWidget(m_usernameLabel);
+    mtgahelperLay->addWidget(m_usernameEdit);
+    mtgahelperLay->addWidget(m_pwdLabel);
+    mtgahelperLay->addWidget(m_pwdEdit);
+    mtgahelperLay->addWidget(m_mtgahLoginButton);
 
     m_downloadGroup = new QGroupBox(this);
     m_formatLabel = new QLabel(this);
@@ -69,8 +85,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_formatCombo->addItem(QString(), QStringLiteral("TradSealed"));
     m_setsLabel = new QLabel(this);
     m_setsView = new QListView(this);
-    m_setsModel = new QStandardItemModel(this);
-    fillSets();
+    m_setsModel = new QStandardItemModel(0,1,this);
     m_setsView->setModel(m_setsModel);
     QGridLayout *downloadLay = new QGridLayout(m_downloadGroup);
     downloadLay->addWidget(m_formatLabel,0,0);
@@ -85,6 +100,15 @@ MainWindow::MainWindow(QWidget *parent)
     mainLay->addWidget(m_downloadGroup);
     mainLay->addWidget(m_startButton);
     retranslateUi();
+
+    connect(m_mtgahLoginButton,&QPushButton::clicked,this,&MainWindow::doLogin);
+    connect(m_worker,&Worker::loginFalied,this,[](){qDebug("Login Failed");});
+    connect(m_worker,&Worker::loggedIn,this,[](){qDebug("Login Success");});
+    connect(m_worker,&Worker::downloadSetsMTGAHFailed,this,[](){qDebug("downloadSetsMTGAH Failed");});
+    connect(m_worker,&Worker::downloadSetsScryfallFailed,this,[](){qDebug("downloadSetsScryfall Failed");});
+    connect(m_worker,&Worker::setsMTGAH,this,&MainWindow::fillSets);
+    connect(m_worker,&Worker::setsScryfall,this,&MainWindow::fillSetNames);
+    m_worker->downloadSetsMTGAH();
 }
 
 void MainWindow::changeEvent(QEvent *event)
@@ -99,7 +123,9 @@ void MainWindow::retranslateUi()
 {
     setWindowTitle(tr("17 Helper"));
     m_mtgahelperGroup->setTitle(tr("MTGAHelper"));
-    m_tokenLabel->setText(tr("MTGAHelper Token"));
+    m_usernameLabel->setText(tr("Email"));
+    m_pwdLabel->setText(tr("Password"));
+    m_mtgahLoginButton->setText(tr("Login"));
     m_downloadGroup->setTitle(tr("Data to Download"));
     m_formatLabel->setText(tr("Format"));
     m_formatCombo->setItemText(0, tr("Premier Draft"));
@@ -108,7 +134,6 @@ void MainWindow::retranslateUi()
     m_formatCombo->setItemText(3, tr("Sealed"));
     m_formatCombo->setItemText(4, tr("Traditional Sealed"));
     m_setsLabel->setText(tr("Sets"));
-    translateSets();
     m_startButton->setText(tr("Start"));
 }
 
