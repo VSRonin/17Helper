@@ -13,14 +13,36 @@
 
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
-
 #include <QWidget>
+class QLineEdit;
+class QListView;
+class QStandardItemModel;
+class QLabel;
+class QGroupBox;
+class QComboBox;
+class QPushButton;
 class MainWindow : public QWidget
 {
     Q_OBJECT
     Q_DISABLE_COPY_MOVE(MainWindow)
 public:
     explicit MainWindow(QWidget* parent = nullptr);
+protected:
+    void changeEvent(QEvent *event) override;
+    void retranslateUi();
+private:
+    QGroupBox *m_mtgahelperGroup;
+    QLabel *m_tokenLabel;
+    QLineEdit *m_tokenEdit;
+    QLabel *m_setsLabel;
+    QListView *m_setsView;
+    QStandardItemModel *m_setsModel;
+    QComboBox* m_formatCombo;
+    QLabel *m_formatLabel;
+    QGroupBox *m_downloadGroup;
+    QPushButton *m_startButton;
+    void fillSets();
+    void translateSets();
 };
 
 #endif
