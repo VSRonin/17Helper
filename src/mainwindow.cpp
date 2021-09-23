@@ -13,38 +13,42 @@
 
 #include "mainwindow.h"
 #include "worker.h"
-#include <QEvent>
-#include <QLineEdit>
+#include "ui_mainwindow.h"
 #include <QStandardItemModel>
-#include <QListView>
-#include <QLabel>
-#include <QGroupBox>
-#include <QHBoxLayout>
-#include <QVBoxLayout>
-#include <QGridLayout>
-#include <QComboBox>
-#include <QPushButton>
-
 void MainWindow::doLogin()
 {
-    m_worker->tryLogin(m_usernameEdit->text(), m_pwdEdit->text());
+    ui->loginButton->setEnabled(false);
+    ui->usernameEdit->setEnabled(false);
+    ui->pwdEdit->setEnabled(false);
+    m_worker->tryLogin(ui->usernameEdit->text(), ui->pwdEdit->text());
+}
+
+void MainWindow::doLogout()
+{
+    ui->logoutButton->setEnabled(false);
+    m_worker->logOut();
 }
 
 void MainWindow::fillSets(const QStringList &sets)
 {
+    m_error &= ~MTGAHSetsError;
     m_setsModel->removeRows(0,m_setsModel->rowCount());
-    m_setsModel->insertRows(0,sets.size());
+    Qt::CheckState checkState = Qt::Checked;
     for(int i=sets.size()-1;i>=0;--i){
         auto item = new QStandardItem;
         item->setData(sets.at(i),Qt::UserRole);
-        item->setData(i==0 ? Qt::Checked : Qt::Unchecked, Qt::CheckStateRole);
+        item->setData(checkState, Qt::CheckStateRole);
         item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsUserCheckable);
+        m_setsModel->insertRow(m_setsModel->rowCount(),item);
+        checkState = Qt::Unchecked;
     }
-    m_worker->downloadSetsScryfall(sets);
+    m_worker->downloadSetsScryfall();
+    retranslateUi();
 }
 
 void MainWindow::fillSetNames(const QHash<QString,QString>& setNames)
 {
+    m_error &= ~ScryfallSetsError;
     for(int i=0, iEnd = m_setsModel->rowCount();i<iEnd;++i){
         const QString setToFind = m_setsModel->index(i,0).data(Qt::UserRole).toString();
         auto nameIter = setNames.constFind(setToFind);
@@ -53,62 +57,110 @@ void MainWindow::fillSetNames(const QHash<QString,QString>& setNames)
         else
             m_setsModel->setData(m_setsModel->index(i,0),nameIter.value());
     }
+    retranslateUi();
+}
+
+void MainWindow::onLogoutError()
+{
+    m_error |= LogoutError;
+    ui->logoutButton->setEnabled(true);
+    retranslateUi();
+}
+
+void MainWindow::onMTGAHSetsError()
+{
+    m_error |= MTGAHSetsError;
+    ui->retryBasicDownloadButton->setEnabled(true);
+    retranslateUi();
+}
+
+void MainWindow::onScryfallSetsError()
+{
+    m_error |= ScryfallSetsError;
+    ui->retryBasicDownloadButton->setEnabled(true);
+    retranslateUi();
+}
+
+void MainWindow::retrySetsDownload()
+{
+    ui->retryBasicDownloadButton->setEnabled(false);
+    m_worker->downloadSetsMTGAH();
+}
+
+void MainWindow::onLogout()
+{
+    m_error &= ~LogoutError;
+    ui->usernameEdit->setEnabled(true);
+    ui->pwdEdit->setEnabled(true);
+    toggleLoginLogoutButtons();
+    disableSetsSection();
+    retranslateUi();
+}
+
+void MainWindow::onLogin()
+{
+    m_error &= ~LoginError;
+    toggleLoginLogoutButtons();
+    enableSetsSection();
+    retranslateUi();
+}
+
+void MainWindow::onLoginError()
+{
+    m_error |= LoginError;
+    ui->loginButton->setEnabled(true);
+    ui->usernameEdit->setEnabled(true);
+    ui->pwdEdit->setEnabled(true);
+    retranslateUi();
 }
 
 MainWindow::MainWindow(QWidget *parent)
     : QWidget(parent)
+    , m_error(NoError)
+    , ui(new Ui::MainWindow)
 {
+    ui->setupUi(this);
     m_worker = new Worker(this);
-
-    m_mtgahelperGroup = new QGroupBox(this);
-    m_usernameLabel = new QLabel(this);
-    m_usernameEdit = new QLineEdit(this);
-    m_pwdLabel = new QLabel(this);
-    m_pwdEdit = new QLineEdit(this);
-    m_pwdEdit->setEchoMode(QLineEdit::Password);
-    m_pwdEdit->setInputMethodHints(Qt::ImhHiddenText | Qt::ImhSensitiveData | Qt::ImhNoAutoUppercase | Qt::ImhNoPredictiveText | Qt::ImhNoEditMenu);
-    m_mtgahLoginButton = new QPushButton(this);
-    QHBoxLayout *mtgahelperLay = new QHBoxLayout(m_mtgahelperGroup);
-    mtgahelperLay->addWidget(m_usernameLabel);
-    mtgahelperLay->addWidget(m_usernameEdit);
-    mtgahelperLay->addWidget(m_pwdLabel);
-    mtgahelperLay->addWidget(m_pwdEdit);
-    mtgahelperLay->addWidget(m_mtgahLoginButton);
-
-    m_downloadGroup = new QGroupBox(this);
-    m_formatLabel = new QLabel(this);
-    m_formatCombo = new QComboBox(this);
-    m_formatCombo->addItem(QString(), QStringLiteral("PremierDraft"));
-    m_formatCombo->addItem(QString(), QStringLiteral("QuickDraft"));
-    m_formatCombo->addItem(QString(), QStringLiteral("TradDraft"));
-    m_formatCombo->addItem(QString(), QStringLiteral("Sealed"));
-    m_formatCombo->addItem(QString(), QStringLiteral("TradSealed"));
-    m_setsLabel = new QLabel(this);
-    m_setsView = new QListView(this);
-    m_setsModel = new QStandardItemModel(0,1,this);
-    m_setsView->setModel(m_setsModel);
-    QGridLayout *downloadLay = new QGridLayout(m_downloadGroup);
-    downloadLay->addWidget(m_formatLabel,0,0);
-    downloadLay->addWidget(m_formatCombo,0,1);
-    downloadLay->addWidget(m_setsLabel,1,0,1,2);
-    downloadLay->addWidget(m_setsView,2,0,1,2);
-
-    m_startButton = new QPushButton(this);
-
-    QVBoxLayout *mainLay = new QVBoxLayout(this);
-    mainLay->addWidget(m_mtgahelperGroup);
-    mainLay->addWidget(m_downloadGroup);
-    mainLay->addWidget(m_startButton);
+    m_setsModel = new QStandardItemModel(this);
+    m_setsModel->insertColumn(0);
+    ui->setsView->setModel(m_setsModel);
+    ui->logoutButton->hide();
+    ui->errorLabel->hide();
+    ui->retryBasicDownloadButton->hide();
+    ui->formatsCombo->addItem(QString(), QStringLiteral("PremierDraft"));
+    ui->formatsCombo->addItem(QString(), QStringLiteral("QuickDraft"));
+    ui->formatsCombo->addItem(QString(), QStringLiteral("TradDraft"));
+    ui->formatsCombo->addItem(QString(), QStringLiteral("Sealed"));
+    ui->formatsCombo->addItem(QString(), QStringLiteral("TradSealed"));
+    disableSetsSection();
     retranslateUi();
 
-    connect(m_mtgahLoginButton,&QPushButton::clicked,this,&MainWindow::doLogin);
-    connect(m_worker,&Worker::loginFalied,this,[](){qDebug("Login Failed");});
-    connect(m_worker,&Worker::loggedIn,this,[](){qDebug("Login Success");});
-    connect(m_worker,&Worker::downloadSetsMTGAHFailed,this,[](){qDebug("downloadSetsMTGAH Failed");});
-    connect(m_worker,&Worker::downloadSetsScryfallFailed,this,[](){qDebug("downloadSetsScryfall Failed");});
+    connect(ui->loginButton,&QPushButton::clicked,this,&MainWindow::doLogin);
+    connect(ui->logoutButton,&QPushButton::clicked,this,&MainWindow::doLogout);
+    connect(ui->retryBasicDownloadButton,&QPushButton::clicked,this,&MainWindow::retrySetsDownload);
+    connect(ui->allSetsButton,&QPushButton::clicked,this,&MainWindow::selectAllSets);
+    connect(ui->noSetButton,&QPushButton::clicked,this,&MainWindow::selectNoSets);
     connect(m_worker,&Worker::setsMTGAH,this,&MainWindow::fillSets);
     connect(m_worker,&Worker::setsScryfall,this,&MainWindow::fillSetNames);
+    connect(m_worker,&Worker::loggedIn,this,&MainWindow::onLogin);
+    connect(m_worker,&Worker::loginFalied,this,&MainWindow::onLoginError);
+    connect(m_worker,&Worker::loggedOut,this,&MainWindow::onLogout);
+    connect(m_worker,&Worker::logoutFailed,this,&MainWindow::onLogoutError);
+
+
+    connect(m_worker,&Worker::downloadSetsMTGAHFailed,this,[](){qDebug("downloadSetsMTGAH Failed");});
+    connect(m_worker,&Worker::downloadSetsScryfallFailed,this,[](){qDebug("downloadSetsScryfall Failed");});
+
     m_worker->downloadSetsMTGAH();
+}
+
+MainWindow::~MainWindow()
+{
+    delete ui;
+}
+
+MainWindow::CurrentErrors MainWindow::errors() const {
+    return m_error;
 }
 
 void MainWindow::changeEvent(QEvent *event)
@@ -121,20 +173,39 @@ void MainWindow::changeEvent(QEvent *event)
 
 void MainWindow::retranslateUi()
 {
-    setWindowTitle(tr("17 Helper"));
-    m_mtgahelperGroup->setTitle(tr("MTGAHelper"));
-    m_usernameLabel->setText(tr("Email"));
-    m_pwdLabel->setText(tr("Password"));
-    m_mtgahLoginButton->setText(tr("Login"));
-    m_downloadGroup->setTitle(tr("Data to Download"));
-    m_formatLabel->setText(tr("Format"));
-    m_formatCombo->setItemText(0, tr("Premier Draft"));
-    m_formatCombo->setItemText(1, tr("Quick Draft"));
-    m_formatCombo->setItemText(2, tr("Traditional Draft"));
-    m_formatCombo->setItemText(3, tr("Sealed"));
-    m_formatCombo->setItemText(4, tr("Traditional Sealed"));
-    m_setsLabel->setText(tr("Sets"));
-    m_startButton->setText(tr("Start"));
+    ui->formatsCombo->setItemText(0, tr("Premier Draft"));
+    ui->formatsCombo->setItemText(1, tr("Quick Draft"));
+    ui->formatsCombo->setItemText(2, tr("Traditional Draft"));
+    ui->formatsCombo->setItemText(3, tr("Sealed"));
+    ui->formatsCombo->setItemText(4, tr("Traditional Sealed"));
+    ui->retranslateUi(this);
+    ui->errorLabel->setVisible(m_error != NoError);
+    ui->retryBasicDownloadButton->setVisible(m_error & (MTGAHSetsError | ScryfallSetsError));
+    QStringList errorStrings;
+    if(m_error & LoginError)
+        errorStrings.append(tr("Login Failed! Check your username, password or internet connection"));
+    if(m_error & LogoutError)
+        errorStrings.append(tr("Logout Failed! Check your internet connection"));
+    ui->errorLabel->setText(errorStrings.join(QChar(QLatin1Char('\n'))));
+}
+
+void MainWindow::setSetsSectionEnabled(bool enabled)
+{
+    ui->setsGroup->setEnabled(enabled);
+}
+
+void MainWindow::setAllSetsSelection(Qt::CheckState check)
+{
+    for(int i=0, iEnd = m_setsModel->rowCount();i<iEnd;++i)
+        m_setsModel->item(i)->setCheckState(check);
+}
+
+void MainWindow::toggleLoginLogoutButtons()
+{
+    for(QPushButton* button : {ui->loginButton, ui->logoutButton}){
+        button->setVisible(!button->isVisible());
+        button->setEnabled(true);
+    }
 }
 
 

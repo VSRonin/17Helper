@@ -1,0 +1,63 @@
+name: Main Platforms
+on: 
+  push:
+    branches:
+      - master
+      - dev
+    paths-ignore:
+      - 'docs/**'
+      - '**.markdown'
+      - '**.md'
+      - 'LICENSE'
+  pull_request:
+    branches:
+      - master
+      - dev
+    paths-ignore:
+      - 'docs/**'
+      - '**.markdown'
+      - '**.md'
+      - 'LICENSE'
+jobs:
+    build:
+        name: Build and Test ${{ matrix.platforms.friendly_name }} Qt${{ matrix.qt_ver }} dll${{ matrix.shared_lib }} NoGui${{ matrix.no_gui }} NoWidgets${{ matrix.no_widgets }} ManyRoles${{ matrix.many_roles }}
+        runs-on: ${{ matrix.platforms.os }}
+        strategy:
+          fail-fast: false
+          matrix:
+              qt_ver: [6.1.3]
+              platforms:
+                - { os: windows-latest, generator: "NMake Makefiles", friendly_name: MSVC }
+                - { os: ubuntu-latest, generator: "Unix Makefiles", friendly_name: Ubuntu }
+                - { os: macos-latest, generator: "Unix Makefiles", friendly_name: MacOS }
+        steps:
+          - name: Install Qt
+            uses: jurplel/install-qt-action@v2
+            with:
+              version: ${{ matrix.qt_ver }}
+          - name: Git Checkout
+            uses: actions/checkout@v2
+            with:
+              fetch-depth: 0
+          - name: Create Build Directory
+            shell: pwsh
+            run: |
+              mkdir build
+              cd build
+          - name: Set up MSVC environment
+            if: ${{ matrix.platforms.friendly_name == 'MSVC' }}
+            uses: ilammy/msvc-dev-cmd@v1
+          - name: Install Linux Dependencies
+            if: ${{ runner.os == 'Linux' }}
+            run: |
+              sudo apt-get update -y
+              sudo apt-get install libxcb-icccm4 libxcb-xkb1 libxcb-icccm4 libxcb-image0 libxcb-render-util0 libxcb-randr0 libxcb-keysyms1 libxcb-xinerama0 libxcb-xinput-dev
+              export PATH=$PATH:$PWD/build/installed/lib
+              export PATH=$PATH:$PWD/build/installed/bin
+          - name: ${{ matrix.platforms.friendly_name }} Qt${{ matrix.qt_ver }}
+            shell: pwsh
+            run: |
+              cd build
+              cmake -G"${{ matrix.platforms.generator }}" -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_TESTING=OFF -DCMAKE_INSTALL_PREFIX="../installed" ../
+              cmake --build .
+              cmake --build . --target install

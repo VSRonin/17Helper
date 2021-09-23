@@ -5,6 +5,9 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
+#ifdef QT_DEBUG
+#include <QDebug>
+#endif
 Worker::Worker(QObject *parent)
     : m_nam(new QNetworkAccessManager(this))
 {
@@ -14,7 +17,7 @@ Worker::Worker(QObject *parent)
 void Worker::tryLogin(const QString &userName, const QString &password)
 {
     if(userName.isEmpty() || password.isEmpty()){
-        loginFalied();
+        emit loginFalied();
         return;
     }
     const QUrl loginUrl = QUrl::fromUserInput(
@@ -27,17 +30,29 @@ void Worker::tryLogin(const QString &userName, const QString &password)
         QJsonParseError parseErr;
         QJsonDocument loginDocument = QJsonDocument::fromJson(reply->readAll(),&parseErr);
         if(parseErr.error != QJsonParseError::NoError || !loginDocument.isObject()){
-            loginFalied();
+            emit loginFalied();
             return;
         }
         QJsonObject loginObject = loginDocument.object();
         if(!loginObject[QLatin1String("isAuthenticated")].toBool(false)){
-            loginFalied();
+            emit loginFalied();
             return;
         }
-        loggedIn();
+        emit loggedIn();
     });
 
+}
+
+void Worker::logOut()
+{
+    const QUrl setsUrl = QUrl::fromUserInput(QStringLiteral("https://mtgahelper.com/api/Account/Signout"));
+    QNetworkReply* reply = m_nam->post(QNetworkRequest(setsUrl),QByteArray());
+    connect(reply,&QNetworkReply::finished,reply,&QNetworkReply::deleteLater);
+    connect(reply,&QNetworkReply::errorOccurred,this,&Worker::logoutFailed);
+    connect(reply,&QNetworkReply::finished,this,[reply,this]()->void{
+        if(reply->error()==QNetworkReply::NoError)
+            emit loggedOut();
+    });
 }
 
 void Worker::downloadSetsMTGAH()
@@ -47,27 +62,29 @@ void Worker::downloadSetsMTGAH()
     connect(reply,&QNetworkReply::errorOccurred,this,&Worker::downloadSetsMTGAHFailed);
     connect(reply,&QNetworkReply::finished,reply,&QNetworkReply::deleteLater);
     connect(reply,&QNetworkReply::finished,this,[reply,this]()->void{
+        if(reply->error()!=QNetworkReply::NoError)
+            return;
         QJsonParseError parseErr;
         QJsonDocument setsDocument = QJsonDocument::fromJson(reply->readAll(),&parseErr);
         if(parseErr.error != QJsonParseError::NoError || !setsDocument.isObject()){
-            downloadSetsMTGAHFailed();
+            emit downloadSetsMTGAHFailed();
             return;
         }
         QJsonObject setsObject = setsDocument.object();
         QJsonValue setsArrVal = setsObject[QLatin1String("sets")];
         if(!setsArrVal.isArray()){
-            downloadSetsMTGAHFailed();
+            emit downloadSetsMTGAHFailed();
             return;
         }
         QJsonArray setsArray = setsArrVal.toArray();
         QStringList setList;
         for(auto i = setsArray.cbegin(), iEnd=setsArray.cend();i!=iEnd;++i){
-            const QString setStr = i->toObject()[QLatin1String("name")].toString();
+            const QString setStr = i->toObject()[QLatin1String("name")].toString().toUpper();
             if(!setStr.isEmpty())
                 setList.append(setStr.toUpper());
         }
         if(setList.isEmpty()){
-            downloadSetsMTGAHFailed();
+            emit downloadSetsMTGAHFailed();
             return;
         }
         for(auto i = setList.begin();i!=setList.end();++i){
@@ -78,43 +95,46 @@ void Worker::downloadSetsMTGAH()
                     ++j;
             }
         }
-        setsMTGAH(setList);
+        emit setsMTGAH(setList);
     });
 }
 
-void Worker::downloadSetsScryfall(const QStringList &sets)
+void Worker::downloadSetsScryfall()
 {
     const QUrl setsUrl = QUrl::fromUserInput(QStringLiteral("https://api.scryfall.com/sets"));
     QNetworkReply* reply = m_nam->get(QNetworkRequest(setsUrl));
     connect(reply,&QNetworkReply::errorOccurred,this,&Worker::downloadSetsMTGAHFailed);
     connect(reply,&QNetworkReply::finished,reply,&QNetworkReply::deleteLater);
-    connect(reply,&QNetworkReply::finished,this,[reply,this,sets]()->void{
+    connect(reply,&QNetworkReply::finished,this,[reply,this]()->void{
+        if(reply->error()!=QNetworkReply::NoError)
+            return;
         QJsonParseError parseErr;
         const QJsonDocument setsDocument = QJsonDocument::fromJson(reply->readAll(),&parseErr);
         if(parseErr.error != QJsonParseError::NoError || !setsDocument.isObject()){
-            downloadSetsScryfallFailed();
+            emit downloadSetsScryfallFailed();
             return;
         }
         const QJsonObject setsObject = setsDocument.object();
         const QJsonValue setsArrVal = setsObject[QLatin1String("data")];
         if(!setsArrVal.isArray()){
-            downloadSetsScryfallFailed();
+            emit downloadSetsScryfallFailed();
             return;
         }
         const QJsonArray setsArray = setsArrVal.toArray();
         QHash<QString,QString> setNames;
         for(auto i = setsArray.cbegin(), iEnd=setsArray.cend();i!=iEnd;++i){
             const QJsonObject setObj = i->toObject();
-            const QString setStr = setObj[QLatin1String("arena_code")].toString();
-            int setsIdx = sets.indexOf(setStr.toUpper());
-            if(setsIdx>=0 && !setNames.contains(sets.at(setsIdx)))
-                setNames.insert(sets.at(setsIdx), setObj[QLatin1String("name")].toString());
+            const QString setStr = setObj[QLatin1String("arena_code")].toString().trimmed().toUpper();
+            if(setStr.isEmpty())
+                continue;
+            if(!setNames.contains(setStr))
+                setNames.insert(setStr, setObj[QLatin1String("name")].toString().trimmed());
         }
-        if(setNames.size()==0){
-            downloadSetsScryfallFailed();
+        if(setNames.isEmpty()){
+            emit downloadSetsScryfallFailed();
             return;
         }
-        setsScryfall(setNames);
+        emit setsScryfall(setNames);
     });
 }
 

@@ -3,6 +3,7 @@ find_package(Qt6 COMPONENTS Widgets Gui Core Network LinguistTools REQUIRED)
 set(ui_SRCS 
     mainwindow.cpp
     mainwindow.h
+	mainwindow.ui
 )
 set(backend_SRCS
     seventeencard.cpp
@@ -19,6 +20,7 @@ set(17Helper_SRCS
 qt6_create_translation(17Helper_QM_FILES ${17Helper_SRCS} 17Helper_en.ts)
 add_library(17HelperLib STATIC ${17Helper_SRCS} ${17Helper_QM_FILES})
 add_library(17HelperLib::17HelperLib ALIAS 17HelperLib)
+target_compile_definitions(17HelperLib PUBLIC QT_NO_CAST_FROM_ASCII QT_NO_CAST_TO_ASCII)
 target_include_directories(17HelperLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
 target_link_libraries(17HelperLib PUBLIC 
     Qt6::Core

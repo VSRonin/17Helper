@@ -14,13 +14,8 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 #include <QWidget>
-class QLineEdit;
-class QListView;
+namespace Ui { class MainWindow; }
 class QStandardItemModel;
-class QLabel;
-class QGroupBox;
-class QComboBox;
-class QPushButton;
 class Worker;
 class MainWindow : public QWidget
 {
@@ -28,28 +23,43 @@ class MainWindow : public QWidget
     Q_DISABLE_COPY_MOVE(MainWindow)
 public:
     explicit MainWindow(QWidget* parent = nullptr);
+    ~MainWindow();
+    enum CurrentError{
+        NoError=0x0
+        , LoginError=0x1
+        , LogoutError=0x2
+        , MTGAHSetsError=0x4
+        , ScryfallSetsError=0x8
+    };
+    Q_DECLARE_FLAGS(CurrentErrors, CurrentError)
+    CurrentErrors errors() const;
 protected:
     void changeEvent(QEvent *event) override;
     void retranslateUi();
 private:
-    QGroupBox *m_mtgahelperGroup;
-    QLabel *m_usernameLabel;
-    QLineEdit *m_usernameEdit;
-    QLabel *m_pwdLabel;
-    QLineEdit *m_pwdEdit;
-    QPushButton *m_mtgahLoginButton;
-    QLabel *m_setsLabel;
-    QListView *m_setsView;
-    QStandardItemModel *m_setsModel;
-    QComboBox* m_formatCombo;
-    QLabel *m_formatLabel;
-    QGroupBox *m_downloadGroup;
-    QPushButton *m_startButton;
+    CurrentErrors m_error;
+    QStandardItemModel* m_setsModel;
     Worker *m_worker;
+    Ui::MainWindow *ui;
+    void setSetsSectionEnabled(bool enabled);
+    void setAllSetsSelection(Qt::CheckState check);
 private slots:
+    void toggleLoginLogoutButtons();
     void doLogin();
+    void doLogout();
     void fillSets(const QStringList& sets);
     void fillSetNames(const QHash<QString,QString>& setNames);
+    void enableSetsSection(){setSetsSectionEnabled(true);}
+    void disableSetsSection(){setSetsSectionEnabled(false);}
+    void onLogin();
+    void onLoginError();
+    void onLogout();
+    void onLogoutError();
+    void onMTGAHSetsError();
+    void onScryfallSetsError();
+    void selectAllSets(){setAllSetsSelection(Qt::Checked);}
+    void selectNoSets(){setAllSetsSelection(Qt::Unchecked);}
+    void retrySetsDownload();
 };
-
+Q_DECLARE_OPERATORS_FOR_FLAGS(MainWindow::CurrentErrors);
 #endif

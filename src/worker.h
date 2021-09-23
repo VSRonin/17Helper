@@ -23,11 +23,14 @@ public:
     explicit Worker(QObject* parent = nullptr);
 public slots:
     void tryLogin(const QString& userName, const QString& password);
+    void logOut();
     void downloadSetsMTGAH();
-    void downloadSetsScryfall(const QStringList& sets);
+    void downloadSetsScryfall();
 signals:
     void loggedIn();
     void loginFalied();
+    void loggedOut();
+    void logoutFailed();
     void downloadSetsMTGAHFailed();
     void setsMTGAH(const QStringList& sets);
     void downloadSetsScryfallFailed();
