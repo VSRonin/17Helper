@@ -3,11 +3,13 @@ find_package(Qt6 COMPONENTS Widgets Gui Core Network LinguistTools REQUIRED)
 set(ui_SRCS 
     mainwindow.cpp
     mainwindow.h
-	mainwindow.ui
+    mainwindow.ui
 )
 set(backend_SRCS
     seventeencard.cpp
     seventeencard.h
+    mtgahcard.h
+    mtgahcard.cpp
     worker.h
     worker.cpp
 )

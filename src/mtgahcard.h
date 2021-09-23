@@ -11,34 +11,19 @@
    limitations under the License.
 \****************************************************************************/
 
-#ifndef WORKER_H
-#define WORKER_H
-#include <QObject>
-class QNetworkAccessManager;
-class Worker : public QObject
+#ifndef MTGAHCARD_H
+#define MTGAHCARD_H
+#include <QString>
+class MtgahCard
 {
-    Q_OBJECT
-    Q_DISABLE_COPY_MOVE(Worker)
 public:
-    explicit Worker(QObject* parent = nullptr);
-public slots:
-    void tryLogin(const QString& userName, const QString& password);
-    void logOut();
-    void downloadSetsMTGAH();
-    void downloadSetsScryfall();
-    void getCustomRatingTemplate();
-signals:
-    void loggedIn();
-    void loginFalied();
-    void loggedOut();
-    void logoutFailed();
-    void downloadSetsMTGAHFailed();
-    void setsMTGAH(const QStringList& sets);
-    void downloadSetsScryfallFailed();
-    void customRatingTemplateFailed();
-    void setsScryfall(const QHash<QString,QString>& sets);
+    MtgahCard();
+    MtgahCard(const SeventeenCard& other) = default;
+    MtgahCard& operator=(const SeventeenCard& other) = default;
 private:
-    QNetworkAccessManager *m_nam;
+    int id_arena;
+    QString name;
+    QString set;
 };
 
 #endif

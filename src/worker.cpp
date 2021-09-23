@@ -103,7 +103,7 @@ void Worker::downloadSetsScryfall()
 {
     const QUrl setsUrl = QUrl::fromUserInput(QStringLiteral("https://api.scryfall.com/sets"));
     QNetworkReply* reply = m_nam->get(QNetworkRequest(setsUrl));
-    connect(reply,&QNetworkReply::errorOccurred,this,&Worker::downloadSetsMTGAHFailed);
+    connect(reply,&QNetworkReply::errorOccurred,this,&Worker::downloadSetsScryfallFailed);
     connect(reply,&QNetworkReply::finished,reply,&QNetworkReply::deleteLater);
     connect(reply,&QNetworkReply::finished,this,[reply,this]()->void{
         if(reply->error()!=QNetworkReply::NoError)
@@ -124,7 +124,7 @@ void Worker::downloadSetsScryfall()
         QHash<QString,QString> setNames;
         for(auto i = setsArray.cbegin(), iEnd=setsArray.cend();i!=iEnd;++i){
             const QJsonObject setObj = i->toObject();
-            const QString setStr = setObj[QLatin1String("arena_code")].toString().trimmed().toUpper();
+            const QString setStr = setObj[QLatin1String("code")].toString().trimmed().toUpper();
             if(setStr.isEmpty())
                 continue;
             if(!setNames.contains(setStr))
@@ -136,5 +136,11 @@ void Worker::downloadSetsScryfall()
         }
         emit setsScryfall(setNames);
     });
+}
+
+void Worker::getCustomRatingTemplate()
+{
+    const QUrl setsUrl = QUrl::fromUserInput(QStringLiteral("https://api.scryfall.com/sets"));
+    QNetworkReply* reply = m_nam->get(QNetworkRequest(setsUrl));
 }
 
