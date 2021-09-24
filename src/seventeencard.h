@@ -27,8 +27,6 @@ private:
     double avg_pick;
     int game_count;
     double win_rate;
-    int sideboard_game_count;
-    double sideboard_win_rate;
     int opening_hand_game_count;
     double opening_hand_win_rate;
     int drawn_game_count;

@@ -11,20 +11,19 @@
    limitations under the License.
 \****************************************************************************/
 
-#ifndef MTGAHCARD_H
-#define MTGAHCARD_H
-#include <QString>
-class MtgahCard
+#ifndef RATINGSDELEGATE_H
+#define RATINGSDELEGATE_H
+#include <QStyledItemDelegate>
+class RatingsDelegate : public QStyledItemDelegate
 {
+    Q_OBJECT
+    Q_DISABLE_COPY_MOVE(RatingsDelegate)
 public:
-    MtgahCard();
-    MtgahCard(const MtgahCard& other) = default;
-    MtgahCard& operator=(const MtgahCard& other) = default;
-    int id_arena;
-    QString name;
-    QString set;
-    char rating;
-    QString note;
+	explicit RatingsDelegate(QObject *parent=nullptr);
+    QWidget *createEditor(QWidget *parent, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
+	void setEditorData(QWidget *editor, const QModelIndex &index) const override;
+	void setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const override;
+	void updateEditorGeometry(QWidget *editor, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
 };
 
 #endif

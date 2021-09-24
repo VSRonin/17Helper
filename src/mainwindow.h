@@ -17,6 +17,8 @@
 namespace Ui { class MainWindow; }
 class QStandardItemModel;
 class Worker;
+class RatingsModel;
+class QSortFilterProxyModel;
 class MainWindow : public QWidget
 {
     Q_OBJECT
@@ -29,7 +31,6 @@ public:
         , LoginError=0x1
         , LogoutError=0x2
         , MTGAHSetsError=0x4
-        , ScryfallSetsError=0x8
     };
     Q_DECLARE_FLAGS(CurrentErrors, CurrentError)
     CurrentErrors errors() const;
@@ -39,16 +40,40 @@ protected:
 private:
     CurrentErrors m_error;
     QStandardItemModel* m_setsModel;
+    QStandardItemModel* m_SLMetricsModel;
+    RatingsModel* m_ratingsModel;
+    QSortFilterProxyModel* m_ratingsProxy;
     Worker *m_worker;
     Ui::MainWindow *ui;
     void setSetsSectionEnabled(bool enabled);
     void setAllSetsSelection(Qt::CheckState check);
+    enum SLMetrics{
+        SLseen_count
+        ,SLavg_seen
+        ,SLpick_count
+        ,SLavg_pick
+        ,SLgame_count
+        ,SLwin_rate
+        ,SLopening_hand_game_count
+        ,SLopening_hand_win_rate
+        ,SLdrawn_game_count
+        ,SLdrawn_win_rate
+        ,SLever_drawn_game_count
+        ,SLever_drawn_win_rate
+        ,SLnever_drawn_game_count
+        ,SLnever_drawn_win_rate
+        ,SLdrawn_improvement_win_rate
+
+        , SLCount
+    };
+    QStringList SLcodes;
 private slots:
     void toggleLoginLogoutButtons();
     void doLogin();
     void doLogout();
     void fillSets(const QStringList& sets);
     void fillSetNames(const QHash<QString,QString>& setNames);
+    void fillMetrics();
     void enableSetsSection(){setSetsSectionEnabled(true);}
     void disableSetsSection(){setSetsSectionEnabled(false);}
     void onLogin();
@@ -60,6 +85,8 @@ private slots:
     void selectAllSets(){setAllSetsSelection(Qt::Checked);}
     void selectNoSets(){setAllSetsSelection(Qt::Unchecked);}
     void retrySetsDownload();
+    void onCustomRatingsTaemplateDownloaded();
+    void updateRatingsFiler();
 };
 Q_DECLARE_OPERATORS_FOR_FLAGS(MainWindow::CurrentErrors);
 #endif

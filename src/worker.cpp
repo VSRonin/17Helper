@@ -14,6 +14,10 @@ Worker::Worker(QObject *parent)
 
 }
 
+QMultiHash<QString, MtgahCard> *Worker::ratingsTemplate() {
+    return &m_ratingsTemplate;
+}
+
 void Worker::tryLogin(const QString &userName, const QString &password)
 {
     if(userName.isEmpty() || password.isEmpty()){
@@ -140,7 +144,53 @@ void Worker::downloadSetsScryfall()
 
 void Worker::getCustomRatingTemplate()
 {
-    const QUrl setsUrl = QUrl::fromUserInput(QStringLiteral("https://api.scryfall.com/sets"));
+    const QUrl setsUrl = QUrl::fromUserInput(QStringLiteral("https://mtgahelper.com/api/User/customDraftRatingsForDisplay"));
     QNetworkReply* reply = m_nam->get(QNetworkRequest(setsUrl));
+    connect(reply,&QNetworkReply::errorOccurred,this,&Worker::customRatingTemplateFailed);
+    connect(reply,&QNetworkReply::finished,reply,&QNetworkReply::deleteLater);
+    connect(reply,&QNetworkReply::finished,this,[reply,this]()->void{
+        if(reply->error()!=QNetworkReply::NoError)
+            return;
+        QJsonParseError parseErr;
+        const QJsonDocument ratingsDocument = QJsonDocument::fromJson(reply->readAll(),&parseErr);
+        if(parseErr.error != QJsonParseError::NoError || !ratingsDocument.isArray()){
+            emit customRatingTemplateFailed();
+            return;
+        }
+        decltype(m_ratingsTemplate) rtgsTemplate;
+        const QJsonArray ratingsArray = ratingsDocument.array();
+        for(auto i= ratingsArray.cbegin(), iEnd=ratingsArray.cend();i!=iEnd;++i){
+            if(!i->isObject())
+                continue;
+            const QJsonObject ratingObject = i->toObject();
+            const QJsonObject cardObject = ratingObject[QLatin1String("card")].toObject();
+            if(cardObject.isEmpty())
+                continue;
+            const QString setStr = cardObject[QLatin1String("set")].toString().trimmed().toUpper();
+            if(setStr.isEmpty())
+                continue;
+            const QString nameStr = cardObject[QLatin1String("name")].toString();
+            if(nameStr.isEmpty())
+                continue;
+            const int idArenaVal = cardObject[QLatin1String("idArena")].toInt();
+            MtgahCard card;
+            card.name=nameStr;
+            card.id_arena=idArenaVal;
+            card.set=setStr;
+            const QJsonValue noteValue = ratingObject[QLatin1String("note")];
+            if(!noteValue.isNull())
+                card.note=noteValue.toString();
+            const QJsonValue ratingValue = ratingObject[QLatin1String("rating")];
+            if(!ratingValue.isNull())
+                card.rating=noteValue.toInt();
+            rtgsTemplate.insert(setStr,card);
+        }
+        if(rtgsTemplate.isEmpty()){
+            emit customRatingTemplateFailed();
+            return;
+        }
+        m_ratingsTemplate=rtgsTemplate;
+        emit customRatingTemplate(m_ratingsTemplate);
+    });
 }
 

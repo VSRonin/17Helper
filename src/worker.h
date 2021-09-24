@@ -14,6 +14,9 @@
 #ifndef WORKER_H
 #define WORKER_H
 #include <QObject>
+#include <QMultiHash>
+#include "mtgahcard.h"
+#include "seventeencard.h"
 class QNetworkAccessManager;
 class Worker : public QObject
 {
@@ -21,6 +24,7 @@ class Worker : public QObject
     Q_DISABLE_COPY_MOVE(Worker)
 public:
     explicit Worker(QObject* parent = nullptr);
+    QMultiHash<QString,MtgahCard> *ratingsTemplate();
 public slots:
     void tryLogin(const QString& userName, const QString& password);
     void logOut();
@@ -36,8 +40,10 @@ signals:
     void setsMTGAH(const QStringList& sets);
     void downloadSetsScryfallFailed();
     void customRatingTemplateFailed();
+    void customRatingTemplate(const QMultiHash<QString,MtgahCard>& sets);
     void setsScryfall(const QHash<QString,QString>& sets);
 private:
+    QMultiHash<QString,MtgahCard> m_ratingsTemplate;
     QNetworkAccessManager *m_nam;
 };
 

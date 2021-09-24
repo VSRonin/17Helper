@@ -13,11 +13,23 @@ set(backend_SRCS
     worker.h
     worker.cpp
 )
+set(models_SRCS
+    ratingsmodel.h
+    ratingsmodel.cpp
+)
+set(delegates_SRCS
+    ratingsdelegate.h
+    ratingsdelegate.cpp
+)
 source_group(UI FILES ${ui_SRCS})
 source_group(Backend FILES ${backend_SRCS})
+source_group(Models FILES ${models_SRCS})
+source_group(Delegates FILES ${delegates_SRCS})
 set(17Helper_SRCS
     ${ui_SRCS}
     ${backend_SRCS}
+    ${models_SRCS}
+    ${delegates_SRCS}
 )
 qt6_create_translation(17Helper_QM_FILES ${17Helper_SRCS} 17Helper_en.ts)
 add_library(17HelperLib STATIC ${17Helper_SRCS} ${17Helper_QM_FILES})
