@@ -14,11 +14,13 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 #include <QWidget>
+#include <QMultiHash>
 namespace Ui { class MainWindow; }
 class QStandardItemModel;
 class Worker;
 class RatingsModel;
 class QSortFilterProxyModel;
+class SeventeenCard;
 class MainWindow : public QWidget
 {
     Q_OBJECT
@@ -31,6 +33,7 @@ public:
         , LoginError=0x1
         , LogoutError=0x2
         , MTGAHSetsError=0x4
+        , RatingTemplateFailed=0x8
     };
     Q_DECLARE_FLAGS(CurrentErrors, CurrentError)
     CurrentErrors errors() const;
@@ -67,12 +70,15 @@ private:
         , SLCount
     };
     QStringList SLcodes;
+    QString commentString(const SeventeenCard& card) const;
 private slots:
     void toggleLoginLogoutButtons();
     void doLogin();
     void doLogout();
+    void do17Ldownload();
     void fillSets(const QStringList& sets);
     void fillSetNames(const QHash<QString,QString>& setNames);
+    void onDownloaded17LRatings(const QString& set, const QSet<SeventeenCard> &ratings);
     void fillMetrics();
     void enableSetsSection(){setSetsSectionEnabled(true);}
     void disableSetsSection(){setSetsSectionEnabled(false);}
@@ -82,10 +88,12 @@ private slots:
     void onLogoutError();
     void onMTGAHSetsError();
     void onScryfallSetsError();
+    void onTemplateDownloadFailed();
     void selectAllSets(){setAllSetsSelection(Qt::Checked);}
     void selectNoSets(){setAllSetsSelection(Qt::Unchecked);}
     void retrySetsDownload();
-    void onCustomRatingsTaemplateDownloaded();
+    void retryTemplateDownload();
+    void onCustomRatingsTemplateDownloaded();
     void updateRatingsFiler();
 };
 Q_DECLARE_OPERATORS_FOR_FLAGS(MainWindow::CurrentErrors);

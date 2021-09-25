@@ -18,9 +18,12 @@ class SeventeenCard
 {
 public:
     SeventeenCard();
+    explicit SeventeenCard(const QString& name);
     SeventeenCard(const SeventeenCard& other) = default;
     SeventeenCard& operator=(const SeventeenCard& other) = default;
-private:
+    bool operator==(const SeventeenCard& other) const;
+    bool operator!=(const SeventeenCard& other) const{return !operator==(other);}
+public:
     int seen_count;
     double avg_seen;
     int pick_count;
@@ -37,10 +40,6 @@ private:
     double never_drawn_win_rate;
     double drawn_improvement_win_rate;
     QString name;
-    QString color;
-    QString rarity;
-    QString url;
-    QString url_back;
 };
-
+size_t qHash(const SeventeenCard &card, size_t seed = 0);
 #endif

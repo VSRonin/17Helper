@@ -79,7 +79,14 @@
      <item>
       <widget class="QPushButton" name="retryBasicDownloadButton">
        <property name="text">
-        <string>Retry Download</string>
+        <string>Retry Download Sets</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="retryTemplateButton">
+       <property name="text">
+        <string>Retry Download Template</string>
        </property>
       </widget>
      </item>
@@ -292,7 +299,7 @@
      <item>
       <widget class="QPushButton" name="downloadButton">
        <property name="enabled">
-        <bool>false</bool>
+        <bool>true</bool>
        </property>
        <property name="text">
         <string>Download Data</string>

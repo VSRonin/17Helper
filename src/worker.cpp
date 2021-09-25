@@ -5,13 +5,18 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QTimer>
 #ifdef QT_DEBUG
 #include <QDebug>
 #endif
 Worker::Worker(QObject *parent)
     : m_nam(new QNetworkAccessManager(this))
+    , m_SLrequestOutstanding(0)
 {
-
+    QTimer* SLrequestTimer=new QTimer(this);
+    SLrequestTimer->setInterval(100);
+    connect(SLrequestTimer,&QTimer::timeout,this,&Worker::processSLrequestQueue);
+    SLrequestTimer->start();
 }
 
 QMultiHash<QString, MtgahCard> *Worker::ratingsTemplate() {
@@ -191,6 +196,76 @@ void Worker::getCustomRatingTemplate()
         }
         m_ratingsTemplate=rtgsTemplate;
         emit customRatingTemplate(m_ratingsTemplate);
+    });
+}
+
+void Worker::get17LRatings(const QStringList &sets, const QString &format)
+{
+    if(sets.isEmpty() || format.isEmpty()){
+        emit failed17LRatings();
+        return;
+    }
+    m_SLrequestQueue.clear();
+    for(const QString &set : sets){
+        const QUrl ratingsUrl = QUrl::fromUserInput(QStringLiteral("https://www.17lands.com/card_ratings/data?expansion=")+set+QLatin1String("&format=")+format);
+        m_SLrequestQueue.append(std::make_pair(set,QNetworkRequest(ratingsUrl)));
+    }
+}
+
+void Worker::processSLrequestQueue()
+{
+    if(m_SLrequestQueue.isEmpty())
+        return;
+    const std::pair<QString,QNetworkRequest> currReq = m_SLrequestQueue.takeFirst();
+    const QString currSet = currReq.first;
+    ++m_SLrequestOutstanding;
+    QNetworkReply* reply = m_nam->get(currReq.second);
+    connect(reply,&QNetworkReply::errorOccurred,this,&Worker::failed17LRatings);
+    connect(reply,&QNetworkReply::finished,reply,&QNetworkReply::deleteLater);
+    connect(reply,&QNetworkReply::finished,this,[reply,this,currSet]()->void{
+        if(reply->error()!=QNetworkReply::NoError)
+            return;
+        QJsonParseError parseErr;
+        const QJsonDocument ratingsDocument = QJsonDocument::fromJson(reply->readAll(),&parseErr);
+        if(parseErr.error != QJsonParseError::NoError || !ratingsDocument.isArray()){
+            emit failed17LRatings();
+            return;
+        }
+        QSet<SeventeenCard> rtgsList;
+        const QJsonArray ratingsArray = ratingsDocument.array();
+        for(auto i= ratingsArray.cbegin(), iEnd=ratingsArray.cend();i!=iEnd;++i){
+            if(!i->isObject())
+                continue;
+            const QJsonObject ratingObject = i->toObject();
+            const QString nameStr = ratingObject[QLatin1String("name")].toString();
+            if(nameStr.isEmpty())
+                continue;
+            SeventeenCard card;
+            card.name=nameStr;
+            card.seen_count=ratingObject[QLatin1String("seen_count")].toInt();
+            card.avg_seen=ratingObject[QLatin1String("avg_seen")].toDouble();
+            card.pick_count=ratingObject[QLatin1String("pick_count")].toInt();
+            card.avg_pick=ratingObject[QLatin1String("avg_pick")].toDouble();
+            card.game_count=ratingObject[QLatin1String("game_count")].toInt();
+            card.win_rate=ratingObject[QLatin1String("win_rate")].toDouble();
+            card.opening_hand_game_count=ratingObject[QLatin1String("opening_hand_game_count")].toInt();
+            card.opening_hand_win_rate=ratingObject[QLatin1String("opening_hand_win_rate")].toDouble();
+            card.drawn_game_count=ratingObject[QLatin1String("drawn_game_count")].toInt();
+            card.drawn_win_rate=ratingObject[QLatin1String("drawn_win_rate")].toDouble();
+            card.ever_drawn_game_count=ratingObject[QLatin1String("ever_drawn_game_count")].toInt();
+            card.ever_drawn_win_rate=ratingObject[QLatin1String("ever_drawn_win_rate")].toDouble();
+            card.never_drawn_game_count=ratingObject[QLatin1String("never_drawn_game_count")].toInt();
+            card.never_drawn_win_rate=ratingObject[QLatin1String("never_drawn_win_rate")].toDouble();
+            card.drawn_improvement_win_rate=ratingObject[QLatin1String("drawn_improvement_win_rate")].toDouble();
+            rtgsList.insert(card);
+        }
+        if(rtgsList.isEmpty()){
+            emit failed17LRatings();
+            return;
+        }
+        emit downloaded17LRatings(currSet,rtgsList);
+        if(--m_SLrequestOutstanding==0)
+            emit downloadedAll17LRatings();
     });
 }
 

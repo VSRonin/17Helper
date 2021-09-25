@@ -14,6 +14,8 @@
 #ifndef WORKER_H
 #define WORKER_H
 #include <QObject>
+#include <QNetworkRequest>
+#include <QSet>
 #include <QMultiHash>
 #include "mtgahcard.h"
 #include "seventeencard.h"
@@ -31,6 +33,9 @@ public slots:
     void downloadSetsMTGAH();
     void downloadSetsScryfall();
     void getCustomRatingTemplate();
+    void get17LRatings(const QStringList& sets, const QString& format);
+private slots:
+    void processSLrequestQueue();
 signals:
     void loggedIn();
     void loginFalied();
@@ -42,9 +47,15 @@ signals:
     void customRatingTemplateFailed();
     void customRatingTemplate(const QMultiHash<QString,MtgahCard>& sets);
     void setsScryfall(const QHash<QString,QString>& sets);
+    void failed17LRatings();
+    void downloaded17LRatings(const QString& set, const QSet<SeventeenCard>& ratings);
+    void downloadedAll17LRatings();
+
 private:
+    QList<std::pair<QString,QNetworkRequest> > m_SLrequestQueue;
     QMultiHash<QString,MtgahCard> m_ratingsTemplate;
     QNetworkAccessManager *m_nam;
+    int m_SLrequestOutstanding;
 };
 
 #endif

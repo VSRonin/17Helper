@@ -45,6 +45,18 @@ void MainWindow::doLogout()
     m_worker->logOut();
 }
 
+void MainWindow::do17Ldownload()
+{
+    ui->downloadButton->setEnabled(false);
+    QStringList sets;
+    for(int i=0, iEnd = m_setsModel->rowCount();i<iEnd;++i){
+        const QModelIndex &idx=m_setsModel->index(i,0);
+        if(idx.data(Qt::CheckStateRole).toInt()==Qt::Checked)
+            sets.append(idx.data(Qt::UserRole).toString());
+    }
+    m_worker->get17LRatings(sets,ui->formatsCombo->currentData().toString());
+}
+
 void MainWindow::fillSets(const QStringList &sets)
 {
     m_error &= ~MTGAHSetsError;
@@ -72,6 +84,18 @@ void MainWindow::fillSetNames(const QHash<QString,QString>& setNames)
             m_setsModel->setData(m_setsModel->index(i,0),nameIter.value());
     }
     retranslateUi();
+}
+
+void MainWindow::onDownloaded17LRatings(const QString &set, const QSet<SeventeenCard> &ratings)
+{
+    for(int i=0, iEnd = m_ratingsModel->rowCount();i<iEnd;++i){
+        if(m_ratingsModel->index(i,RatingsModel::rmcSet).data().toString()!=set)
+            continue;
+        const auto rtgIter = ratings.constFind(SeventeenCard(m_ratingsModel->index(i,RatingsModel::rmcName).data().toString()));
+        if(rtgIter==ratings.constEnd())
+            continue;
+        m_ratingsModel->setData(m_ratingsModel->index(i,RatingsModel::rmcNote),commentString(*rtgIter));
+    }
 }
 
 void MainWindow::fillMetrics()
@@ -107,15 +131,30 @@ void MainWindow::onScryfallSetsError()
     fillSetNames(QHash<QString,QString>());
 }
 
+void MainWindow::onTemplateDownloadFailed()
+{
+    m_error |= RatingTemplateFailed;
+    ui->retryTemplateButton->setEnabled(true);
+    retranslateUi();
+}
+
 void MainWindow::retrySetsDownload()
 {
     ui->retryBasicDownloadButton->setEnabled(false);
     m_worker->downloadSetsMTGAH();
 }
 
-void MainWindow::onCustomRatingsTaemplateDownloaded()
+void MainWindow::retryTemplateDownload()
 {
+    ui->retryTemplateButton->setEnabled(false);
+    m_worker->getCustomRatingTemplate();
+}
+
+void MainWindow::onCustomRatingsTemplateDownloaded()
+{
+    m_error &= ~RatingTemplateFailed;
     m_ratingsModel->setRatingsTemplate(m_worker->ratingsTemplate());
+    retranslateUi();
 }
 
 void MainWindow::updateRatingsFiler()
@@ -206,15 +245,21 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->loginButton,&QPushButton::clicked,this,&MainWindow::doLogin);
     connect(ui->logoutButton,&QPushButton::clicked,this,&MainWindow::doLogout);
     connect(ui->retryBasicDownloadButton,&QPushButton::clicked,this,&MainWindow::retrySetsDownload);
+    connect(ui->retryTemplateButton,&QPushButton::clicked,this,&MainWindow::retryTemplateDownload);
+    connect(ui->downloadButton,&QPushButton::clicked,this,&MainWindow::do17Ldownload);
     connect(ui->allSetsButton,&QPushButton::clicked,this,&MainWindow::selectAllSets);
     connect(ui->noSetButton,&QPushButton::clicked,this,&MainWindow::selectNoSets);
     connect(m_worker,&Worker::setsMTGAH,this,&MainWindow::fillSets);
+    connect(m_worker,&Worker::downloadSetsMTGAHFailed,this,&MainWindow::onMTGAHSetsError);
     connect(m_worker,&Worker::setsScryfall,this,&MainWindow::fillSetNames);
+    connect(m_worker,&Worker::downloadSetsScryfallFailed,this,&MainWindow::onScryfallSetsError);
     connect(m_worker,&Worker::loggedIn,this,&MainWindow::onLogin);
     connect(m_worker,&Worker::loginFalied,this,&MainWindow::onLoginError);
     connect(m_worker,&Worker::loggedOut,this,&MainWindow::onLogout);
     connect(m_worker,&Worker::logoutFailed,this,&MainWindow::onLogoutError);
-    connect(m_worker,&Worker::customRatingTemplate,this,&MainWindow::onCustomRatingsTaemplateDownloaded);
+    connect(m_worker,&Worker::customRatingTemplate,this,&MainWindow::onCustomRatingsTemplateDownloaded);
+    connect(m_worker,&Worker::customRatingTemplateFailed,this,&MainWindow::onTemplateDownloadFailed);
+    connect(m_worker,&Worker::downloaded17LRatings,this,&MainWindow::onDownloaded17LRatings);
     connect(m_setsModel,&QAbstractItemModel::dataChanged,this,[this](const QModelIndex&, const QModelIndex&, const QVector<int> &roles){
         if(roles.isEmpty() || roles.contains(Qt::CheckStateRole))
             updateRatingsFiler();
@@ -250,6 +295,7 @@ void MainWindow::retranslateUi()
     ui->retranslateUi(this);
     ui->errorLabel->setVisible(m_error != NoError);
     ui->retryBasicDownloadButton->setVisible(m_error & MTGAHSetsError);
+    ui->retryTemplateButton->setVisible(m_error & RatingTemplateFailed);
     QStringList errorStrings;
     if(m_error & LoginError)
         errorStrings.append(tr("Login Failed! Check your username, password or internet connection"));
@@ -257,7 +303,8 @@ void MainWindow::retranslateUi()
         errorStrings.append(tr("Logout Failed! Check your internet connection"));
     if(m_error & MTGAHSetsError)
         errorStrings.append(tr("Error downloading sets info! Check your internet connection"));
-
+    if(m_error & RatingTemplateFailed)
+        errorStrings.append(tr("Error downloading ratings template! Check your internet connection"));
     ui->errorLabel->setText(errorStrings.join(QChar(QLatin1Char('\n'))));
     ui->ratingsView->update();
     SLcodes = QStringList(SLCount,QString());
@@ -304,6 +351,42 @@ void MainWindow::setAllSetsSelection(Qt::CheckState check)
 {
     for(int i=0, iEnd = m_setsModel->rowCount();i<iEnd;++i)
         m_setsModel->item(i)->setCheckState(check);
+}
+
+QString MainWindow::commentString(const SeventeenCard &card) const
+{
+    QStringList result;
+    if(m_SLMetricsModel->index(SLseen_count,0).data(Qt::CheckStateRole).toInt()==Qt::Checked)
+        result.append(SLcodes.at(SLseen_count)+QLatin1Char(':')+locale().toString(card.seen_count));
+    if(m_SLMetricsModel->index(SLavg_seen,0).data(Qt::CheckStateRole).toInt()==Qt::Checked)
+        result.append(SLcodes.at(SLavg_seen)+QLatin1Char(':')+locale().toString(card.avg_seen));
+    if(m_SLMetricsModel->index(SLpick_count,0).data(Qt::CheckStateRole).toInt()==Qt::Checked)
+        result.append(SLcodes.at(SLpick_count)+QLatin1Char(':')+locale().toString(card.pick_count));
+    if(m_SLMetricsModel->index(SLavg_pick,0).data(Qt::CheckStateRole).toInt()==Qt::Checked)
+        result.append(SLcodes.at(SLavg_pick)+QLatin1Char(':')+locale().toString(card.avg_pick));
+    if(m_SLMetricsModel->index(SLgame_count,0).data(Qt::CheckStateRole).toInt()==Qt::Checked)
+        result.append(SLcodes.at(SLgame_count)+QLatin1Char(':')+locale().toString(card.game_count));
+    if(m_SLMetricsModel->index(SLwin_rate,0).data(Qt::CheckStateRole).toInt()==Qt::Checked)
+        result.append(SLcodes.at(SLwin_rate)+QLatin1Char(':')+locale().toString(card.win_rate));
+    if(m_SLMetricsModel->index(SLopening_hand_game_count,0).data(Qt::CheckStateRole).toInt()==Qt::Checked)
+        result.append(SLcodes.at(SLopening_hand_game_count)+QLatin1Char(':')+locale().toString(card.opening_hand_game_count));
+    if(m_SLMetricsModel->index(SLopening_hand_win_rate,0).data(Qt::CheckStateRole).toInt()==Qt::Checked)
+        result.append(SLcodes.at(SLopening_hand_win_rate)+QLatin1Char(':')+locale().toString(card.opening_hand_win_rate));
+    if(m_SLMetricsModel->index(SLdrawn_game_count,0).data(Qt::CheckStateRole).toInt()==Qt::Checked)
+        result.append(SLcodes.at(SLdrawn_game_count)+QLatin1Char(':')+locale().toString(card.drawn_game_count));
+    if(m_SLMetricsModel->index(SLdrawn_win_rate,0).data(Qt::CheckStateRole).toInt()==Qt::Checked)
+        result.append(SLcodes.at(SLdrawn_win_rate)+QLatin1Char(':')+locale().toString(card.drawn_win_rate));
+    if(m_SLMetricsModel->index(SLever_drawn_game_count,0).data(Qt::CheckStateRole).toInt()==Qt::Checked)
+        result.append(SLcodes.at(SLever_drawn_game_count)+QLatin1Char(':')+locale().toString(card.ever_drawn_game_count));
+    if(m_SLMetricsModel->index(SLever_drawn_win_rate,0).data(Qt::CheckStateRole).toInt()==Qt::Checked)
+        result.append(SLcodes.at(SLever_drawn_win_rate)+QLatin1Char(':')+locale().toString(card.ever_drawn_win_rate));
+    if(m_SLMetricsModel->index(SLnever_drawn_game_count,0).data(Qt::CheckStateRole).toInt()==Qt::Checked)
+        result.append(SLcodes.at(SLnever_drawn_game_count)+QLatin1Char(':')+locale().toString(card.never_drawn_game_count));
+    if(m_SLMetricsModel->index(SLnever_drawn_win_rate,0).data(Qt::CheckStateRole).toInt()==Qt::Checked)
+        result.append(SLcodes.at(SLnever_drawn_win_rate)+QLatin1Char(':')+locale().toString(card.never_drawn_win_rate));
+    if(m_SLMetricsModel->index(SLdrawn_improvement_win_rate,0).data(Qt::CheckStateRole).toInt()==Qt::Checked)
+        result.append(SLcodes.at(SLdrawn_improvement_win_rate)+QLatin1Char(':')+locale().toString(card.drawn_improvement_win_rate));
+    return result.join(QLatin1String(" "));
 }
 
 void MainWindow::toggleLoginLogoutButtons()
