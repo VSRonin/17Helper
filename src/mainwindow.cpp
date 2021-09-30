@@ -21,7 +21,9 @@
 #include <QHeaderView>
 #include <QIdentityProxyModel>
 #include <QDesktopServices>
+#include <QCoreApplication>
 class NoCheckProxy : public QIdentityProxyModel{
+    Q_DISABLE_COPY_MOVE(NoCheckProxy)
 public:
     using QIdentityProxyModel::QIdentityProxyModel;
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override{
@@ -88,12 +90,23 @@ void MainWindow::fillSetNames(const QHash<QString,QString>& setNames)
 
 void MainWindow::onDownloaded17LRatings(const QString &set, const QSet<SeventeenCard> &ratings)
 {
+    Q_ASSERT(!ratings.isEmpty());
+    const auto ratingComparison = [this](const SeventeenCard& a,const SeventeenCard& b)->bool{
+        return ratingValue(a)<ratingValue(b);
+    };
+    const auto minMaxRtg = std::minmax_element(ratings.cbegin(),ratings.cend(),ratingComparison);
+    const double minRtgValue = ratingValue(*minMaxRtg.first);
+    double ratingDenominator = ratingValue(*minMaxRtg.second) - minRtgValue;
+    if(ratingDenominator==0.0)
+        ratingDenominator=1.0;
     for(int i=0, iEnd = m_ratingsModel->rowCount();i<iEnd;++i){
+        QCoreApplication::processEvents();
         if(m_ratingsModel->index(i,RatingsModel::rmcSet).data().toString()!=set)
             continue;
         const auto rtgIter = ratings.constFind(SeventeenCard(m_ratingsModel->index(i,RatingsModel::rmcName).data().toString()));
         if(rtgIter==ratings.constEnd())
             continue;
+        m_ratingsModel->setData(m_ratingsModel->index(i,RatingsModel::rmcRating),qRound(10.0*(ratingValue(*rtgIter)-minRtgValue)/ratingDenominator));
         m_ratingsModel->setData(m_ratingsModel->index(i,RatingsModel::rmcNote),commentString(*rtgIter));
     }
 }
@@ -359,34 +372,57 @@ QString MainWindow::commentString(const SeventeenCard &card) const
     if(m_SLMetricsModel->index(SLseen_count,0).data(Qt::CheckStateRole).toInt()==Qt::Checked)
         result.append(SLcodes.at(SLseen_count)+QLatin1Char(':')+locale().toString(card.seen_count));
     if(m_SLMetricsModel->index(SLavg_seen,0).data(Qt::CheckStateRole).toInt()==Qt::Checked)
-        result.append(SLcodes.at(SLavg_seen)+QLatin1Char(':')+locale().toString(card.avg_seen));
+        result.append(SLcodes.at(SLavg_seen)+QLatin1Char(':')+locale().toString(card.avg_seen,'f',2));
     if(m_SLMetricsModel->index(SLpick_count,0).data(Qt::CheckStateRole).toInt()==Qt::Checked)
         result.append(SLcodes.at(SLpick_count)+QLatin1Char(':')+locale().toString(card.pick_count));
     if(m_SLMetricsModel->index(SLavg_pick,0).data(Qt::CheckStateRole).toInt()==Qt::Checked)
-        result.append(SLcodes.at(SLavg_pick)+QLatin1Char(':')+locale().toString(card.avg_pick));
+        result.append(SLcodes.at(SLavg_pick)+QLatin1Char(':')+locale().toString(card.avg_pick,'f',2));
     if(m_SLMetricsModel->index(SLgame_count,0).data(Qt::CheckStateRole).toInt()==Qt::Checked)
         result.append(SLcodes.at(SLgame_count)+QLatin1Char(':')+locale().toString(card.game_count));
     if(m_SLMetricsModel->index(SLwin_rate,0).data(Qt::CheckStateRole).toInt()==Qt::Checked)
-        result.append(SLcodes.at(SLwin_rate)+QLatin1Char(':')+locale().toString(card.win_rate));
+        result.append(SLcodes.at(SLwin_rate)+QLatin1Char(':')+locale().toString(card.win_rate*100.0,'f',2)+locale().percent());
     if(m_SLMetricsModel->index(SLopening_hand_game_count,0).data(Qt::CheckStateRole).toInt()==Qt::Checked)
         result.append(SLcodes.at(SLopening_hand_game_count)+QLatin1Char(':')+locale().toString(card.opening_hand_game_count));
     if(m_SLMetricsModel->index(SLopening_hand_win_rate,0).data(Qt::CheckStateRole).toInt()==Qt::Checked)
-        result.append(SLcodes.at(SLopening_hand_win_rate)+QLatin1Char(':')+locale().toString(card.opening_hand_win_rate));
+        result.append(SLcodes.at(SLopening_hand_win_rate)+QLatin1Char(':')+locale().toString(card.opening_hand_win_rate*100.0,'f',2)+locale().percent());
     if(m_SLMetricsModel->index(SLdrawn_game_count,0).data(Qt::CheckStateRole).toInt()==Qt::Checked)
         result.append(SLcodes.at(SLdrawn_game_count)+QLatin1Char(':')+locale().toString(card.drawn_game_count));
     if(m_SLMetricsModel->index(SLdrawn_win_rate,0).data(Qt::CheckStateRole).toInt()==Qt::Checked)
-        result.append(SLcodes.at(SLdrawn_win_rate)+QLatin1Char(':')+locale().toString(card.drawn_win_rate));
+        result.append(SLcodes.at(SLdrawn_win_rate)+QLatin1Char(':')+locale().toString(card.drawn_win_rate*100.0,'f',2)+locale().percent());
     if(m_SLMetricsModel->index(SLever_drawn_game_count,0).data(Qt::CheckStateRole).toInt()==Qt::Checked)
         result.append(SLcodes.at(SLever_drawn_game_count)+QLatin1Char(':')+locale().toString(card.ever_drawn_game_count));
     if(m_SLMetricsModel->index(SLever_drawn_win_rate,0).data(Qt::CheckStateRole).toInt()==Qt::Checked)
-        result.append(SLcodes.at(SLever_drawn_win_rate)+QLatin1Char(':')+locale().toString(card.ever_drawn_win_rate));
+        result.append(SLcodes.at(SLever_drawn_win_rate)+QLatin1Char(':')+locale().toString(card.ever_drawn_win_rate*100.0,'f',2)+locale().percent());
     if(m_SLMetricsModel->index(SLnever_drawn_game_count,0).data(Qt::CheckStateRole).toInt()==Qt::Checked)
         result.append(SLcodes.at(SLnever_drawn_game_count)+QLatin1Char(':')+locale().toString(card.never_drawn_game_count));
     if(m_SLMetricsModel->index(SLnever_drawn_win_rate,0).data(Qt::CheckStateRole).toInt()==Qt::Checked)
-        result.append(SLcodes.at(SLnever_drawn_win_rate)+QLatin1Char(':')+locale().toString(card.never_drawn_win_rate));
+        result.append(SLcodes.at(SLnever_drawn_win_rate)+QLatin1Char(':')+locale().toString(card.never_drawn_win_rate*100.0,'f',2)+locale().percent());
     if(m_SLMetricsModel->index(SLdrawn_improvement_win_rate,0).data(Qt::CheckStateRole).toInt()==Qt::Checked)
-        result.append(SLcodes.at(SLdrawn_improvement_win_rate)+QLatin1Char(':')+locale().toString(card.drawn_improvement_win_rate));
-    return result.join(QLatin1String(" "));
+        result.append(SLcodes.at(SLdrawn_improvement_win_rate)+QLatin1Char(':')+locale().toString(card.drawn_improvement_win_rate*100.0,'f',2)+locale().percent());
+    return result.join(QLatin1Char(' '));
+}
+
+double MainWindow::ratingValue(const SeventeenCard &card) const
+{
+    switch(ui->ratingBasedCombo->currentData().toInt()){
+    case SLseen_count: return card.seen_count;
+    case SLavg_seen: return card.avg_seen;
+    case SLpick_count: return card.pick_count;
+    case SLavg_pick: return card.avg_pick;
+    case SLgame_count: return card.game_count;
+    case SLwin_rate: return card.win_rate;
+    case SLopening_hand_game_count: return card.opening_hand_game_count;
+    case SLopening_hand_win_rate: return card.opening_hand_win_rate;
+    case SLdrawn_game_count: return card.drawn_game_count;
+    case SLdrawn_win_rate: return card.drawn_win_rate;
+    case SLever_drawn_game_count: return card.ever_drawn_game_count;
+    case SLever_drawn_win_rate: return card.ever_drawn_win_rate;
+    case SLnever_drawn_game_count: return card.never_drawn_game_count;
+    case SLnever_drawn_win_rate: return card.never_drawn_win_rate;
+    case SLdrawn_improvement_win_rate: return card.drawn_improvement_win_rate;
+    default:
+        return 0;
+    }
 }
 
 void MainWindow::toggleLoginLogoutButtons()

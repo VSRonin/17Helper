@@ -86,13 +86,15 @@ bool RatingsModel::setData(const QModelIndex &index, const QVariant &value, int 
     switch(index.column()){
     case rmcRating:
         i->rating = static_cast<decltype(i->rating)>(value.toInt());
-        return true;
+        break;
     case rmcNote:
         i->note = value.toString();
-        return true;
+        break;
     default:
         return false;
     }
+    emit dataChanged(index,index,{Qt::DisplayRole,Qt::EditRole});
+    return true;
 }
 
 Qt::ItemFlags RatingsModel::flags(const QModelIndex &index) const

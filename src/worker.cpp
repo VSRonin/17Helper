@@ -6,11 +6,13 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QTimer>
+#include <QCoreApplication>
 #ifdef QT_DEBUG
 #include <QDebug>
 #endif
 Worker::Worker(QObject *parent)
-    : m_nam(new QNetworkAccessManager(this))
+    : QObject(parent)
+    , m_nam(new QNetworkAccessManager(this))
     , m_SLrequestOutstanding(0)
 {
     QTimer* SLrequestTimer=new QTimer(this);
@@ -165,6 +167,7 @@ void Worker::getCustomRatingTemplate()
         decltype(m_ratingsTemplate) rtgsTemplate;
         const QJsonArray ratingsArray = ratingsDocument.array();
         for(auto i= ratingsArray.cbegin(), iEnd=ratingsArray.cend();i!=iEnd;++i){
+            QCoreApplication::processEvents();
             if(!i->isObject())
                 continue;
             const QJsonObject ratingObject = i->toObject();

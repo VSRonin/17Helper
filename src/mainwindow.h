@@ -71,6 +71,7 @@ private:
     };
     QStringList SLcodes;
     QString commentString(const SeventeenCard& card) const;
+    double ratingValue(const SeventeenCard& card) const;
 private slots:
     void toggleLoginLogoutButtons();
     void doLogin();
