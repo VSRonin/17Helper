@@ -38,6 +38,12 @@ void Worker::tryLogin(const QString &userName, const QString &password)
     connect(reply,&QNetworkReply::errorOccurred,this,&Worker::loginFalied);
     connect(reply,&QNetworkReply::finished,reply,&QNetworkReply::deleteLater);
     connect(reply,&QNetworkReply::finished,this,[reply,this]()->void{
+        if(reply->error()!=QNetworkReply::NoError)
+            return;
+        if(reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt()!=200){
+            emit loginFalied();
+            return;
+        }
         QJsonParseError parseErr;
         QJsonDocument loginDocument = QJsonDocument::fromJson(reply->readAll(),&parseErr);
         if(parseErr.error != QJsonParseError::NoError || !loginDocument.isObject()){
@@ -61,8 +67,13 @@ void Worker::logOut()
     connect(reply,&QNetworkReply::finished,reply,&QNetworkReply::deleteLater);
     connect(reply,&QNetworkReply::errorOccurred,this,&Worker::logoutFailed);
     connect(reply,&QNetworkReply::finished,this,[reply,this]()->void{
-        if(reply->error()==QNetworkReply::NoError)
-            emit loggedOut();
+        if(reply->error()!=QNetworkReply::NoError)
+            return;
+        if(reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt()!=200){
+            emit logoutFailed();
+            return;
+        }
+        emit loggedOut();
     });
 }
 
@@ -75,6 +86,10 @@ void Worker::downloadSetsMTGAH()
     connect(reply,&QNetworkReply::finished,this,[reply,this]()->void{
         if(reply->error()!=QNetworkReply::NoError)
             return;
+        if(reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt()!=200){
+            emit downloadSetsMTGAHFailed();
+            return;
+        }
         QJsonParseError parseErr;
         QJsonDocument setsDocument = QJsonDocument::fromJson(reply->readAll(),&parseErr);
         if(parseErr.error != QJsonParseError::NoError || !setsDocument.isObject()){
@@ -119,6 +134,10 @@ void Worker::downloadSetsScryfall()
     connect(reply,&QNetworkReply::finished,this,[reply,this]()->void{
         if(reply->error()!=QNetworkReply::NoError)
             return;
+        if(reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt()!=200){
+            emit downloadSetsScryfallFailed();
+            return;
+        }
         QJsonParseError parseErr;
         const QJsonDocument setsDocument = QJsonDocument::fromJson(reply->readAll(),&parseErr);
         if(parseErr.error != QJsonParseError::NoError || !setsDocument.isObject()){
@@ -158,6 +177,10 @@ void Worker::getCustomRatingTemplate()
     connect(reply,&QNetworkReply::finished,this,[reply,this]()->void{
         if(reply->error()!=QNetworkReply::NoError)
             return;
+        if(reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt()!=200){
+            emit customRatingTemplateFailed();
+            return;
+        }
         QJsonParseError parseErr;
         const QJsonDocument ratingsDocument = QJsonDocument::fromJson(reply->readAll(),&parseErr);
         if(parseErr.error != QJsonParseError::NoError || !ratingsDocument.isArray()){
@@ -215,6 +238,45 @@ void Worker::get17LRatings(const QStringList &sets, const QString &format)
     }
 }
 
+void Worker::uploadRatings(const QStringList& sets)
+{
+    QList<MtgahCard> cards;
+    for(const QString& set : sets)
+        cards.append(m_ratingsTemplate.values(set));
+    std::stable_sort(cards.begin(),cards.end(),[](const MtgahCard& a, const MtgahCard& b)->bool{return a.id_arena<b.id_arena;});
+    cards.erase(std::unique(cards.begin(),cards.end(),[](const MtgahCard& a, const MtgahCard& b)->bool{return a.id_arena==b.id_arena;}),cards.end());
+
+    const MtgahCard card = *std::find_if(cards.cbegin(),cards.cend(),[](const MtgahCard& a)->bool{return a.id_arena==78330;});
+
+    QJsonObject cardData;
+    cardData[QLatin1String("idArena")]=card.id_arena;
+    if(card.note.isEmpty())
+        cardData[QLatin1String("note")]=QJsonValue();
+    else
+        cardData[QLatin1String("note")]=card.note;
+    if(card.rating<0)
+        cardData[QLatin1String("rating")]=QJsonValue();
+    else
+        cardData[QLatin1String("rating")]=card.rating;
+    qDebug() << cardData;
+    const QUrl setsUrl = QUrl::fromUserInput(QStringLiteral("https://mtgahelper.com/api/User/CustomDraftRating"));
+    QNetworkReply* reply = m_nam->put(QNetworkRequest(setsUrl),QJsonDocument(cardData).toJson(QJsonDocument::Compact));
+    connect(reply,&QNetworkReply::errorOccurred,this,&Worker::failedUploadRatings);
+    connect(reply,&QNetworkReply::finished,reply,&QNetworkReply::deleteLater);
+    connect(reply,&QNetworkReply::finished,this,[reply,this]()->void{
+        if(reply->error()!=QNetworkReply::NoError){
+            qDebug() << reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+            qDebug() << reply->errorString();
+            return;
+        }
+        if(reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt()!=200){
+            emit failedUploadRatings();
+            return;
+        }
+        emit ratingsUploaded();
+    });
+}
+
 void Worker::processSLrequestQueue()
 {
     if(m_SLrequestQueue.isEmpty())
@@ -228,6 +290,10 @@ void Worker::processSLrequestQueue()
     connect(reply,&QNetworkReply::finished,this,[reply,this,currSet]()->void{
         if(reply->error()!=QNetworkReply::NoError)
             return;
+        if(reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt()!=200){
+            emit failed17LRatings();
+            return;
+        }
         QJsonParseError parseErr;
         const QJsonDocument ratingsDocument = QJsonDocument::fromJson(reply->readAll(),&parseErr);
         if(parseErr.error != QJsonParseError::NoError || !ratingsDocument.isArray()){
@@ -237,6 +303,7 @@ void Worker::processSLrequestQueue()
         QSet<SeventeenCard> rtgsList;
         const QJsonArray ratingsArray = ratingsDocument.array();
         for(auto i= ratingsArray.cbegin(), iEnd=ratingsArray.cend();i!=iEnd;++i){
+            QCoreApplication::processEvents();
             if(!i->isObject())
                 continue;
             const QJsonObject ratingObject = i->toObject();
@@ -269,6 +336,7 @@ void Worker::processSLrequestQueue()
         emit downloaded17LRatings(currSet,rtgsList);
         if(--m_SLrequestOutstanding==0)
             emit downloadedAll17LRatings();
+        emit download17LRatingsProgress(m_SLrequestQueue.size()+m_SLrequestOutstanding);
     });
 }
 

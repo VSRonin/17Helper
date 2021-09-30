@@ -77,9 +77,12 @@ private slots:
     void doLogin();
     void doLogout();
     void do17Ldownload();
+    void doMtgahUpload();
     void fillSets(const QStringList& sets);
     void fillSetNames(const QHash<QString,QString>& setNames);
     void onDownloaded17LRatings(const QString& set, const QSet<SeventeenCard> &ratings);
+    void onDownloadedAll17LRatings();
+    void onDownload17LRatingsProgress(int progress);
     void fillMetrics();
     void enableSetsSection(){setSetsSectionEnabled(true);}
     void disableSetsSection(){setSetsSectionEnabled(false);}

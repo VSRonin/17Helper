@@ -50,13 +50,31 @@ void MainWindow::doLogout()
 void MainWindow::do17Ldownload()
 {
     ui->downloadButton->setEnabled(false);
+    ui->setsGroup->setEnabled(false);
     QStringList sets;
     for(int i=0, iEnd = m_setsModel->rowCount();i<iEnd;++i){
         const QModelIndex &idx=m_setsModel->index(i,0);
         if(idx.data(Qt::CheckStateRole).toInt()==Qt::Checked)
             sets.append(idx.data(Qt::UserRole).toString());
     }
+    ui->progressBar->setVisible(true);
+    ui->progressLabel->setVisible(true);
+    ui->progressBar->setRange(0,sets.size());
+    ui->progressBar->setValue(0);
+    ui->progressLabel->setText(tr("Downloading 17 Lands Data"));
     m_worker->get17LRatings(sets,ui->formatsCombo->currentData().toString());
+}
+
+void MainWindow::doMtgahUpload()
+{
+    ui->uploadButton->setEnabled(false);
+    QStringList sets;
+    for(int i=0, iEnd = m_setsModel->rowCount();i<iEnd;++i){
+        const QModelIndex &idx=m_setsModel->index(i,0);
+        if(idx.data(Qt::CheckStateRole).toInt()==Qt::Checked)
+            sets.append(idx.data(Qt::UserRole).toString());
+    }
+    m_worker->uploadRatings(sets);
 }
 
 void MainWindow::fillSets(const QStringList &sets)
@@ -109,6 +127,25 @@ void MainWindow::onDownloaded17LRatings(const QString &set, const QSet<Seventeen
         m_ratingsModel->setData(m_ratingsModel->index(i,RatingsModel::rmcRating),qRound(10.0*(ratingValue(*rtgIter)-minRtgValue)/ratingDenominator));
         m_ratingsModel->setData(m_ratingsModel->index(i,RatingsModel::rmcNote),commentString(*rtgIter));
     }
+}
+
+void MainWindow::onDownloadedAll17LRatings()
+{
+    ui->downloadButton->setEnabled(true);
+    ui->setsGroup->setEnabled(true);
+    ui->progressBar->setVisible(false);
+    ui->progressLabel->setVisible(false);
+}
+
+void MainWindow::onDownload17LRatingsProgress(int progress)
+{
+    int setCount=0;
+    for(int i=0, iEnd = m_setsModel->rowCount();i<iEnd;++i){
+        const QModelIndex &idx=m_setsModel->index(i,0);
+        if(idx.data(Qt::CheckStateRole).toInt()==Qt::Checked)
+            ++setCount;
+    }
+    ui->progressBar->setValue(ui->progressBar->maximum()-progress);
 }
 
 void MainWindow::fillMetrics()
@@ -201,6 +238,7 @@ void MainWindow::onLogout()
 void MainWindow::onLogin()
 {
     m_error &= ~LoginError;
+    ui->pwdEdit->clear();
     m_worker->getCustomRatingTemplate();
     toggleLoginLogoutButtons();
     enableSetsSection();
@@ -228,6 +266,8 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setsView->setModel(m_setsModel);
     ui->logoutButton->hide();
     ui->errorLabel->hide();
+    ui->progressBar->hide();
+    ui->progressLabel->hide();
     ui->retryBasicDownloadButton->hide();
     ui->formatsCombo->addItem(QString(), QStringLiteral("PremierDraft"));
     ui->formatsCombo->addItem(QString(), QStringLiteral("QuickDraft"));
@@ -260,6 +300,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->retryBasicDownloadButton,&QPushButton::clicked,this,&MainWindow::retrySetsDownload);
     connect(ui->retryTemplateButton,&QPushButton::clicked,this,&MainWindow::retryTemplateDownload);
     connect(ui->downloadButton,&QPushButton::clicked,this,&MainWindow::do17Ldownload);
+    connect(ui->uploadButton,&QPushButton::clicked,this,&MainWindow::doMtgahUpload);
     connect(ui->allSetsButton,&QPushButton::clicked,this,&MainWindow::selectAllSets);
     connect(ui->noSetButton,&QPushButton::clicked,this,&MainWindow::selectNoSets);
     connect(m_worker,&Worker::setsMTGAH,this,&MainWindow::fillSets);
@@ -273,6 +314,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_worker,&Worker::customRatingTemplate,this,&MainWindow::onCustomRatingsTemplateDownloaded);
     connect(m_worker,&Worker::customRatingTemplateFailed,this,&MainWindow::onTemplateDownloadFailed);
     connect(m_worker,&Worker::downloaded17LRatings,this,&MainWindow::onDownloaded17LRatings);
+    connect(m_worker,&Worker::downloadedAll17LRatings,this,&MainWindow::onDownloadedAll17LRatings);
     connect(m_setsModel,&QAbstractItemModel::dataChanged,this,[this](const QModelIndex&, const QModelIndex&, const QVector<int> &roles){
         if(roles.isEmpty() || roles.contains(Qt::CheckStateRole))
             updateRatingsFiler();

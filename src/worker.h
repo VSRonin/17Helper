@@ -20,6 +20,7 @@
 #include "mtgahcard.h"
 #include "seventeencard.h"
 class QNetworkAccessManager;
+
 class Worker : public QObject
 {
     Q_OBJECT
@@ -34,6 +35,7 @@ public slots:
     void downloadSetsScryfall();
     void getCustomRatingTemplate();
     void get17LRatings(const QStringList& sets, const QString& format);
+    void uploadRatings(const QStringList& sets);
 private slots:
     void processSLrequestQueue();
 signals:
@@ -50,7 +52,9 @@ signals:
     void failed17LRatings();
     void downloaded17LRatings(const QString& set, const QSet<SeventeenCard>& ratings);
     void downloadedAll17LRatings();
-
+    void download17LRatingsProgress(int progress);
+    void ratingsUploaded();
+    void failedUploadRatings();
 private:
     QList<std::pair<QString,QNetworkRequest> > m_SLrequestQueue;
     QMultiHash<QString,MtgahCard> m_ratingsTemplate;
