@@ -259,16 +259,15 @@ void Worker::uploadRatings(const QStringList& sets)
     else
         cardData[QLatin1String("rating")]=card.rating;
     qDebug() << cardData;
-    const QUrl setsUrl = QUrl::fromUserInput(QStringLiteral("https://mtgahelper.com/api/User/CustomDraftRating"));
-    QNetworkReply* reply = m_nam->put(QNetworkRequest(setsUrl),QJsonDocument(cardData).toJson(QJsonDocument::Compact));
+    const QUrl ratingUrl = QUrl::fromUserInput(QStringLiteral("https://mtgahelper.com/api/User/CustomDraftRating"));
+    QNetworkRequest ratingReq(ratingUrl);
+    ratingReq.setHeader(QNetworkRequest::ContentTypeHeader,QStringLiteral("application/json"));
+    QNetworkReply* reply = m_nam->put(ratingReq,QJsonDocument(cardData).toJson(QJsonDocument::Compact));
     connect(reply,&QNetworkReply::errorOccurred,this,&Worker::failedUploadRatings);
     connect(reply,&QNetworkReply::finished,reply,&QNetworkReply::deleteLater);
     connect(reply,&QNetworkReply::finished,this,[reply,this]()->void{
-        if(reply->error()!=QNetworkReply::NoError){
-            qDebug() << reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-            qDebug() << reply->errorString();
+        if(reply->error()!=QNetworkReply::NoError)
             return;
-        }
         if(reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt()!=200){
             emit failedUploadRatings();
             return;
