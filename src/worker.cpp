@@ -14,11 +14,13 @@ Worker::Worker(QObject *parent)
     : QObject(parent)
     , m_nam(new QNetworkAccessManager(this))
     , m_SLrequestOutstanding(0)
+    , m_MTGAHrequestOutstanding(0)
 {
-    QTimer* SLrequestTimer=new QTimer(this);
-    SLrequestTimer->setInterval(100);
-    connect(SLrequestTimer,&QTimer::timeout,this,&Worker::processSLrequestQueue);
-    SLrequestTimer->start();
+    QTimer* requestTimer=new QTimer(this);
+    requestTimer->setInterval(100);
+    connect(requestTimer,&QTimer::timeout,this,&Worker::processSLrequestQueue);
+    connect(requestTimer,&QTimer::timeout,this,&Worker::processMTGAHrequestQueue);
+    requestTimer->start();
 }
 
 QMultiHash<QString, MtgahCard> *Worker::ratingsTemplate() {
@@ -197,13 +199,15 @@ void Worker::getCustomRatingTemplate()
             const QJsonObject cardObject = ratingObject[QLatin1String("card")].toObject();
             if(cardObject.isEmpty())
                 continue;
+            const int idArenaVal = cardObject[QLatin1String("idArena")].toInt();
+            if(std::find_if(rtgsTemplate.cbegin(),rtgsTemplate.cend(),[idArenaVal](const MtgahCard& card)->bool{return idArenaVal==card.id_arena;})!=rtgsTemplate.cend())
+                continue;
             const QString setStr = cardObject[QLatin1String("set")].toString().trimmed().toUpper();
             if(setStr.isEmpty())
                 continue;
             const QString nameStr = cardObject[QLatin1String("name")].toString();
             if(nameStr.isEmpty())
                 continue;
-            const int idArenaVal = cardObject[QLatin1String("idArena")].toInt();
             MtgahCard card;
             card.name=nameStr;
             card.id_arena=idArenaVal;
@@ -236,44 +240,6 @@ void Worker::get17LRatings(const QStringList &sets, const QString &format)
         const QUrl ratingsUrl = QUrl::fromUserInput(QStringLiteral("https://www.17lands.com/card_ratings/data?expansion=")+set+QLatin1String("&format=")+format);
         m_SLrequestQueue.append(std::make_pair(set,QNetworkRequest(ratingsUrl)));
     }
-}
-
-void Worker::uploadRatings(const QStringList& sets)
-{
-    QList<MtgahCard> cards;
-    for(const QString& set : sets)
-        cards.append(m_ratingsTemplate.values(set));
-    std::stable_sort(cards.begin(),cards.end(),[](const MtgahCard& a, const MtgahCard& b)->bool{return a.id_arena<b.id_arena;});
-    cards.erase(std::unique(cards.begin(),cards.end(),[](const MtgahCard& a, const MtgahCard& b)->bool{return a.id_arena==b.id_arena;}),cards.end());
-
-    const MtgahCard card = *std::find_if(cards.cbegin(),cards.cend(),[](const MtgahCard& a)->bool{return a.id_arena==78330;});
-
-    QJsonObject cardData;
-    cardData[QLatin1String("idArena")]=card.id_arena;
-    if(card.note.isEmpty())
-        cardData[QLatin1String("note")]=QJsonValue();
-    else
-        cardData[QLatin1String("note")]=card.note;
-    if(card.rating<0)
-        cardData[QLatin1String("rating")]=QJsonValue();
-    else
-        cardData[QLatin1String("rating")]=card.rating;
-    qDebug() << cardData;
-    const QUrl ratingUrl = QUrl::fromUserInput(QStringLiteral("https://mtgahelper.com/api/User/CustomDraftRating"));
-    QNetworkRequest ratingReq(ratingUrl);
-    ratingReq.setHeader(QNetworkRequest::ContentTypeHeader,QStringLiteral("application/json"));
-    QNetworkReply* reply = m_nam->put(ratingReq,QJsonDocument(cardData).toJson(QJsonDocument::Compact));
-    connect(reply,&QNetworkReply::errorOccurred,this,&Worker::failedUploadRatings);
-    connect(reply,&QNetworkReply::finished,reply,&QNetworkReply::deleteLater);
-    connect(reply,&QNetworkReply::finished,this,[reply,this]()->void{
-        if(reply->error()!=QNetworkReply::NoError)
-            return;
-        if(reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt()!=200){
-            emit failedUploadRatings();
-            return;
-        }
-        emit ratingsUploaded();
-    });
 }
 
 void Worker::processSLrequestQueue()
@@ -333,9 +299,60 @@ void Worker::processSLrequestQueue()
             return;
         }
         emit downloaded17LRatings(currSet,rtgsList);
-        if(--m_SLrequestOutstanding==0)
+        if(m_SLrequestQueue.size()+(--m_SLrequestOutstanding)==0)
             emit downloadedAll17LRatings();
         emit download17LRatingsProgress(m_SLrequestQueue.size()+m_SLrequestOutstanding);
     });
+}
+
+void Worker::uploadRatings(const QStringList& sets)
+{
+    for(const QString& set : sets){
+        auto cardsRange = qAsConst(m_ratingsTemplate).equal_range(set);
+        if(cardsRange.first==m_ratingsTemplate.cend())
+            continue;
+        for(auto i=cardsRange.first;i!=cardsRange.second;++i){
+
+            const QUrl ratingUrl = QUrl::fromUserInput(QStringLiteral("https://mtgahelper.com/api/User/CustomDraftRating"));
+            QNetworkRequest ratingReq(ratingUrl);
+            ratingReq.setHeader(QNetworkRequest::ContentTypeHeader,QStringLiteral("application/json"));
+            m_MTGAHrequestQueue.append(std::make_pair(*i,ratingReq));
+        }
+    }
+}
+
+void Worker::processMTGAHrequestQueue()
+{
+    if(m_MTGAHrequestQueue.isEmpty())
+        return;
+    const std::pair<MtgahCard,QNetworkRequest> currReq = m_MTGAHrequestQueue.takeFirst();
+    const MtgahCard currCard = currReq.first;
+    QJsonObject cardData;
+    cardData[QLatin1String("idArena")]=currCard.id_arena;
+    if(currCard.note.isEmpty())
+        cardData[QLatin1String("note")]=QJsonValue();
+    else
+        cardData[QLatin1String("note")]=currCard.note;
+    if(currCard.rating<0)
+        cardData[QLatin1String("rating")]=QJsonValue();
+    else
+        cardData[QLatin1String("rating")]=currCard.rating;
+    ++m_MTGAHrequestOutstanding;
+    QNetworkReply* reply = m_nam->put(currReq.second,QJsonDocument(cardData).toJson(QJsonDocument::Compact));
+    connect(reply,&QNetworkReply::errorOccurred,this,std::bind(&Worker::failedUploadRating,this,currCard));
+    connect(reply,&QNetworkReply::finished,reply,&QNetworkReply::deleteLater);
+    connect(reply,&QNetworkReply::finished,this,[reply,this,currCard]()->void{
+        if(reply->error()!=QNetworkReply::NoError)
+            return;
+        if(reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt()!=200){
+            emit failedUploadRating(currCard);
+            return;
+        }
+        emit ratingUploaded(currCard.name);
+        if(m_MTGAHrequestQueue.size()+(--m_MTGAHrequestOutstanding)==0)
+            emit allRatingsUploaded();
+        emit ratingsUploadProgress(m_SLrequestQueue.size()+m_MTGAHrequestOutstanding);
+    });
+
 }
 

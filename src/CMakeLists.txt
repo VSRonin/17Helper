@@ -1,5 +1,6 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.14)
 find_package(Qt6 COMPONENTS Widgets Gui Core Network LinguistTools REQUIRED)
+find_package(OpenSSL REQUIRED)
 set(ui_SRCS 
     mainwindow.cpp
     mainwindow.h
@@ -59,9 +60,20 @@ set_target_properties(17Helper PROPERTIES
     CXX_STANDARD_REQUIRED ON
     VERSION ${VERSION_SHORT}
 )
+install(TARGETS 17Helper
+    BUNDLE DESTINATION "17Helper"
+    RUNTIME DESTINATION "17Helper"
+)
+install(FILES ${17Helper_QM_FILES} DESTINATION "17Helper/translations")
+install(DIRECTORY "${OPENSSL_ROOT_DIR}/bin/"
+    RUNTIME DESTINATION "17Helper"
+    FILES_MATCHING PATTERN "*${CMAKE_SHARED_LIBRARY_SUFFIX}"
+)
+include(InstallRequiredSystemLibraries)
+include(windeployqt)
+WinDeployQt(17Helper en "17Helper")
 include(InstallRequiredSystemLibraries)
 install(
     PROGRAMS ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS}
-    DESTINATION runtime
+    DESTINATION "17Helper"
 )
-install(FILES ${17Helper_QM_FILES} DESTINATION translations)

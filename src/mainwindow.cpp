@@ -35,6 +35,7 @@ public:
 
 void MainWindow::doLogin()
 {
+    ui->pwdEdit->clear();
     ui->loginButton->setEnabled(false);
     ui->usernameEdit->setEnabled(false);
     ui->pwdEdit->setEnabled(false);
@@ -238,7 +239,6 @@ void MainWindow::onLogout()
 void MainWindow::onLogin()
 {
     m_error &= ~LoginError;
-    ui->pwdEdit->clear();
     m_worker->getCustomRatingTemplate();
     toggleLoginLogoutButtons();
     enableSetsSection();

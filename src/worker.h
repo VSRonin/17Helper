@@ -38,6 +38,7 @@ public slots:
     void uploadRatings(const QStringList& sets);
 private slots:
     void processSLrequestQueue();
+    void processMTGAHrequestQueue();
 signals:
     void loggedIn();
     void loginFalied();
@@ -53,13 +54,17 @@ signals:
     void downloaded17LRatings(const QString& set, const QSet<SeventeenCard>& ratings);
     void downloadedAll17LRatings();
     void download17LRatingsProgress(int progress);
-    void ratingsUploaded();
-    void failedUploadRatings();
+    void allRatingsUploaded();
+    void ratingUploaded(const QString& card);
+    void ratingsUploadProgress(int progress);
+    void failedUploadRating(const MtgahCard& card);
 private:
     QList<std::pair<QString,QNetworkRequest> > m_SLrequestQueue;
+    QList<std::pair<MtgahCard,QNetworkRequest> > m_MTGAHrequestQueue;
     QMultiHash<QString,MtgahCard> m_ratingsTemplate;
     QNetworkAccessManager *m_nam;
     int m_SLrequestOutstanding;
+    int m_MTGAHrequestOutstanding;
 };
 
 #endif
