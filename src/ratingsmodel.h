@@ -16,34 +16,32 @@
 #include <QAbstractTableModel>
 #include <QMultiHash>
 class MtgahCard;
-class RatingsModel : public QAbstractTableModel {
-  Q_OBJECT
-  Q_DISABLE_COPY_MOVE(RatingsModel)
+class RatingsModel : public QAbstractTableModel
+{
+    Q_OBJECT
+    Q_DISABLE_COPY_MOVE(RatingsModel)
 public:
-  enum RatingsModelColumns {
-    rmcSet,
-    rmcName,
-    rmcArenaId,
-    rmcRating,
-    rmcNote
+    enum RatingsModelColumns {
+        rmcSet,
+        rmcName,
+        rmcArenaId,
+        rmcRating,
+        rmcNote
 
-    ,
-    rmcCount
-  };
-  explicit RatingsModel(QObject *parent = nullptr);
-  int rowCount(const QModelIndex &parent = QModelIndex()) const override;
-  int columnCount(const QModelIndex &parent = QModelIndex()) const override;
-  QVariant data(const QModelIndex &index,
-                int role = Qt::DisplayRole) const override;
-  QVariant headerData(int section, Qt::Orientation orientation,
-                      int role = Qt::DisplayRole) const override;
-  void setRatingsTemplate(QMultiHash<QString, MtgahCard> *tmplt);
-  bool setData(const QModelIndex &index, const QVariant &value,
-               int role = Qt::EditRole) override;
-  Qt::ItemFlags flags(const QModelIndex &index) const override;
+        ,
+        rmcCount
+    };
+    explicit RatingsModel(QObject *parent = nullptr);
+    int rowCount(const QModelIndex &parent = QModelIndex()) const override;
+    int columnCount(const QModelIndex &parent = QModelIndex()) const override;
+    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
+    QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
+    void setRatingsTemplate(QMultiHash<QString, MtgahCard> *tmplt);
+    bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
+    Qt::ItemFlags flags(const QModelIndex &index) const override;
 
 private:
-  QMultiHash<QString, MtgahCard> *m_ratingsTemplate;
+    QMultiHash<QString, MtgahCard> *m_ratingsTemplate;
 };
 
 #endif

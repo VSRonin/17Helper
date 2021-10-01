@@ -21,51 +21,52 @@
 #include <QSet>
 class QNetworkAccessManager;
 
-class Worker : public QObject {
-  Q_OBJECT
-  Q_DISABLE_COPY_MOVE(Worker)
+class Worker : public QObject
+{
+    Q_OBJECT
+    Q_DISABLE_COPY_MOVE(Worker)
 public:
-  explicit Worker(QObject *parent = nullptr);
-  QMultiHash<QString, MtgahCard> *ratingsTemplate();
+    explicit Worker(QObject *parent = nullptr);
+    QMultiHash<QString, MtgahCard> *ratingsTemplate();
 public slots:
-  void tryLogin(const QString &userName, const QString &password);
-  void logOut();
-  void downloadSetsMTGAH();
-  void downloadSetsScryfall();
-  void getCustomRatingTemplate();
-  void get17LRatings(const QStringList &sets, const QString &format);
-  void uploadRatings(const QStringList &sets);
+    void tryLogin(const QString &userName, const QString &password);
+    void logOut();
+    void downloadSetsMTGAH();
+    void downloadSetsScryfall();
+    void getCustomRatingTemplate();
+    void get17LRatings(const QStringList &sets, const QString &format);
+    void uploadRatings(const QStringList &sets);
 private slots:
-  void processSLrequestQueue();
-  void processMTGAHrequestQueue();
+    void processSLrequestQueue();
+    void processMTGAHrequestQueue();
 signals:
-  void loggedIn();
-  void loginFalied();
-  void loggedOut();
-  void logoutFailed();
-  void downloadSetsMTGAHFailed();
-  void setsMTGAH(const QStringList &sets);
-  void downloadSetsScryfallFailed();
-  void customRatingTemplateFailed();
-  void customRatingTemplate(const QMultiHash<QString, MtgahCard> &sets);
-  void setsScryfall(const QHash<QString, QString> &sets);
-  void failed17LRatings();
-  void downloaded17LRatings(const QString &set,
-                            const QSet<SeventeenCard> &ratings);
-  void downloadedAll17LRatings();
-  void download17LRatingsProgress(int progress);
-  void allRatingsUploaded();
-  void ratingUploaded(const QString &card);
-  void ratingsUploadProgress(int progress);
-  void failedUploadRating(const MtgahCard &card);
+    void loggedIn();
+    void loginFalied();
+    void loggedOut();
+    void logoutFailed();
+    void downloadSetsMTGAHFailed();
+    void setsMTGAH(const QStringList &sets);
+    void downloadSetsScryfallFailed();
+    void customRatingTemplateFailed();
+    void customRatingTemplate(const QMultiHash<QString, MtgahCard> &sets);
+    void setsScryfall(const QHash<QString, QString> &sets);
+    void failed17LRatings();
+    void downloadedAll17LRatings();
+    void download17LRatingsProgress(int progress);
+    void allRatingsUploaded();
+    void ratingUploaded(const QString &card);
+    void ratingsUploadMaxProgress(int progress);
+    void ratingsUploadProgress(int progress);
+    void failedUploadRating(const MtgahCard &card);
+    void downloaded17LRatings(const QString &set, const QSet<SeventeenCard> &ratings);
 
 private:
-  QList<std::pair<QString, QNetworkRequest>> m_SLrequestQueue;
-  QList<std::pair<MtgahCard, QNetworkRequest>> m_MTGAHrequestQueue;
-  QMultiHash<QString, MtgahCard> m_ratingsTemplate;
-  QNetworkAccessManager *m_nam;
-  int m_SLrequestOutstanding;
-  int m_MTGAHrequestOutstanding;
+    QList<std::pair<QString, QNetworkRequest>> m_SLrequestQueue;
+    QList<std::pair<MtgahCard, QNetworkRequest>> m_MTGAHrequestQueue;
+    QMultiHash<QString, MtgahCard> m_ratingsTemplate;
+    QNetworkAccessManager *m_nam;
+    int m_SLrequestOutstanding;
+    int m_MTGAHrequestOutstanding;
 };
 
 #endif
