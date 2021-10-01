@@ -14,17 +14,16 @@
 #ifndef MTGAHCARD_H
 #define MTGAHCARD_H
 #include <QString>
-class MtgahCard
-{
+class MtgahCard {
 public:
-    MtgahCard();
-    MtgahCard(const MtgahCard& other) = default;
-    MtgahCard& operator=(const MtgahCard& other) = default;
-    int id_arena;
-    QString name;
-    QString set;
-    char rating;
-    QString note;
+  MtgahCard();
+  MtgahCard(const MtgahCard &other) = default;
+  MtgahCard &operator=(const MtgahCard &other) = default;
+  int id_arena;
+  QString name;
+  QString set;
+  char rating;
+  QString note;
 };
 
 #endif

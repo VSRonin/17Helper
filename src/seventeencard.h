@@ -14,32 +14,34 @@
 #ifndef SEVENTEENCARD_H
 #define SEVENTEENCARD_H
 #include <QString>
-class SeventeenCard
-{
+class SeventeenCard {
 public:
-    SeventeenCard();
-    explicit SeventeenCard(const QString& name);
-    SeventeenCard(const SeventeenCard& other) = default;
-    SeventeenCard& operator=(const SeventeenCard& other) = default;
-    bool operator==(const SeventeenCard& other) const;
-    bool operator!=(const SeventeenCard& other) const{return !operator==(other);}
+  SeventeenCard();
+  explicit SeventeenCard(const QString &name);
+  SeventeenCard(const SeventeenCard &other) = default;
+  SeventeenCard &operator=(const SeventeenCard &other) = default;
+  bool operator==(const SeventeenCard &other) const;
+  bool operator!=(const SeventeenCard &other) const {
+    return !operator==(other);
+  }
+
 public:
-    int seen_count;
-    double avg_seen;
-    int pick_count;
-    double avg_pick;
-    int game_count;
-    double win_rate;
-    int opening_hand_game_count;
-    double opening_hand_win_rate;
-    int drawn_game_count;
-    double drawn_win_rate;
-    int ever_drawn_game_count;
-    double ever_drawn_win_rate;
-    int never_drawn_game_count;
-    double never_drawn_win_rate;
-    double drawn_improvement_win_rate;
-    QString name;
+  int seen_count;
+  double avg_seen;
+  int pick_count;
+  double avg_pick;
+  int game_count;
+  double win_rate;
+  int opening_hand_game_count;
+  double opening_hand_win_rate;
+  int drawn_game_count;
+  double drawn_win_rate;
+  int ever_drawn_game_count;
+  double ever_drawn_win_rate;
+  int never_drawn_game_count;
+  double never_drawn_win_rate;
+  double drawn_improvement_win_rate;
+  QString name;
 };
 size_t qHash(const SeventeenCard &card, size_t seed = 0);
 #endif

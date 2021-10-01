@@ -14,16 +14,18 @@
 #ifndef RATINGSDELEGATE_H
 #define RATINGSDELEGATE_H
 #include <QStyledItemDelegate>
-class RatingsDelegate : public QStyledItemDelegate
-{
-    Q_OBJECT
-    Q_DISABLE_COPY_MOVE(RatingsDelegate)
+class RatingsDelegate : public QStyledItemDelegate {
+  Q_OBJECT
+  Q_DISABLE_COPY_MOVE(RatingsDelegate)
 public:
-	explicit RatingsDelegate(QObject *parent=nullptr);
-    QWidget *createEditor(QWidget *parent, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
-	void setEditorData(QWidget *editor, const QModelIndex &index) const override;
-	void setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const override;
-	void updateEditorGeometry(QWidget *editor, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
+  explicit RatingsDelegate(QObject *parent = nullptr);
+  QWidget *createEditor(QWidget *parent, const QStyleOptionViewItem &option,
+                        const QModelIndex &index) const override;
+  void setEditorData(QWidget *editor, const QModelIndex &index) const override;
+  void setModelData(QWidget *editor, QAbstractItemModel *model,
+                    const QModelIndex &index) const override;
+  void updateEditorGeometry(QWidget *editor, const QStyleOptionViewItem &option,
+                            const QModelIndex &index) const override;
 };
 
 #endif
