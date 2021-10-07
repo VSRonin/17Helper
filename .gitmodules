@@ -1,4 +1,0 @@
-[submodule "KItemModels"]
-	path = KItemModels
-	url = https://invent.kde.org/frameworks/kitemmodels.git
-	branch = master
