@@ -17,7 +17,10 @@
 
 class Worker;
 class QThread;
+class QStandardItemModel;
 class QAbstractItemModel;
+class SeventeenCard;
+class QSqlQueryModel;
 class MainObject : public QObject
 {
     Q_OBJECT
@@ -25,10 +28,51 @@ class MainObject : public QObject
 public:
     explicit MainObject(QObject *parent = nullptr);
     ~MainObject();
+    enum SLMetrics {
+        SLseen_count,
+        SLavg_seen,
+        SLpick_count,
+        SLavg_pick,
+        SLgame_count,
+        SLwin_rate,
+        SLopening_hand_game_count,
+        SLopening_hand_win_rate,
+        SLdrawn_game_count,
+        SLdrawn_win_rate,
+        SLever_drawn_game_count,
+        SLever_drawn_win_rate,
+        SLnever_drawn_game_count,
+        SLnever_drawn_win_rate,
+        SLdrawn_improvement_win_rate,
+
+        SLCount
+    };
+    QAbstractItemModel *SLMetricsModel() const;
+    QAbstractItemModel *setsModel() const;
+public slots:
+    void tryLogin(const QString &userName, const QString &password, bool rememberMe = false);
+    void logOut();
+    void retranslateModels();
+private slots:
+    void onWorkerInit();
+    void onLoggedIn();
+signals:
+    void loggedIn();
+    void loginFalied(const QString &error);
+    void loggedOut();
+    void logoutFailed(const QString &error);
+    void initialisationFailed();
+
 private:
-    Worker* m_worker;
-    QThread* m_workerThread;
-    QAbstractItemModel* m_ratingsModel;
+    double ratingValue(const SeventeenCard &card, SLMetrics method) const;
+    QString commentString(const SeventeenCard &card, const QLocale &locale) const;
+    void fillMetrics();
+    Worker *m_worker;
+    QThread *m_workerThread;
+    const QString m_objectDbName;
+    QStringList SLcodes;
+    QStandardItemModel *m_SLMetricsModel;
+    QSqlQueryModel *m_setsModel;
 };
 
 #endif

@@ -19,16 +19,17 @@
 #include <QNetworkRequest>
 #include <QObject>
 #include <QSet>
+#include <QSqlDatabase>
 class QNetworkAccessManager;
-
+class QTimer;
 class Worker : public QObject
 {
     Q_OBJECT
     Q_DISABLE_COPY_MOVE(Worker)
 public:
     explicit Worker(QObject *parent = nullptr);
-    QMultiHash<QString, MtgahCard> *ratingsTemplate();
 public slots:
+    void init();
     void tryLogin(const QString &userName, const QString &password);
     void logOut();
     void downloadSetsMTGAH();
@@ -39,16 +40,19 @@ public slots:
 private slots:
     void processSLrequestQueue();
     void processMTGAHrequestQueue();
+    void checkStopTimer();
+
 signals:
+    void initialised();
+    void initialisationFailed();
     void loggedIn();
-    void loginFalied();
+    void loginFalied(const QString &error);
     void loggedOut();
-    void logoutFailed();
+    void logoutFailed(const QString &error);
     void downloadSetsMTGAHFailed();
-    void setsMTGAH(const QStringList &sets);
+    void setsMTGAH(bool needsUpdate);
     void downloadSetsScryfallFailed();
     void customRatingTemplateFailed();
-    void customRatingTemplate(const QMultiHash<QString, MtgahCard> &sets);
     void setsScryfall(const QHash<QString, QString> &sets);
     void failed17LRatings();
     void downloadedAll17LRatings();
@@ -61,12 +65,15 @@ signals:
     void downloaded17LRatings(const QString &set, const QSet<SeventeenCard> &ratings);
 
 private:
+    void saveMTGAHSets(QStringList sets);
     QList<std::pair<QString, QNetworkRequest>> m_SLrequestQueue;
     QList<std::pair<MtgahCard, QNetworkRequest>> m_MTGAHrequestQueue;
-    QMultiHash<QString, MtgahCard> m_ratingsTemplate;
     QNetworkAccessManager *m_nam;
     int m_SLrequestOutstanding;
     int m_MTGAHrequestOutstanding;
+    const QString m_workerDbName;
+    QSqlDatabase openWorkerDb();
+    QTimer *m_requestTimer;
 };
 
 #endif

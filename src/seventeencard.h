@@ -23,8 +23,6 @@ public:
     SeventeenCard &operator=(const SeventeenCard &other) = default;
     bool operator==(const SeventeenCard &other) const;
     bool operator!=(const SeventeenCard &other) const { return !operator==(other); }
-
-public:
     int seen_count;
     double avg_seen;
     int pick_count;

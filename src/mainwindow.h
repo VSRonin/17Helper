@@ -19,7 +19,7 @@ namespace Ui {
 class MainWindow;
 }
 class QStandardItemModel;
-class Worker;
+class MainObject;
 class RatingsModel;
 class QSortFilterProxyModel;
 class SeventeenCard;
@@ -30,7 +30,14 @@ class MainWindow : public QWidget
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
-    enum CurrentError { NoError = 0x0, LoginError = 0x1, LogoutError = 0x2, MTGAHSetsError = 0x4, RatingTemplateFailed = 0x8 };
+    enum CurrentError {
+        NoError = 0x0,
+        LoginError = 0x1,
+        LogoutError = 0x2,
+        MTGAHSetsError = 0x4,
+        RatingTemplateFailed = 0x8,
+        InitialisationError = 0x10
+    };
     Q_DECLARE_FLAGS(CurrentErrors, CurrentError)
     CurrentErrors errors() const;
 
@@ -40,37 +47,10 @@ protected:
 
 private:
     CurrentErrors m_error;
-    QStandardItemModel *m_setsModel;
-    QStandardItemModel *m_SLMetricsModel;
-    RatingsModel *m_ratingsModel;
-    QSortFilterProxyModel *m_ratingsProxy;
-    Worker *m_worker;
+    MainObject *m_object;
     Ui::MainWindow *ui;
     void setSetsSectionEnabled(bool enabled);
     void setAllSetsSelection(Qt::CheckState check);
-    enum SLMetrics {
-        SLseen_count,
-        SLavg_seen,
-        SLpick_count,
-        SLavg_pick,
-        SLgame_count,
-        SLwin_rate,
-        SLopening_hand_game_count,
-        SLopening_hand_win_rate,
-        SLdrawn_game_count,
-        SLdrawn_win_rate,
-        SLever_drawn_game_count,
-        SLever_drawn_win_rate,
-        SLnever_drawn_game_count,
-        SLnever_drawn_win_rate,
-        SLdrawn_improvement_win_rate
-
-        ,
-        SLCount
-    };
-    QStringList SLcodes;
-    QString commentString(const SeventeenCard &card) const;
-    double ratingValue(const SeventeenCard &card) const;
 private slots:
     void toggleLoginLogoutButtons();
     void doLogin();
@@ -82,13 +62,12 @@ private slots:
     void onDownloaded17LRatings(const QString &set, const QSet<SeventeenCard> &ratings);
     void onDownloadedAll17LRatings();
     void onDownload17LRatingsProgress(int progress);
-    void fillMetrics();
     void enableSetsSection() { setSetsSectionEnabled(true); }
     void disableSetsSection() { setSetsSectionEnabled(false); }
     void onLogin();
-    void onLoginError();
+    void onLoginError(const QString &error);
     void onLogout();
-    void onLogoutError();
+    void onLogoutError(const QString &error);
     void onMTGAHSetsError();
     void onScryfallSetsError();
     void onTemplateDownloadFailed();
