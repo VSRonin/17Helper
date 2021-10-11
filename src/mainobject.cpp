@@ -11,7 +11,6 @@
    limitations under the License.
 \****************************************************************************/
 #include "mainobject.h"
-#include "worker.h"
 #include "globals.h"
 #include <QThread>
 #include <QTimer>
@@ -28,6 +27,8 @@ MainObject::MainObject(QObject *parent)
 {
     m_SLMetricsModel = new QStandardItemModel(SLCount, 1, this);
     fillMetrics();
+    m_formatsModel = new QStandardItemModel(dfCount, 1, this);
+    fillFormats();
     m_setsModel = new QSqlQueryModel(this);
 
     m_workerThread = new QThread(this);
@@ -43,6 +44,7 @@ MainObject::MainObject(QObject *parent)
     connect(m_worker, &Worker::loginFalied, this, &MainObject::loginFalied);
     connect(m_worker, &Worker::loggedOut, this, &MainObject::loggedOut);
     connect(m_worker, &Worker::logoutFailed, this, &MainObject::logoutFailed);
+    connect(m_worker, &Worker::setsScryfall, this, &MainObject::onSetsScryfall);
     m_workerThread->start();
 }
 
@@ -60,6 +62,11 @@ QAbstractItemModel *MainObject::SLMetricsModel() const
 QAbstractItemModel *MainObject::setsModel() const
 {
     return m_setsModel;
+}
+
+QAbstractItemModel *MainObject::formatsModel() const
+{
+    return m_formatsModel;
 }
 
 void MainObject::tryLogin(const QString &userName, const QString &password, bool rememberMe)
@@ -88,6 +95,12 @@ void MainObject::logOut()
 
 void MainObject::retranslateModels()
 {
+    m_formatsModel->setData(m_formatsModel->index(dfPremierDraft, 0), tr("Premier Draft"));
+    m_formatsModel->setData(m_formatsModel->index(dfQuickDraft, 0), tr("Quick Draft"));
+    m_formatsModel->setData(m_formatsModel->index(dfTradDraft, 0), tr("Traditional Draft"));
+    m_formatsModel->setData(m_formatsModel->index(dfSealed, 0), tr("Sealed"));
+    m_formatsModel->setData(m_formatsModel->index(dfTradSealed, 0), tr("Traditional Sealed"));
+
     if (SLcodes.isEmpty()) {
         SLcodes.reserve(SLCount);
         for (int i = 0; i < SLCount; ++i)
@@ -135,15 +148,52 @@ void MainObject::retranslateModels()
 
 void MainObject::onWorkerInit()
 {
-    QSqlDatabase objectDb = openDb(m_objectDbName);
-    QSqlQuery setsQuery(objectDb);
-    setsQuery.prepare(QStringLiteral("SELECT [id] FROM [Sets]"));
-    Q_ASSUME(setsQuery.exec());
-    m_setsModel->setQuery(setsQuery);
+    selectSetsModel();
     QTimer::singleShot(0, m_worker, &Worker::downloadSetsMTGAH);
 }
 
+void MainObject::fillMetrics()
+{
+    for (int i = 0; i < SLCount; ++i) {
+        QStandardItem *item = new QStandardItem;
+        item->setData(i, Qt::UserRole);
+        if (i == SLdrawn_win_rate || i == SLavg_pick)
+            item->setData(Qt::Checked, Qt::CheckStateRole);
+        else
+            item->setData(Qt::Unchecked, Qt::CheckStateRole);
+        item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsUserCheckable);
+        m_SLMetricsModel->setItem(i, 0, item);
+    }
+}
+
+void MainObject::fillFormats()
+{
+    m_formatsModel->setData(m_formatsModel->index(dfPremierDraft, 0), QStringLiteral("PremierDraft"), Qt::UserRole);
+    m_formatsModel->setData(m_formatsModel->index(dfQuickDraft, 0), QStringLiteral("QuickDraft"), Qt::UserRole);
+    m_formatsModel->setData(m_formatsModel->index(dfTradDraft, 0), QStringLiteral("TradDraft"), Qt::UserRole);
+    m_formatsModel->setData(m_formatsModel->index(dfSealed, 0), QStringLiteral("Sealed"), Qt::UserRole);
+    m_formatsModel->setData(m_formatsModel->index(dfTradSealed, 0), QStringLiteral("TradSealed"), Qt::UserRole);
+}
+
+void MainObject::selectSetsModel()
+{
+    QSqlDatabase objectDb = openDb(m_objectDbName);
+    QSqlQuery setsQuery(objectDb);
+    setsQuery.prepare(
+            QStringLiteral("select [name] from (SELECT CASE WHEN [name] is NULL then [id] ELSE [name] END as [name], CASE WHEN [release_date] is "
+                           "NULL then DATE() ELSE [release_date] END as [release_date] FROM [Sets] where [type] & ?) order by [release_date] desc"));
+    setsQuery.addBindValue(DraftableSet);
+    Q_ASSUME(setsQuery.exec());
+    m_setsModel->setQuery(setsQuery);
+}
+
 void MainObject::onLoggedIn() { }
+
+void MainObject::onSetsScryfall(bool needsUpdate)
+{
+    if (needsUpdate)
+        selectSetsModel();
+}
 
 QString MainObject::commentString(const SeventeenCard &card, const QLocale &locale) const
 {
@@ -181,20 +231,6 @@ QString MainObject::commentString(const SeventeenCard &card, const QLocale &loca
         result.append(SLcodes.at(SLdrawn_improvement_win_rate) + QLatin1Char(':') + locale.toString(card.drawn_improvement_win_rate * 100.0, 'f', 2)
                       + percent);
     return result.join(QLatin1Char(' '));
-}
-
-void MainObject::fillMetrics()
-{
-    for (int i = 0; i < SLCount; ++i) {
-        QStandardItem *item = new QStandardItem;
-        item->setData(i, Qt::UserRole);
-        if (i == SLdrawn_win_rate || i == SLavg_pick)
-            item->setData(Qt::Checked, Qt::CheckStateRole);
-        else
-            item->setData(Qt::Unchecked, Qt::CheckStateRole);
-        item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsUserCheckable);
-        m_SLMetricsModel->setItem(i, 0, item);
-    }
 }
 
 double MainObject::ratingValue(const SeventeenCard &card, SLMetrics method) const

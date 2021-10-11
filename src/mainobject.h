@@ -14,8 +14,7 @@
 #ifndef MAINOBJECT_H
 #define MAINOBJECT_H
 #include <QObject>
-
-class Worker;
+#include "worker.h"
 class QThread;
 class QStandardItemModel;
 class QAbstractItemModel;
@@ -47,8 +46,19 @@ public:
 
         SLCount
     };
+    enum DraftFormats {
+        dfPremierDraft,
+        dfQuickDraft,
+        dfTradDraft,
+        dfSealed,
+        dfTradSealed,
+
+        dfCount
+    };
+    enum { DraftableSet = Worker::stcore | Worker::stexpansion | Worker::stdraft_innovation };
     QAbstractItemModel *SLMetricsModel() const;
     QAbstractItemModel *setsModel() const;
+    QAbstractItemModel *formatsModel() const;
 public slots:
     void tryLogin(const QString &userName, const QString &password, bool rememberMe = false);
     void logOut();
@@ -56,22 +66,27 @@ public slots:
 private slots:
     void onWorkerInit();
     void onLoggedIn();
+    void onSetsScryfall(bool needsUpdate);
 signals:
     void loggedIn();
     void loginFalied(const QString &error);
     void loggedOut();
     void logoutFailed(const QString &error);
     void initialisationFailed();
+    void setsReady();
 
 private:
     double ratingValue(const SeventeenCard &card, SLMetrics method) const;
     QString commentString(const SeventeenCard &card, const QLocale &locale) const;
     void fillMetrics();
+    void fillFormats();
+    void selectSetsModel();
     Worker *m_worker;
     QThread *m_workerThread;
     const QString m_objectDbName;
     QStringList SLcodes;
     QStandardItemModel *m_SLMetricsModel;
+    QStandardItemModel *m_formatsModel;
     QSqlQueryModel *m_setsModel;
 };
 

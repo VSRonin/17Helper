@@ -25,8 +25,7 @@ Worker::Worker(QObject *parent)
     , m_workerDbName(QStringLiteral("WorkerDb"))
 {
     m_requestTimer = new QTimer(this);
-    m_requestTimer->setInterval(200);
-    connect(m_requestTimer, &QTimer::timeout, this, &Worker::processSLrequestQueue);
+    m_requestTimer->setInterval(RequestTimerTimeout);
     connect(m_requestTimer, &QTimer::timeout, this, &Worker::processMTGAHrequestQueue);
     connect(m_requestTimer, &QTimer::timeout, this, &Worker::processSLrequestQueue);
 }
@@ -47,8 +46,10 @@ void Worker::init()
     QSqlDatabase workerdb = openWorkerDb();
     Q_ASSERT(workerdb.driver()->hasFeature(QSqlDriver::PreparedQueries));
     Q_ASSERT(workerdb.driver()->hasFeature(QSqlDriver::PositionalPlaceholders));
+    Q_ASSERT(workerdb.driver()->hasFeature(QSqlDriver::NamedPlaceholders));
     QSqlQuery createSetsQuery(workerdb);
-    createSetsQuery.prepare(QStringLiteral("CREATE TABLE IF NOT EXISTS [Sets] ([id] TEXT PRIMARY KEY, [name] TEXT, [type] INTEGER)"));
+    createSetsQuery.prepare(
+            QStringLiteral("CREATE TABLE IF NOT EXISTS [Sets] ([id] TEXT PRIMARY KEY, [name] TEXT, [type] INTEGER, [release_date] TEXT)"));
     if (!createSetsQuery.exec()) {
         emit initialisationFailed();
         return;
@@ -139,6 +140,7 @@ void Worker::downloadSetsMTGAH()
             return;
         }
         saveMTGAHSets(setList);
+        downloadSetsScryfall();
     });
 }
 
@@ -151,16 +153,16 @@ void Worker::saveMTGAHSets(QStringList sets)
         emit downloadSetsMTGAHFailed();
         return;
     }
-    while (getSetsQuery.next()) {
+    while (getSetsQuery.next())
         sets.removeAll(getSetsQuery.value(0).toString().trimmed());
-    }
     getSetsQuery.clear();
     if (sets.isEmpty()) {
         emit setsMTGAH(false);
         return;
     }
     std::sort(sets.begin(), sets.end());
-    for (auto i = sets.begin(), iEnd = std::unique(sets.begin(), sets.end()); i != iEnd; ++i) {
+    sets.erase(std::unique(sets.begin(), sets.end()), sets.end());
+    for (auto i = sets.cbegin(), iEnd = sets.cend(); i != iEnd; ++i) {
         QSqlQuery insertSetsQuery(workerdb);
         insertSetsQuery.prepare(QStringLiteral("INSERT INTO [Sets] ([id]) VALUES (?)"));
         insertSetsQuery.addBindValue(*i);
@@ -174,45 +176,109 @@ void Worker::saveMTGAHSets(QStringList sets)
 
 void Worker::downloadSetsScryfall()
 {
+    QStringList sets;
+    QSqlDatabase workerdb = openWorkerDb();
+    QSqlQuery scryfallSets(workerdb);
+    scryfallSets.prepare(QStringLiteral("SELECT [id] FROM [Sets] WHERE [name] IS NULL OR [type] IS NULL OR [release_date] IS NULL"));
+    if (scryfallSets.exec()) {
+        while (scryfallSets.next())
+            sets.append(scryfallSets.value(0).toString());
+    }
+    if (sets.isEmpty()) {
+        emit setsScryfall(false);
+        return;
+    }
     const QUrl setsUrl = QUrl::fromUserInput(QStringLiteral("https://api.scryfall.com/sets"));
     QNetworkReply *reply = m_nam->get(QNetworkRequest(setsUrl));
     connect(reply, &QNetworkReply::errorOccurred, this, &Worker::downloadSetsScryfallFailed);
     connect(reply, &QNetworkReply::finished, reply, &QNetworkReply::deleteLater);
-    connect(reply, &QNetworkReply::finished, this, [reply, this]() -> void {
-        if (reply->error() != QNetworkReply::NoError)
-            return;
-        if (reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() != 200) {
-            emit downloadSetsScryfallFailed();
-            return;
+    connect(reply, &QNetworkReply::finished, this, std::bind(&Worker::parseSetsScryfall, this, reply, sets));
+}
+
+void Worker::parseSetsScryfall(QNetworkReply *reply, const QStringList &sets)
+{
+    if (reply->error() != QNetworkReply::NoError)
+        return;
+    if (reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() != 200) {
+        emit downloadSetsScryfallFailed();
+        return;
+    }
+    QJsonParseError parseErr;
+    const QJsonDocument setsDocument = QJsonDocument::fromJson(reply->readAll(), &parseErr);
+    if (parseErr.error != QJsonParseError::NoError || !setsDocument.isObject()) {
+        emit downloadSetsScryfallFailed();
+        return;
+    }
+    const QJsonObject setsObject = setsDocument.object();
+    const QJsonValue setsArrVal = setsObject[QLatin1String("data")];
+    if (!setsArrVal.isArray()) {
+        emit downloadSetsScryfallFailed();
+        return;
+    }
+    QSqlDatabase workerdb = openWorkerDb();
+    const QJsonArray setsArray = setsArrVal.toArray();
+    for (auto i = setsArray.cbegin(), iEnd = setsArray.cend(); i != iEnd; ++i) {
+        const QJsonObject setObj = i->toObject();
+        const QString setStr = setObj[QLatin1String("code")].toString().trimmed().toUpper();
+        if (setStr.isEmpty())
+            continue;
+        if (sets.contains(setStr)) {
+            QSqlQuery updateSetQuery(workerdb);
+            updateSetQuery.prepare(
+                    QStringLiteral("UPDATE [Sets] SET [name] = :name , [type] = :type , [release_date] = :releaseDt WHERE [id] = :id"));
+            updateSetQuery.bindValue(QStringLiteral(":name"), setObj[QLatin1String("name")].toString().trimmed());
+            updateSetQuery.bindValue(QStringLiteral(":type"), setTypeCode(setObj[QLatin1String("set_type")].toString().trimmed()));
+            updateSetQuery.bindValue(QStringLiteral(":releaseDt"), setObj[QLatin1String("released_at")].toString().trimmed());
+            updateSetQuery.bindValue(QStringLiteral(":id"), setStr);
+            Q_ASSUME(updateSetQuery.exec());
         }
-        QJsonParseError parseErr;
-        const QJsonDocument setsDocument = QJsonDocument::fromJson(reply->readAll(), &parseErr);
-        if (parseErr.error != QJsonParseError::NoError || !setsDocument.isObject()) {
-            emit downloadSetsScryfallFailed();
-            return;
-        }
-        const QJsonObject setsObject = setsDocument.object();
-        const QJsonValue setsArrVal = setsObject[QLatin1String("data")];
-        if (!setsArrVal.isArray()) {
-            emit downloadSetsScryfallFailed();
-            return;
-        }
-        const QJsonArray setsArray = setsArrVal.toArray();
-        QHash<QString, QString> setNames;
-        for (auto i = setsArray.cbegin(), iEnd = setsArray.cend(); i != iEnd; ++i) {
-            const QJsonObject setObj = i->toObject();
-            const QString setStr = setObj[QLatin1String("code")].toString().trimmed().toUpper();
-            if (setStr.isEmpty())
-                continue;
-            if (!setNames.contains(setStr))
-                setNames.insert(setStr, setObj[QLatin1String("name")].toString().trimmed());
-        }
-        if (setNames.isEmpty()) {
-            emit downloadSetsScryfallFailed();
-            return;
-        }
-        emit setsScryfall(setNames);
-    });
+    }
+    emit setsScryfall(true);
+}
+
+int Worker::setTypeCode(const QString &setType) const
+{
+    if (setType == QStringLiteral("core"))
+        return stcore;
+    if (setType == QStringLiteral("expansion"))
+        return stexpansion;
+    if (setType == QStringLiteral("masters"))
+        return stmasters;
+    if (setType == QStringLiteral("masterpiece"))
+        return stmasterpiece;
+    if (setType == QStringLiteral("from_the_vault"))
+        return stfrom_the_vault;
+    if (setType == QStringLiteral("spellbook"))
+        return stspellbook;
+    if (setType == QStringLiteral("premium_deck"))
+        return stpremium_deck;
+    if (setType == QStringLiteral("duel_deck"))
+        return stduel_deck;
+    if (setType == QStringLiteral("draft_innovation"))
+        return stdraft_innovation;
+    if (setType == QStringLiteral("treasure_chest"))
+        return sttreasure_chest;
+    if (setType == QStringLiteral("commander"))
+        return stcommander;
+    if (setType == QStringLiteral("planechase"))
+        return stplanechase;
+    if (setType == QStringLiteral("archenemy"))
+        return starchenemy;
+    if (setType == QStringLiteral("vanguard"))
+        return stvanguard;
+    if (setType == QStringLiteral("funny"))
+        return stfunny;
+    if (setType == QStringLiteral("starter"))
+        return ststarter;
+    if (setType == QStringLiteral("box"))
+        return stbox;
+    if (setType == QStringLiteral("promo"))
+        return stpromo;
+    if (setType == QStringLiteral("token"))
+        return sttoken;
+    if (setType == QStringLiteral("memorabilia"))
+        return stmemorabilia;
+    return 0;
 }
 
 void Worker::getCustomRatingTemplate()

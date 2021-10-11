@@ -282,11 +282,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->progressLabel->hide();
     ui->savePwdWarningLabel->hide();
     ui->retryBasicDownloadButton->hide();
-    ui->formatsCombo->addItem(QString(), QStringLiteral("PremierDraft"));
-    ui->formatsCombo->addItem(QString(), QStringLiteral("QuickDraft"));
-    ui->formatsCombo->addItem(QString(), QStringLiteral("TradDraft"));
-    ui->formatsCombo->addItem(QString(), QStringLiteral("Sealed"));
-    ui->formatsCombo->addItem(QString(), QStringLiteral("TradSealed"));
+    ui->formatsCombo->setModel(m_object->formatsModel());
     /*-m_ratingsModel = new RatingsModel(this);
     m_ratingsModel->setRatingsTemplate(m_worker->ratingsTemplate());
     m_ratingsProxy = new QSortFilterProxyModel(this);
@@ -359,11 +355,6 @@ void MainWindow::changeEvent(QEvent *event)
 
 void MainWindow::retranslateUi()
 {
-    ui->formatsCombo->setItemText(0, tr("Premier Draft"));
-    ui->formatsCombo->setItemText(1, tr("Quick Draft"));
-    ui->formatsCombo->setItemText(2, tr("Traditional Draft"));
-    ui->formatsCombo->setItemText(3, tr("Sealed"));
-    ui->formatsCombo->setItemText(4, tr("Traditional Sealed"));
     ui->retranslateUi(this);
     ui->savePwdWarningLabel->setText(ui->savePwdWarningLabel->text().arg(appDataPath()));
     ui->errorLabel->setVisible(m_error != NoError);
