@@ -25,6 +25,7 @@
 #include <QStandardItemModel>
 #include <QUrl>
 #include <QDebug>
+#include <QDir>
 class NoCheckProxy : public QIdentityProxyModel
 {
     Q_DISABLE_COPY_MOVE(NoCheckProxy)
@@ -356,7 +357,7 @@ void MainWindow::changeEvent(QEvent *event)
 void MainWindow::retranslateUi()
 {
     ui->retranslateUi(this);
-    ui->savePwdWarningLabel->setText(ui->savePwdWarningLabel->text().arg(appDataPath()));
+    ui->savePwdWarningLabel->setText(ui->savePwdWarningLabel->text().arg(appDataPath() + QDir::separator() + QLatin1String("17helperconfig.json")));
     ui->errorLabel->setVisible(m_error != NoError);
     ui->retryBasicDownloadButton->setVisible(m_error & MTGAHSetsError);
     ui->retryTemplateButton->setVisible(m_error & RatingTemplateFailed);

@@ -2,6 +2,13 @@ cmake_minimum_required(VERSION 3.14)
 find_package(QT NAMES Qt6 Qt5 COMPONENTS Core REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets Gui Core Network Sql LinguistTools REQUIRED)
 find_package(OpenSSL REQUIRED)
+include(FetchContent)
+set(FETCHCONTENT_QUIET OFF)
+FetchContent_Declare(QtModelUtilitiesFC
+    GIT_REPOSITORY https://github.com/VSRonin/QtModelUtilities.git
+    GIT_TAG master
+)
+FetchContent_MakeAvailable(QtModelUtilitiesFC)
 set(ui_SRCS 
     mainwindow.cpp
     mainwindow.h
@@ -22,6 +29,8 @@ set(backend_SRCS
 set(models_SRCS
     ratingsmodel.h
     ratingsmodel.cpp
+    checkableproxy.h
+    checkableproxy.cpp
 )
 set(delegates_SRCS
     ratingsdelegate.h
@@ -48,6 +57,7 @@ target_link_libraries(17HelperLib PUBLIC
     Qt::Widgets
     Qt::Network
     Qt::Sql
+    QtModelUtilities::QtModelUtilities
 )
 set_target_properties(17HelperLib PROPERTIES
     AUTOMOC ON

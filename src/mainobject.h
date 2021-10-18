@@ -20,6 +20,7 @@ class QStandardItemModel;
 class QAbstractItemModel;
 class SeventeenCard;
 class QSqlQueryModel;
+class CheckableProxy;
 class MainObject : public QObject
 {
     Q_OBJECT
@@ -88,6 +89,7 @@ private:
     QStandardItemModel *m_SLMetricsModel;
     QStandardItemModel *m_formatsModel;
     QSqlQueryModel *m_setsModel;
+    CheckableProxy *m_setsProxy;
 };
 
 #endif

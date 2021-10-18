@@ -12,6 +12,7 @@
 \****************************************************************************/
 #include "mainobject.h"
 #include "globals.h"
+#include "checkableproxy.h"
 #include <QThread>
 #include <QTimer>
 #include <QStandardPaths>
@@ -30,6 +31,8 @@ MainObject::MainObject(QObject *parent)
     m_formatsModel = new QStandardItemModel(dfCount, 1, this);
     fillFormats();
     m_setsModel = new QSqlQueryModel(this);
+    m_setsProxy = new CheckableProxy(this);
+    m_setsProxy->setSourceModel(m_setsModel);
 
     m_workerThread = new QThread(this);
     m_worker = new Worker;
@@ -61,7 +64,7 @@ QAbstractItemModel *MainObject::SLMetricsModel() const
 
 QAbstractItemModel *MainObject::setsModel() const
 {
-    return m_setsModel;
+    return m_setsProxy;
 }
 
 QAbstractItemModel *MainObject::formatsModel() const
