@@ -13,7 +13,7 @@
 #include "checkableproxy.h"
 
 CheckableProxy::CheckableProxy(QObject *parent)
-    :RoleMaskProxyModel(parent)
+    : RoleMaskProxyModel(parent)
 {
     addMaskedRole(Qt::CheckStateRole);
 }
@@ -25,8 +25,8 @@ Qt::ItemFlags CheckableProxy::flags(const QModelIndex &index) const
 
 QVariant CheckableProxy::data(const QModelIndex &index, int role) const
 {
-    const QVariant result = RoleMaskProxyModel::data(index,role);
-    if(!result.isValid() && role==Qt::CheckStateRole)
+    const QVariant result = RoleMaskProxyModel::data(index, role);
+    if (!result.isValid() && role == Qt::CheckStateRole)
         return Qt::Unchecked;
     return result;
 }

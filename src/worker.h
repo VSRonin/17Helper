@@ -69,7 +69,7 @@ private slots:
     void processMTGAHrequestQueue();
     void checkStopTimer();
     void parseSetsScryfall(QNetworkReply *reply, const QStringList &sets);
-
+    void onCustomRatingTemplateFinished(QNetworkReply *reply);
 signals:
     void initialised();
     void initialisationFailed();
@@ -91,6 +91,7 @@ signals:
     void ratingsUploadProgress(int progress);
     void failedUploadRating(const MtgahCard &card);
     void downloaded17LRatings(const QString &set, const QSet<SeventeenCard> &ratings);
+    void customRatingTemplate(bool needsUpdate);
 
 private:
     void saveMTGAHSets(QStringList sets);

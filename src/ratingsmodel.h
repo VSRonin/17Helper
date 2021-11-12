@@ -13,10 +13,8 @@
 
 #ifndef RATINGSMODEL_H
 #define RATINGSMODEL_H
-#include <QAbstractTableModel>
-#include <QMultiHash>
-class MtgahCard;
-class RatingsModel : public QAbstractTableModel
+#include <QSqlTableModel>
+class RatingsModel : public QSqlTableModel
 {
     Q_OBJECT
     Q_DISABLE_COPY_MOVE(RatingsModel)
@@ -26,22 +24,15 @@ public:
         rmcName,
         rmcArenaId,
         rmcRating,
-        rmcNote
+        rmcNote,
 
-        ,
         rmcCount
     };
-    explicit RatingsModel(QObject *parent = nullptr);
-    int rowCount(const QModelIndex &parent = QModelIndex()) const override;
-    int columnCount(const QModelIndex &parent = QModelIndex()) const override;
-    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
-    QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
-    void setRatingsTemplate(QMultiHash<QString, MtgahCard> *tmplt);
-    bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
+    QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
     Qt::ItemFlags flags(const QModelIndex &index) const override;
-
-private:
-    QMultiHash<QString, MtgahCard> *m_ratingsTemplate;
+    explicit RatingsModel(QObject *parent = nullptr, QSqlDatabase db = QSqlDatabase());
+    void setTable(const QString &tableName = QString()) override;
+    void setFilter(const QString &filter) override;
 };
 
 #endif

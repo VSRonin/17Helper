@@ -19,7 +19,7 @@ class CheckableProxy : public RoleMaskProxyModel
     Q_OBJECT
     Q_DISABLE_COPY_MOVE(CheckableProxy)
 public:
-    explicit CheckableProxy(QObject* parent = nullptr);
+    explicit CheckableProxy(QObject *parent = nullptr);
     Qt::ItemFlags flags(const QModelIndex &index) const override;
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
 };

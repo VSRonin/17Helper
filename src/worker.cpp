@@ -47,6 +47,7 @@ void Worker::init()
     Q_ASSERT(workerdb.driver()->hasFeature(QSqlDriver::PreparedQueries));
     Q_ASSERT(workerdb.driver()->hasFeature(QSqlDriver::PositionalPlaceholders));
     Q_ASSERT(workerdb.driver()->hasFeature(QSqlDriver::NamedPlaceholders));
+    Q_ASSERT(workerdb.driver()->hasFeature(QSqlDriver::Transactions));
     QSqlQuery createSetsQuery(workerdb);
     createSetsQuery.prepare(
             QStringLiteral("CREATE TABLE IF NOT EXISTS [Sets] ([id] TEXT PRIMARY KEY, [name] TEXT, [type] INTEGER, [release_date] TEXT)"));
@@ -54,6 +55,14 @@ void Worker::init()
         emit initialisationFailed();
         return;
     }
+    QSqlQuery createRatingsQuery(workerdb);
+    createRatingsQuery.prepare(QStringLiteral("CREATE TABLE IF NOT EXISTS [Ratings] ([set] TEXT NOT NULL, [name] TEXT NOT NULL, [id_arena] INTEGER "
+                                              "PRIMARY KEY, [rating] INTEGER, [note] TEXT)"));
+    if (!createRatingsQuery.exec()) {
+        emit initialisationFailed();
+        return;
+    }
+
     emit initialised();
 }
 
@@ -236,6 +245,82 @@ void Worker::parseSetsScryfall(QNetworkReply *reply, const QStringList &sets)
     emit setsScryfall(true);
 }
 
+void Worker::onCustomRatingTemplateFinished(QNetworkReply *reply)
+{
+    if (reply->error() != QNetworkReply::NoError)
+        return;
+    if (reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() != 200) {
+        emit customRatingTemplateFailed();
+        return;
+    }
+    QJsonParseError parseErr;
+    const QJsonDocument ratingsDocument = QJsonDocument::fromJson(reply->readAll(), &parseErr);
+    if (parseErr.error != QJsonParseError::NoError || !ratingsDocument.isArray()) {
+        emit customRatingTemplateFailed();
+        return;
+    }
+    bool oneFound = false;
+    bool needUpdate = false;
+    QSqlDatabase workerdb = openWorkerDb();
+    Q_ASSUME(workerdb.transaction());
+    const QJsonArray ratingsArray = ratingsDocument.array();
+    for (auto i = ratingsArray.cbegin(), iEnd = ratingsArray.cend(); i != iEnd; ++i) {
+        if (!i->isObject())
+            continue;
+        const QJsonObject ratingObject = i->toObject();
+        const QJsonObject cardObject = ratingObject[QLatin1String("card")].toObject();
+        if (cardObject.isEmpty())
+            continue;
+        const int idArenaVal = cardObject[QLatin1String("idArena")].toInt();
+        const QString setStr = cardObject[QLatin1String("set")].toString().trimmed().toUpper();
+        if (setStr.isEmpty())
+            continue;
+        const QString nameStr = cardObject[QLatin1String("name")].toString().trimmed();
+        if (nameStr.isEmpty())
+            continue;
+        oneFound = true;
+        const QJsonValue noteValue = ratingObject[QLatin1String("note")];
+        const QString noteStr = noteValue.toString();
+        const QJsonValue ratingValue = ratingObject[QLatin1String("rating")];
+        const int ratingNum = ratingValue.isNull() ? -1 : ratingValue.toInt();
+        if (!needUpdate) {
+            QSqlQuery checkRatingQuery(workerdb);
+            checkRatingQuery.prepare(
+                    QStringLiteral("SELECT [id_arena], [name], [set], [rating], [note] FROM [Ratings] WHERE [id_arena] = :id_arena"));
+            checkRatingQuery.bindValue(QStringLiteral(":id_arena"), idArenaVal);
+            if (checkRatingQuery.exec() && checkRatingQuery.next() && checkRatingQuery.value(1).toString() == nameStr
+                && checkRatingQuery.value(2).toString() == setStr && checkRatingQuery.value(3).toInt() == ratingNum
+                && checkRatingQuery.value(4).toString() == noteStr)
+                continue;
+            needUpdate = true;
+        }
+        QSqlQuery updateRatingQuery(workerdb);
+        updateRatingQuery.prepare(QStringLiteral(
+                "INSERT OR REPLACE INTO [Ratings] ([id_arena], [name], [set], [rating], [note]) VALUES (:id_arena, :name, :set, :rating, :note)"));
+        updateRatingQuery.bindValue(QStringLiteral(":id_arena"), idArenaVal);
+        updateRatingQuery.bindValue(QStringLiteral(":name"), nameStr);
+        updateRatingQuery.bindValue(QStringLiteral(":set"), setStr);
+        updateRatingQuery.bindValue(QStringLiteral(":rating"), ratingNum);
+        updateRatingQuery.bindValue(QStringLiteral(":note"), noteStr);
+        if (!updateRatingQuery.exec()) {
+            Q_ASSUME(workerdb.rollback());
+            emit customRatingTemplateFailed();
+            return;
+        }
+    }
+    if (!oneFound) {
+        Q_ASSUME(workerdb.rollback());
+        emit customRatingTemplateFailed();
+        return;
+    }
+    if (!workerdb.commit()) {
+        Q_ASSUME(workerdb.rollback());
+        emit customRatingTemplateFailed();
+        return;
+    }
+    emit customRatingTemplate(needUpdate);
+}
+
 int Worker::setTypeCode(const QString &setType) const
 {
     if (setType == QStringLiteral("core"))
@@ -287,59 +372,7 @@ void Worker::getCustomRatingTemplate()
     QNetworkReply *reply = m_nam->get(QNetworkRequest(setsUrl));
     connect(reply, &QNetworkReply::errorOccurred, this, &Worker::customRatingTemplateFailed);
     connect(reply, &QNetworkReply::finished, reply, &QNetworkReply::deleteLater);
-    connect(reply, &QNetworkReply::finished, this, [reply, this]() -> void {
-        if (reply->error() != QNetworkReply::NoError)
-            return;
-        if (reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() != 200) {
-            emit customRatingTemplateFailed();
-            return;
-        }
-        QJsonParseError parseErr;
-        const QJsonDocument ratingsDocument = QJsonDocument::fromJson(reply->readAll(), &parseErr);
-        if (parseErr.error != QJsonParseError::NoError || !ratingsDocument.isArray()) {
-            emit customRatingTemplateFailed();
-            return;
-        }
-        QMultiHash<QString, MtgahCard> rtgsTemplate;
-        const QJsonArray ratingsArray = ratingsDocument.array();
-        for (auto i = ratingsArray.cbegin(), iEnd = ratingsArray.cend(); i != iEnd; ++i) {
-            QCoreApplication::processEvents();
-            if (!i->isObject())
-                continue;
-            const QJsonObject ratingObject = i->toObject();
-            const QJsonObject cardObject = ratingObject[QLatin1String("card")].toObject();
-            if (cardObject.isEmpty())
-                continue;
-            const int idArenaVal = cardObject[QLatin1String("idArena")].toInt();
-            if (std::find_if(rtgsTemplate.cbegin(), rtgsTemplate.cend(),
-                             [idArenaVal](const MtgahCard &card) -> bool { return idArenaVal == card.id_arena; })
-                != rtgsTemplate.cend())
-                continue;
-            const QString setStr = cardObject[QLatin1String("set")].toString().trimmed().toUpper();
-            if (setStr.isEmpty())
-                continue;
-            const QString nameStr = cardObject[QLatin1String("name")].toString();
-            if (nameStr.isEmpty())
-                continue;
-            MtgahCard card;
-            card.name = nameStr;
-            card.id_arena = idArenaVal;
-            card.set = setStr;
-            const QJsonValue noteValue = ratingObject[QLatin1String("note")];
-            if (!noteValue.isNull())
-                card.note = noteValue.toString();
-            const QJsonValue ratingValue = ratingObject[QLatin1String("rating")];
-            if (!ratingValue.isNull())
-                card.rating = ratingValue.toInt();
-            rtgsTemplate.insert(setStr, card);
-        }
-        if (rtgsTemplate.isEmpty()) {
-            emit customRatingTemplateFailed();
-            return;
-        }
-        // m_ratingsTemplate = rtgsTemplate;
-        // emit customRatingTemplate(m_ratingsTemplate);
-    });
+    connect(reply, &QNetworkReply::finished, this, std::bind(&Worker::onCustomRatingTemplateFinished, this, reply));
 }
 
 void Worker::get17LRatings(const QStringList &sets, const QString &format)

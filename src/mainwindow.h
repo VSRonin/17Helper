@@ -21,7 +21,6 @@ class MainWindow;
 class QStandardItemModel;
 class MainObject;
 class RatingsModel;
-class QSortFilterProxyModel;
 class SeventeenCard;
 class MainWindow : public QWidget
 {

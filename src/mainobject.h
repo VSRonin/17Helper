@@ -21,6 +21,7 @@ class QAbstractItemModel;
 class SeventeenCard;
 class QSqlQueryModel;
 class CheckableProxy;
+class RatingsModel;
 class MainObject : public QObject
 {
     Q_OBJECT
@@ -60,6 +61,8 @@ public:
     QAbstractItemModel *SLMetricsModel() const;
     QAbstractItemModel *setsModel() const;
     QAbstractItemModel *formatsModel() const;
+    QAbstractItemModel *ratingsModel() const;
+    void filterRatings(QStringList sets);
 public slots:
     void tryLogin(const QString &userName, const QString &password, bool rememberMe = false);
     void logOut();
@@ -68,6 +71,8 @@ private slots:
     void onWorkerInit();
     void onLoggedIn();
     void onSetsScryfall(bool needsUpdate);
+    void onSetsMTGAH();
+    void onRatingsTemplate(bool needsUpdate);
 signals:
     void loggedIn();
     void loginFalied(const QString &error);
@@ -90,6 +95,7 @@ private:
     QStandardItemModel *m_formatsModel;
     QSqlQueryModel *m_setsModel;
     CheckableProxy *m_setsProxy;
+    RatingsModel *m_ratingTemplateModel;
 };
 
 #endif

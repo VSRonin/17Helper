@@ -13,6 +13,7 @@
 #include "mainobject.h"
 #include "globals.h"
 #include "checkableproxy.h"
+#include "ratingsmodel.h"
 #include <QThread>
 #include <QTimer>
 #include <QStandardPaths>
@@ -22,9 +23,12 @@
 #include <QStandardItemModel>
 #include <QSqlQueryModel>
 #include <QSqlQuery>
+#include <QSqlDriver>
+//#define DEBUG_SINGLE_THREAD
 MainObject::MainObject(QObject *parent)
     : QObject(parent)
     , m_objectDbName(QStringLiteral("ObjectDb"))
+    , m_workerThread(nullptr)
 {
     m_SLMetricsModel = new QStandardItemModel(SLCount, 1, this);
     fillMetrics();
@@ -33,13 +37,16 @@ MainObject::MainObject(QObject *parent)
     m_setsModel = new QSqlQueryModel(this);
     m_setsProxy = new CheckableProxy(this);
     m_setsProxy->setSourceModel(m_setsModel);
+    m_ratingTemplateModel = new RatingsModel(this, openDb(m_objectDbName));
 
-    m_workerThread = new QThread(this);
     m_worker = new Worker;
+#ifndef DEBUG_SINGLE_THREAD
+    m_workerThread = new QThread(this);
     m_worker->moveToThread(m_workerThread);
 
     connect(m_workerThread, &QThread::finished, m_worker, &QObject::deleteLater);
     connect(m_workerThread, &QThread::started, m_worker, &Worker::init);
+#endif
     connect(m_worker, &Worker::initialised, this, &MainObject::onWorkerInit);
     connect(m_worker, &Worker::initialisationFailed, this, &MainObject::initialisationFailed);
     connect(m_worker, &Worker::loggedIn, this, &MainObject::loggedIn);
@@ -48,13 +55,21 @@ MainObject::MainObject(QObject *parent)
     connect(m_worker, &Worker::loggedOut, this, &MainObject::loggedOut);
     connect(m_worker, &Worker::logoutFailed, this, &MainObject::logoutFailed);
     connect(m_worker, &Worker::setsScryfall, this, &MainObject::onSetsScryfall);
+    connect(m_worker, &Worker::setsMTGAH, this, &MainObject::onSetsMTGAH);
+    connect(m_worker, &Worker::customRatingTemplate, this, &MainObject::onRatingsTemplate);
+#ifndef DEBUG_SINGLE_THREAD
     m_workerThread->start();
+#else
+    m_worker->init();
+#endif
 }
 
 MainObject::~MainObject()
 {
+#ifndef DEBUG_SINGLE_THREAD
     m_workerThread->quit();
     m_workerThread->wait();
+#endif
 }
 
 QAbstractItemModel *MainObject::SLMetricsModel() const
@@ -70,6 +85,22 @@ QAbstractItemModel *MainObject::setsModel() const
 QAbstractItemModel *MainObject::formatsModel() const
 {
     return m_formatsModel;
+}
+
+QAbstractItemModel *MainObject::ratingsModel() const
+{
+    return m_ratingTemplateModel;
+}
+
+void MainObject::filterRatings(QStringList sets)
+{
+    if (sets.isEmpty())
+        return m_ratingTemplateModel->setFilter(QString());
+    QSqlDriver *driver = openDb(m_objectDbName).driver();
+    for (int i = 0; i < sets.size(); ++i)
+        sets[i] = driver->escapeIdentifier(sets.at(i), QSqlDriver::FieldName);
+    const QString filterString = QLatin1String("[set] in (") + sets.join(QLatin1Char(',')) + QLatin1Char(')');
+    m_ratingTemplateModel->setFilter(filterString);
 }
 
 void MainObject::tryLogin(const QString &userName, const QString &password, bool rememberMe)
@@ -152,6 +183,7 @@ void MainObject::retranslateModels()
 void MainObject::onWorkerInit()
 {
     selectSetsModel();
+    m_ratingTemplateModel->setTable();
     QTimer::singleShot(0, m_worker, &Worker::downloadSetsMTGAH);
 }
 
@@ -182,20 +214,34 @@ void MainObject::selectSetsModel()
 {
     QSqlDatabase objectDb = openDb(m_objectDbName);
     QSqlQuery setsQuery(objectDb);
-    setsQuery.prepare(
-            QStringLiteral("select [name] from (SELECT CASE WHEN [name] is NULL then [id] ELSE [name] END as [name], CASE WHEN [release_date] is "
-                           "NULL then DATE() ELSE [release_date] END as [release_date] FROM [Sets] where [type] & ?) order by [release_date] desc"));
+    setsQuery.prepare(QStringLiteral(
+            "select [name], [id] from (SELECT [id], CASE WHEN [name] is NULL then [id] ELSE [name] END as [name], CASE WHEN [release_date] is "
+            "NULL then DATE() ELSE [release_date] END as [release_date] FROM [Sets] where [type] & ?) order by [release_date] desc"));
     setsQuery.addBindValue(DraftableSet);
     Q_ASSUME(setsQuery.exec());
     m_setsModel->setQuery(setsQuery);
 }
 
-void MainObject::onLoggedIn() { }
+void MainObject::onLoggedIn()
+{
+    QTimer::singleShot(0, m_worker, &Worker::getCustomRatingTemplate);
+}
 
 void MainObject::onSetsScryfall(bool needsUpdate)
 {
     if (needsUpdate)
         selectSetsModel();
+}
+
+void MainObject::onSetsMTGAH()
+{
+    m_setsProxy->setData(m_setsProxy->index(0, 0), Qt::Checked, Qt::CheckStateRole);
+}
+
+void MainObject::onRatingsTemplate(bool needsUpdate)
+{
+    if (needsUpdate)
+        m_ratingTemplateModel->select();
 }
 
 QString MainObject::commentString(const SeventeenCard &card, const QLocale &locale) const

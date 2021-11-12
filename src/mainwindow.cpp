@@ -227,26 +227,18 @@ void MainWindow::retryTemplateDownload()
 void MainWindow::onCustomRatingsTemplateDownloaded()
 {
     m_error &= ~RatingTemplateFailed;
-    // m_ratingsModel->setRatingsTemplate(m_worker->ratingsTemplate());
     retranslateUi();
 }
 
 void MainWindow::updateRatingsFiler()
 {
-    /*QString regExpString;
-    for (int i = 0, iEnd = m_setsModel->rowCount(); i != iEnd; ++i) {
-        const QModelIndex currIdx = m_setsModel->index(i, 0);
-        if (currIdx.data(Qt::CheckStateRole).toInt() == Qt::Checked) {
-            if (regExpString.isEmpty())
-                regExpString = QStringLiteral("(?:");
-            else
-                regExpString += QLatin1Char('|');
-            regExpString += currIdx.data(Qt::UserRole).toString();
+    QStringList sets;
+    for (int i = 0, iEnd = m_object->setsModel()->rowCount(); i != iEnd; ++i) {
+        if (m_object->setsModel()->index(i, 0).data(Qt::CheckStateRole).toInt() == Qt::Checked) {
+            sets.append(m_object->setsModel()->index(i, 1).data().toString());
         }
     }
-    if (!regExpString.isEmpty())
-        regExpString += QLatin1Char(')');
-    m_ratingsProxy->setFilterRegularExpression(regExpString);*/
+    m_object->filterRatings(sets);
 }
 
 void MainWindow::onRatingsUploadMaxProgress(int maxRange)
@@ -284,12 +276,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->savePwdWarningLabel->hide();
     ui->retryBasicDownloadButton->hide();
     ui->formatsCombo->setModel(m_object->formatsModel());
-    /*-m_ratingsModel = new RatingsModel(this);
-    m_ratingsModel->setRatingsTemplate(m_worker->ratingsTemplate());
-    m_ratingsProxy = new QSortFilterProxyModel(this);
-    m_ratingsProxy->setSourceModel(m_ratingsModel);
-    m_ratingsProxy->setFilterKeyColumn(RatingsModel::rmcSet);
-    ui->ratingsView->setModel(m_ratingsProxy);*/
+    ui->ratingsView->setModel(m_object->ratingsModel());
     ui->ratingsView->setColumnHidden(RatingsModel::rmcArenaId, true);
     ui->ratingsView->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
     ui->ratingsView->sortByColumn(RatingsModel::rmcName, Qt::AscendingOrder);
@@ -328,11 +315,11 @@ MainWindow::MainWindow(QWidget *parent)
     // connect(m_worker, &Worker::ratingsUploadMaxProgress, this, &MainWindow::onRatingsUploadMaxProgress);
     // connect(m_worker, &Worker::ratingsUploadProgress, this, &MainWindow::onRatingsUploadProgress);
     // connect(m_worker, &Worker::allRatingsUploaded, this, &MainWindow::onAllRatingsUploaded);
-    /*connect(m_setsModel, &QAbstractItemModel::dataChanged, this, [this](const QModelIndex &, const QModelIndex &, const QVector<int> &roles) {
-        if (roles.isEmpty() || roles.contains(Qt::CheckStateRole))
-            updateRatingsFiler();
-    });*/
-    // connect(m_ratingsModel, &QAbstractItemModel::modelReset, this, &MainWindow::updateRatingsFiler);
+    connect(m_object->setsModel(), &QAbstractItemModel::dataChanged, this,
+            [this](const QModelIndex &, const QModelIndex &, const QVector<int> &roles) {
+                if (roles.isEmpty() || roles.contains(Qt::CheckStateRole))
+                    updateRatingsFiler();
+            });
     // m_worker->downloadSetsMTGAH();
 }
 
@@ -383,8 +370,8 @@ void MainWindow::setSetsSectionEnabled(bool enabled)
 
 void MainWindow::setAllSetsSelection(Qt::CheckState check)
 {
-    /*for (int i = 0, iEnd = m_setsModel->rowCount(); i < iEnd; ++i)
-        m_setsModel->item(i)->setCheckState(check);*/
+    for (int i = 0, iEnd = m_object->setsModel()->rowCount(); i < iEnd; ++i)
+        m_object->setsModel()->setData(m_object->setsModel()->index(i, 0), check, Qt::CheckStateRole);
 }
 
 void MainWindow::toggleLoginLogoutButtons()
