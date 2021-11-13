@@ -13,15 +13,30 @@
 
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
-#include <QMultiHash>
+#include <QList>
 #include <QWidget>
+#include <QDateTime>
+#include "mainobject.h"
 namespace Ui {
 class MainWindow;
 }
 class QStandardItemModel;
-class MainObject;
 class RatingsModel;
 class SeventeenCard;
+
+struct ProgressElement
+{
+    MainObject::Operations m_operation;
+    QString m_description;
+    int m_min;
+    int m_max;
+    int m_val;
+    ProgressElement();
+    ProgressElement(MainObject::Operations operation, const QString &description, int max, int min, int val);
+    ProgressElement(const ProgressElement &other) = default;
+    ProgressElement &operator=(const ProgressElement &other) = default;
+};
+
 class MainWindow : public QWidget
 {
     Q_OBJECT
@@ -48,9 +63,15 @@ private:
     CurrentErrors m_error;
     MainObject *m_object;
     Ui::MainWindow *ui;
+    QList<ProgressElement> progressQueue;
+    QDateTime last17lDownload;
     void setSetsSectionEnabled(bool enabled);
     void setAllSetsSelection(Qt::CheckState check);
 private slots:
+    void onLast17lDownload(const QDateTime &dt);
+    void onStartProgress(MainObject::Operations op, const QString &description, int max, int min);
+    void onUpdateProgress(MainObject::Operations op, int val);
+    void onEndProgress(MainObject::Operations op);
     void toggleLoginLogoutButtons();
     void doLogin();
     void doLogout();
@@ -76,8 +97,6 @@ private slots:
     void retryTemplateDownload();
     void onCustomRatingsTemplateDownloaded();
     void updateRatingsFiler();
-    void onRatingsUploadMaxProgress(int maxRange);
-    void onRatingsUploadProgress(int progress);
     void onAllRatingsUploaded();
 };
 Q_DECLARE_OPERATORS_FOR_FLAGS(MainWindow::CurrentErrors);

@@ -58,6 +58,17 @@ public:
         dfCount
     };
     enum { DraftableSet = Worker::stcore | Worker::stexpansion | Worker::stdraft_innovation };
+    enum Operations {
+        opNoOperation = 0,
+        opInitWorker = 1,
+        opDownloadSets,
+        opDownloadSetsData,
+        opLogIn,
+        opLogOut,
+        opDownloadRatingTemplate,
+        opDownload17Ratings,
+    };
+
     QAbstractItemModel *SLMetricsModel() const;
     QAbstractItemModel *setsModel() const;
     QAbstractItemModel *formatsModel() const;
@@ -67,9 +78,13 @@ public slots:
     void tryLogin(const QString &userName, const QString &password, bool rememberMe = false);
     void logOut();
     void retranslateModels();
+    void download17Lands(const QStringList &sets);
 private slots:
     void onWorkerInit();
     void onLoggedIn();
+    void onLoginFalied(const QString &error);
+    void onLoggedOut();
+    void onLogoutFalied(const QString &error);
     void onSetsScryfall(bool needsUpdate);
     void onSetsMTGAH();
     void onRatingsTemplate(bool needsUpdate);
@@ -80,8 +95,13 @@ signals:
     void logoutFailed(const QString &error);
     void initialisationFailed();
     void setsReady();
+    void startProgress(Operations op, const QString &description, int max, int min);
+    void updateProgress(Operations op, int val);
+    void endProgress(Operations op);
+    void last17Dowload(const QDateTime &date);
 
 private:
+    void getLast17LDownloadDate();
     double ratingValue(const SeventeenCard &card, SLMetrics method) const;
     QString commentString(const SeventeenCard &card, const QLocale &locale) const;
     void fillMetrics();

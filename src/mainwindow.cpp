@@ -15,7 +15,6 @@
 #include "ratingsdelegate.h"
 #include "ratingsmodel.h"
 #include "ui_mainwindow.h"
-#include "mainobject.h"
 #include "globals.h"
 #include <QCoreApplication>
 #include <QDesktopServices>
@@ -26,6 +25,7 @@
 #include <QUrl>
 #include <QDebug>
 #include <QDir>
+#include <QCompleter>
 class NoCheckProxy : public QIdentityProxyModel
 {
     Q_DISABLE_COPY_MOVE(NoCheckProxy)
@@ -39,6 +39,18 @@ public:
     }
 };
 
+ProgressElement::ProgressElement()
+    : ProgressElement(MainObject::opNoOperation, QString(), 0, 0, 0)
+{ }
+
+ProgressElement::ProgressElement(MainObject::Operations operation, const QString &description, int max, int min, int val)
+    : m_operation(operation)
+    , m_description(description)
+    , m_min(min)
+    , m_max(max)
+    , m_val(val)
+{ }
+
 void MainWindow::doLogin()
 {
     QWidget *widToDisable[] = {ui->loginButton, ui->remembePwdCheck, ui->usernameEdit, ui->pwdEdit};
@@ -51,7 +63,6 @@ void MainWindow::doLogin()
 void MainWindow::onLogin()
 {
     m_error &= ~LoginError;
-    // m_worker->getCustomRatingTemplate();
     toggleLoginLogoutButtons();
     enableSetsSection();
     retranslateUi();
@@ -241,16 +252,6 @@ void MainWindow::updateRatingsFiler()
     m_object->filterRatings(sets);
 }
 
-void MainWindow::onRatingsUploadMaxProgress(int maxRange)
-{
-    ui->progressBar->setRange(0, maxRange);
-}
-
-void MainWindow::onRatingsUploadProgress(int progress)
-{
-    ui->progressBar->setValue(ui->progressBar->maximum() - progress);
-}
-
 void MainWindow::onLogout()
 {
     m_error &= ~LogoutError;
@@ -281,6 +282,10 @@ MainWindow::MainWindow(QWidget *parent)
     ui->ratingsView->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
     ui->ratingsView->sortByColumn(RatingsModel::rmcName, Qt::AscendingOrder);
     ui->ratingsView->setItemDelegateForColumn(RatingsModel::rmcRating, new RatingsDelegate(this));
+    QCompleter *searchCompleter = new QCompleter(this);
+    searchCompleter->setModel(m_object->ratingsModel());
+    searchCompleter->setCompletionColumn(RatingsModel::rmcName);
+    ui->searchCardEdit->setCompleter(searchCompleter);
     ui->notesView->setModel(m_object->SLMetricsModel());
     auto SLMetricsProxy = new NoCheckProxy(this);
     SLMetricsProxy->setSourceModel(m_object->SLMetricsModel());
@@ -304,6 +309,9 @@ MainWindow::MainWindow(QWidget *parent)
     // connect(m_worker, &Worker::downloadSetsMTGAHFailed, this, &MainWindow::onMTGAHSetsError);
     // connect(m_worker, &Worker::setsScryfall, this, &MainWindow::fillSetNames);
     // connect(m_worker, &Worker::downloadSetsScryfallFailed, this, &MainWindow::onScryfallSetsError);
+    connect(m_object, &MainObject::startProgress, this, &MainWindow::onStartProgress);
+    connect(m_object, &MainObject::updateProgress, this, &MainWindow::onUpdateProgress);
+    connect(m_object, &MainObject::endProgress, this, &MainWindow::onEndProgress);
     connect(m_object, &MainObject::loggedIn, this, &MainWindow::onLogin);
     connect(m_object, &MainObject::loginFalied, this, &MainWindow::onLoginError);
     connect(m_object, &MainObject::loggedOut, this, &MainWindow::onLogout);
@@ -344,7 +352,10 @@ void MainWindow::changeEvent(QEvent *event)
 void MainWindow::retranslateUi()
 {
     ui->retranslateUi(this);
-    ui->savePwdWarningLabel->setText(ui->savePwdWarningLabel->text().arg(appDataPath() + QDir::separator() + QLatin1String("17helperconfig.json")));
+    ui->savePwdWarningLabel->setText(
+            tr("Your password will be stored in plain text in %1").arg(appDataPath() + QDir::separator() + QLatin1String("17helperconfig.json")));
+    ui->ratingUpdateDateLabel->setText(
+            tr("17Lands Ratings as of: %1").arg(last17lDownload.isValid() ? locale().toString(last17lDownload) : tr("Never")));
     ui->errorLabel->setVisible(m_error != NoError);
     ui->retryBasicDownloadButton->setVisible(m_error & MTGAHSetsError);
     ui->retryTemplateButton->setVisible(m_error & RatingTemplateFailed);
@@ -372,6 +383,65 @@ void MainWindow::setAllSetsSelection(Qt::CheckState check)
 {
     for (int i = 0, iEnd = m_object->setsModel()->rowCount(); i < iEnd; ++i)
         m_object->setsModel()->setData(m_object->setsModel()->index(i, 0), check, Qt::CheckStateRole);
+}
+
+void MainWindow::onLast17lDownload(const QDateTime &dt)
+{
+    last17lDownload = dt;
+    retranslateUi();
+}
+
+void MainWindow::onStartProgress(MainObject::Operations op, const QString &description, int max, int min)
+{
+#ifdef QT_DEBUG
+    for (auto i = progressQueue.cbegin(), iEnd = progressQueue.cend(); i != iEnd; ++i)
+        Q_ASSERT(i->m_operation != op);
+#endif
+    if (progressQueue.isEmpty()) {
+        ui->progressBar->setRange(min, max);
+        ui->progressBar->setValue(min);
+        ui->progressLabel->setText(description);
+        ui->progressBar->show();
+        ui->progressLabel->show();
+    }
+    progressQueue.append(ProgressElement(op, description, max, min, min));
+}
+
+void MainWindow::onUpdateProgress(MainObject::Operations op, int val)
+{
+    const auto pBegin = progressQueue.begin();
+    for (auto i = pBegin, iEnd = progressQueue.end(); i != iEnd; ++i) {
+        if (i->m_operation == op) {
+            i->m_val = val;
+            if (i == pBegin)
+                ui->progressBar->setValue(val);
+        }
+    }
+}
+
+void MainWindow::onEndProgress(MainObject::Operations op)
+{
+    const auto pBegin = progressQueue.begin();
+    for (auto i = pBegin, iEnd = progressQueue.end(); i != iEnd; ++i) {
+        if (i->m_operation == op) {
+            if (i == pBegin) {
+                i = progressQueue.erase(i);
+                if (i != progressQueue.end()) {
+                    ui->progressBar->setRange(i->m_min, i->m_max);
+                    ui->progressBar->setValue(i->m_val);
+                    ui->progressLabel->setText(i->m_description);
+                }
+            } else {
+                i = progressQueue.erase(i);
+            }
+            if (i == progressQueue.end()) {
+                ui->progressBar->hide();
+                ui->progressLabel->hide();
+            }
+            return;
+        }
+    }
+    Q_UNREACHABLE();
 }
 
 void MainWindow::toggleLoginLogoutButtons()

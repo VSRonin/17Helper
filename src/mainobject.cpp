@@ -27,8 +27,8 @@
 //#define DEBUG_SINGLE_THREAD
 MainObject::MainObject(QObject *parent)
     : QObject(parent)
-    , m_objectDbName(QStringLiteral("ObjectDb"))
     , m_workerThread(nullptr)
+    , m_objectDbName(QStringLiteral("ObjectDb"))
 {
     m_SLMetricsModel = new QStandardItemModel(SLCount, 1, this);
     fillMetrics();
@@ -38,7 +38,7 @@ MainObject::MainObject(QObject *parent)
     m_setsProxy = new CheckableProxy(this);
     m_setsProxy->setSourceModel(m_setsModel);
     m_ratingTemplateModel = new RatingsModel(this, openDb(m_objectDbName));
-
+    QTimer::singleShot(0, this, std::bind(&MainObject::startProgress, this, opInitWorker, tr("Initialising"), 0, 0));
     m_worker = new Worker;
 #ifndef DEBUG_SINGLE_THREAD
     m_workerThread = new QThread(this);
@@ -49,11 +49,10 @@ MainObject::MainObject(QObject *parent)
 #endif
     connect(m_worker, &Worker::initialised, this, &MainObject::onWorkerInit);
     connect(m_worker, &Worker::initialisationFailed, this, &MainObject::initialisationFailed);
-    connect(m_worker, &Worker::loggedIn, this, &MainObject::loggedIn);
     connect(m_worker, &Worker::loggedIn, this, &MainObject::onLoggedIn);
-    connect(m_worker, &Worker::loginFalied, this, &MainObject::loginFalied);
-    connect(m_worker, &Worker::loggedOut, this, &MainObject::loggedOut);
-    connect(m_worker, &Worker::logoutFailed, this, &MainObject::logoutFailed);
+    connect(m_worker, &Worker::loginFalied, this, &MainObject::onLoginFalied);
+    connect(m_worker, &Worker::loggedOut, this, &MainObject::onLoggedOut);
+    connect(m_worker, &Worker::logoutFailed, this, &MainObject::onLoginFalied);
     connect(m_worker, &Worker::setsScryfall, this, &MainObject::onSetsScryfall);
     connect(m_worker, &Worker::setsMTGAH, this, &MainObject::onSetsMTGAH);
     connect(m_worker, &Worker::customRatingTemplate, this, &MainObject::onRatingsTemplate);
@@ -105,6 +104,7 @@ void MainObject::filterRatings(QStringList sets)
 
 void MainObject::tryLogin(const QString &userName, const QString &password, bool rememberMe)
 {
+    emit startProgress(opLogIn, tr("Logging in"), 1, 0);
     QTimer::singleShot(0, m_worker, std::bind(&Worker::tryLogin, m_worker, userName, password));
     if (rememberMe) {
         const QString configPath = appSettingsPath();
@@ -124,6 +124,7 @@ void MainObject::tryLogin(const QString &userName, const QString &password, bool
 
 void MainObject::logOut()
 {
+    emit startProgress(opLogOut, tr("Logging out"), 1, 0);
     QTimer::singleShot(0, m_worker, &Worker::logOut);
 }
 
@@ -180,10 +181,19 @@ void MainObject::retranslateModels()
             ->setData(tr("Improvement When Drawn (%1)").arg(SLcodes.at(SLdrawn_improvement_win_rate)), Qt::DisplayRole);
 }
 
+void MainObject::download17Lands(const QStringList &sets)
+{
+    // #TODO
+}
+
 void MainObject::onWorkerInit()
 {
+    emit endProgress(opInitWorker);
     selectSetsModel();
+    getLast17LDownloadDate();
     m_ratingTemplateModel->setTable();
+    emit startProgress(opDownloadSets, tr("Loading Sets"), 0, 0);
+    emit startProgress(opDownloadSetsData, tr("Downloading Set Details"), 0, 0);
     QTimer::singleShot(0, m_worker, &Worker::downloadSetsMTGAH);
 }
 
@@ -219,27 +229,62 @@ void MainObject::selectSetsModel()
             "NULL then DATE() ELSE [release_date] END as [release_date] FROM [Sets] where [type] & ?) order by [release_date] desc"));
     setsQuery.addBindValue(DraftableSet);
     Q_ASSUME(setsQuery.exec());
-    m_setsModel->setQuery(setsQuery);
+    m_setsModel->setQuery(std::move(setsQuery));
+}
+void MainObject::getLast17LDownloadDate()
+{
+    QSqlDatabase objectDb = openDb(m_objectDbName);
+    QSqlQuery setsQuery(objectDb);
+    setsQuery.prepare(QStringLiteral("select [updateDate] from [SLRatingsDate]"));
+    Q_ASSUME(setsQuery.exec());
+    if (setsQuery.next())
+        emit last17Dowload(QDateTime::fromString(setsQuery.value(0).toString(), Qt::ISODate));
+    else
+        emit last17Dowload(QDateTime());
 }
 
 void MainObject::onLoggedIn()
 {
+    emit endProgress(opLogIn);
+    emit loggedIn();
+    emit startProgress(opDownloadRatingTemplate, tr("Downloading custom ratings from MTGA Helper"), 0, 0);
     QTimer::singleShot(0, m_worker, &Worker::getCustomRatingTemplate);
+}
+
+void MainObject::onLoggedOut()
+{
+    emit endProgress(opLogOut);
+    emit loggedOut();
+}
+
+void MainObject::onLogoutFalied(const QString &error)
+{
+    emit endProgress(opLogOut);
+    emit logoutFailed(error);
+}
+
+void MainObject::onLoginFalied(const QString &error)
+{
+    emit endProgress(opLogIn);
+    emit loginFalied(error);
 }
 
 void MainObject::onSetsScryfall(bool needsUpdate)
 {
+    emit endProgress(opDownloadSetsData);
     if (needsUpdate)
         selectSetsModel();
 }
 
 void MainObject::onSetsMTGAH()
 {
+    emit endProgress(opDownloadSets);
     m_setsProxy->setData(m_setsProxy->index(0, 0), Qt::Checked, Qt::CheckStateRole);
 }
 
 void MainObject::onRatingsTemplate(bool needsUpdate)
 {
+    emit endProgress(opDownloadRatingTemplate);
     if (needsUpdate)
         m_ratingTemplateModel->select();
 }

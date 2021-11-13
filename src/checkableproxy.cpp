@@ -30,3 +30,12 @@ QVariant CheckableProxy::data(const QModelIndex &index, int role) const
         return Qt::Unchecked;
     return result;
 }
+
+void CheckableProxy::multiData(const QModelIndex &index, QModelRoleDataSpan roleDataSpan) const
+{
+    RoleMaskProxyModel::multiData(index, roleDataSpan);
+    for (QModelRoleData &roleData : roleDataSpan) {
+        if (!roleData.data().isValid() && roleData.role() == Qt::CheckStateRole)
+            roleData.setData(Qt::Unchecked);
+    }
+}

@@ -12,15 +12,13 @@ void RatingsModel::setTable(const QString &)
 {
     QSqlTableModel::setTable(QStringLiteral("Ratings"));
     select();
-    while (canFetchMore())
-        fetchMore();
 }
 
-void RatingsModel::setFilter(const QString &filter)
+int RatingsModel::columnCount(const QModelIndex &parent) const
 {
-    QSqlTableModel::setFilter(filter);
-    while (canFetchMore())
-        fetchMore();
+    if (parent.isValid())
+        return QSqlTableModel::columnCount(parent);
+    return qMax(int(rmcCount), QSqlTableModel::columnCount(parent));
 }
 
 QVariant RatingsModel::headerData(int section, Qt::Orientation orientation, int role) const

@@ -62,6 +62,34 @@ void Worker::init()
         emit initialisationFailed();
         return;
     }
+    QSqlQuery create17UpdateDateQuery(workerdb);
+    create17UpdateDateQuery.prepare(QStringLiteral("CREATE TABLE IF NOT EXISTS [SLRatingsDate] ([updateDate] TEXT NOT NULL)"));
+    if (!create17UpdateDateQuery.exec()) {
+        emit initialisationFailed();
+        return;
+    }
+    QSqlQuery create17RatingsQuery(workerdb);
+    create17RatingsQuery.prepare(QStringLiteral("CREATE TABLE IF NOT EXISTS [SLRatings] ([name] TEXT PRIMARY KEY "
+                                                ", [seen_count] INTEGER "
+                                                ", [avg_seen] REAL "
+                                                ", [pick_count] INTEGER "
+                                                ", [avg_pick] REAL "
+                                                ", [game_count] INTEGER "
+                                                ", [win_rate] REAL "
+                                                ", [opening_hand_game_count] INTEGER "
+                                                ", [opening_hand_win_rate] REAL "
+                                                ", [drawn_game_count] INTEGER "
+                                                ", [drawn_win_rate] REAL "
+                                                ", [ever_drawn_game_count] INTEGER "
+                                                ", [ever_drawn_win_rate] REAL "
+                                                ", [never_drawn_game_count] INTEGER "
+                                                ", [never_drawn_win_rate] REAL "
+                                                ", [drawn_improvement_win_rate] REAL "
+                                                ")"));
+    if (!create17RatingsQuery.exec()) {
+        emit initialisationFailed();
+        return;
+    }
 
     emit initialised();
 }
