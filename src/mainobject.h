@@ -101,7 +101,6 @@ signals:
     void last17Dowload(const QDateTime &date);
 
 private:
-    void getLast17LDownloadDate();
     double ratingValue(const SeventeenCard &card, SLMetrics method) const;
     QString commentString(const SeventeenCard &card, const QLocale &locale) const;
     void fillMetrics();

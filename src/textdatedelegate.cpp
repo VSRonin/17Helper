@@ -6,7 +6,7 @@ TextDateDelegate::TextDateDelegate(QObject *parent)
 
 QString TextDateDelegate::displayText(const QVariant &value, const QLocale &locale) const
 {
-    if (value.isValid())
-        return locale.toString(QDateTime::fromString(value.toString(), Qt::ISODate));
-    return tr("Never", "Never updated before");
+    if (value.isNull())
+        return tr("Never", "Never updated before");
+    return locale.toString(QDateTime::fromString(value.toString(), Qt::ISODate));
 }

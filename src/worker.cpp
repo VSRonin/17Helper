@@ -317,9 +317,11 @@ void Worker::onCustomRatingTemplateFinished(QNetworkReply *reply)
             needUpdate = true;
         }
         QSqlQuery updateRatingQuery(workerdb);
-        updateRatingQuery.prepare(QStringLiteral(
-                "INSERT OR REPLACE INTO [Ratings] ([id_arena], [name], [set], [rating], [note]) VALUES (:id_arena, :name, :set, :rating, :note)"));
+        updateRatingQuery.prepare(
+                QStringLiteral("INSERT OR REPLACE INTO [Ratings] ([id_arena], [name], [set], [rating], [note], [lastUpdate]) VALUES (:id_arena, "
+                               ":name, :set, :rating, :note, (select [lastUpdate] from [Ratings] where [id_arena]=:id_arena_search))"));
         updateRatingQuery.bindValue(QStringLiteral(":id_arena"), idArenaVal);
+        updateRatingQuery.bindValue(QStringLiteral("id_arena_search"), idArenaVal);
         updateRatingQuery.bindValue(QStringLiteral(":name"), nameStr);
         updateRatingQuery.bindValue(QStringLiteral(":set"), setStr);
         updateRatingQuery.bindValue(QStringLiteral(":rating"), ratingNum);

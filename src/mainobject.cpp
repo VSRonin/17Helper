@@ -201,7 +201,6 @@ void MainObject::onWorkerInit()
 {
     emit endProgress(opInitWorker);
     selectSetsModel();
-    getLast17LDownloadDate();
     m_ratingTemplateModel->setTable();
     emit startProgress(opDownloadSets, tr("Loading Sets"), 0, 0);
     emit startProgress(opDownloadSetsData, tr("Downloading Set Details"), 0, 0);
