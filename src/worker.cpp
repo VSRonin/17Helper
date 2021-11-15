@@ -57,14 +57,8 @@ void Worker::init()
     }
     QSqlQuery createRatingsQuery(workerdb);
     createRatingsQuery.prepare(QStringLiteral("CREATE TABLE IF NOT EXISTS [Ratings] ([set] TEXT NOT NULL, [name] TEXT NOT NULL, [id_arena] INTEGER "
-                                              "PRIMARY KEY, [rating] INTEGER, [note] TEXT)"));
+                                              "PRIMARY KEY, [lastUpdate] TEXT, [rating] INTEGER, [note] TEXT)"));
     if (!createRatingsQuery.exec()) {
-        emit initialisationFailed();
-        return;
-    }
-    QSqlQuery create17UpdateDateQuery(workerdb);
-    create17UpdateDateQuery.prepare(QStringLiteral("CREATE TABLE IF NOT EXISTS [SLRatingsDate] ([updateDate] TEXT NOT NULL)"));
-    if (!create17UpdateDateQuery.exec()) {
         emit initialisationFailed();
         return;
     }

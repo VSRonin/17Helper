@@ -73,7 +73,7 @@ public:
     QAbstractItemModel *setsModel() const;
     QAbstractItemModel *formatsModel() const;
     QAbstractItemModel *ratingsModel() const;
-    void filterRatings(QStringList sets);
+    void filterRatings(QString name, QStringList sets);
 public slots:
     void tryLogin(const QString &userName, const QString &password, bool rememberMe = false);
     void logOut();

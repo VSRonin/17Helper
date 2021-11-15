@@ -35,6 +35,8 @@ set(models_SRCS
 set(delegates_SRCS
     ratingsdelegate.h
     ratingsdelegate.cpp
+    textdatedelegate.h
+    textdatedelegate.cpp
 )
 source_group(UI FILES ${ui_SRCS})
 source_group(Backend FILES ${backend_SRCS})

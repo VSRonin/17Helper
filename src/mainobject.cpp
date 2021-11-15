@@ -91,14 +91,25 @@ QAbstractItemModel *MainObject::ratingsModel() const
     return m_ratingTemplateModel;
 }
 
-void MainObject::filterRatings(QStringList sets)
+void MainObject::filterRatings(QString name, QStringList sets)
 {
-    if (sets.isEmpty())
+    if (sets.isEmpty() && name.isEmpty())
         return m_ratingTemplateModel->setFilter(QString());
+    QString filterString;
     QSqlDriver *driver = openDb(m_objectDbName).driver();
-    for (int i = 0; i < sets.size(); ++i)
-        sets[i] = driver->escapeIdentifier(sets.at(i), QSqlDriver::FieldName);
-    const QString filterString = QLatin1String("[set] in (") + sets.join(QLatin1Char(',')) + QLatin1Char(')');
+    if (!sets.isEmpty()) {
+        for (int i = 0; i < sets.size(); ++i)
+            sets[i] = driver->escapeIdentifier(sets.at(i), QSqlDriver::FieldName);
+        filterString = QLatin1String("[set] in (") + sets.join(QLatin1Char(',')) + QLatin1Char(')');
+    }
+    if (!name.isEmpty()) {
+        if (!filterString.isEmpty())
+            filterString += QLatin1String(" AND ");
+        filterString += QLatin1String("[name] like ") + driver->escapeIdentifier(QLatin1Char('%') + name + QLatin1Char('%'), QSqlDriver::FieldName);
+    }
+#ifdef QT_DEBUG
+    qDebug() << filterString;
+#endif
     m_ratingTemplateModel->setFilter(filterString);
 }
 
@@ -230,17 +241,6 @@ void MainObject::selectSetsModel()
     setsQuery.addBindValue(DraftableSet);
     Q_ASSUME(setsQuery.exec());
     m_setsModel->setQuery(std::move(setsQuery));
-}
-void MainObject::getLast17LDownloadDate()
-{
-    QSqlDatabase objectDb = openDb(m_objectDbName);
-    QSqlQuery setsQuery(objectDb);
-    setsQuery.prepare(QStringLiteral("select [updateDate] from [SLRatingsDate]"));
-    Q_ASSUME(setsQuery.exec());
-    if (setsQuery.next())
-        emit last17Dowload(QDateTime::fromString(setsQuery.value(0).toString(), Qt::ISODate));
-    else
-        emit last17Dowload(QDateTime());
 }
 
 void MainObject::onLoggedIn()

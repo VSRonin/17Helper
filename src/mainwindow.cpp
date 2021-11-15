@@ -13,6 +13,7 @@
 
 #include "mainwindow.h"
 #include "ratingsdelegate.h"
+#include "textdatedelegate.h"
 #include "ratingsmodel.h"
 #include "ui_mainwindow.h"
 #include "globals.h"
@@ -249,7 +250,7 @@ void MainWindow::updateRatingsFiler()
             sets.append(m_object->setsModel()->index(i, 1).data().toString());
         }
     }
-    m_object->filterRatings(sets);
+    m_object->filterRatings(ui->searchCardEdit->text(), sets);
 }
 
 void MainWindow::onLogout()
@@ -282,6 +283,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->ratingsView->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
     ui->ratingsView->sortByColumn(RatingsModel::rmcName, Qt::AscendingOrder);
     ui->ratingsView->setItemDelegateForColumn(RatingsModel::rmcRating, new RatingsDelegate(this));
+    ui->ratingsView->setItemDelegateForColumn(RatingsModel::rmcLastUpdate, new TextDateDelegate(this));
     QCompleter *searchCompleter = new QCompleter(this);
     searchCompleter->setModel(m_object->ratingsModel());
     searchCompleter->setCompletionColumn(RatingsModel::rmcName);
@@ -305,6 +307,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->uploadButton, &QPushButton::clicked, this, &MainWindow::doMtgahUpload);
     connect(ui->allSetsButton, &QPushButton::clicked, this, &MainWindow::selectAllSets);
     connect(ui->noSetButton, &QPushButton::clicked, this, &MainWindow::selectNoSets);
+    connect(ui->searchCardEdit, &QLineEdit::textChanged, this, &MainWindow::updateRatingsFiler);
     // connect(m_worker, &Worker::setsMTGAH, this, &MainWindow::fillSets);
     // connect(m_worker, &Worker::downloadSetsMTGAHFailed, this, &MainWindow::onMTGAHSetsError);
     // connect(m_worker, &Worker::setsScryfall, this, &MainWindow::fillSetNames);
@@ -354,8 +357,6 @@ void MainWindow::retranslateUi()
     ui->retranslateUi(this);
     ui->savePwdWarningLabel->setText(
             tr("Your password will be stored in plain text in %1").arg(appDataPath() + QDir::separator() + QLatin1String("17helperconfig.json")));
-    ui->ratingUpdateDateLabel->setText(
-            tr("17Lands Ratings as of: %1").arg(last17lDownload.isValid() ? locale().toString(last17lDownload) : tr("Never")));
     ui->errorLabel->setVisible(m_error != NoError);
     ui->retryBasicDownloadButton->setVisible(m_error & MTGAHSetsError);
     ui->retryTemplateButton->setVisible(m_error & RatingTemplateFailed);

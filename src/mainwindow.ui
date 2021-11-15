@@ -190,7 +190,7 @@
          </font>
         </property>
         <property name="text">
-         <string>Your password will be stored in plain text in %1</string>
+         <string notr="true">Your password will be stored in plain text in %1</string>
         </property>
        </widget>
       </item>
@@ -345,13 +345,6 @@
          </size>
         </property>
        </spacer>
-      </item>
-      <item row="0" column="3">
-       <widget class="QLabel" name="ratingUpdateDateLabel">
-        <property name="text">
-         <string>17Lands Ratings as of %1</string>
-        </property>
-       </widget>
       </item>
       <item row="1" column="0" colspan="4">
        <widget class="QTableView" name="ratingsView">
