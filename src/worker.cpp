@@ -41,8 +41,9 @@ QSqlDatabase Worker::openWorkerDb()
     return openDb(m_workerDbName);
 }
 
-void Worker::init(){
-    QMetaObject::invokeMethod(this,&Worker::actualInit,Qt::QueuedConnection);
+void Worker::init()
+{
+    QMetaObject::invokeMethod(this, &Worker::actualInit, Qt::QueuedConnection);
 }
 
 void Worker::actualInit()
@@ -92,8 +93,9 @@ void Worker::actualInit()
 
     emit initialised();
 }
-void Worker::tryLogin(const QString &userName, const QString &password){
-    QMetaObject::invokeMethod(this,std::bind(&Worker::actualTryLogin,this,userName,password),Qt::QueuedConnection);
+void Worker::tryLogin(const QString &userName, const QString &password)
+{
+    QMetaObject::invokeMethod(this, std::bind(&Worker::actualTryLogin, this, userName, password), Qt::QueuedConnection);
 }
 void Worker::actualTryLogin(const QString &userName, const QString &password)
 {
@@ -127,8 +129,9 @@ void Worker::actualTryLogin(const QString &userName, const QString &password)
         emit loggedIn();
     });
 }
-void Worker::logOut(){
-    QMetaObject::invokeMethod(this,&Worker::actualLogOut,Qt::QueuedConnection);
+void Worker::logOut()
+{
+    QMetaObject::invokeMethod(this, &Worker::actualLogOut, Qt::QueuedConnection);
 }
 void Worker::actualLogOut()
 {
@@ -142,8 +145,9 @@ void Worker::actualLogOut()
         emit loggedOut();
     });
 }
-void Worker::downloadSetsMTGAH(){
-    QMetaObject::invokeMethod(this,&Worker::actualDownloadSetsMTGAH,Qt::QueuedConnection);
+void Worker::downloadSetsMTGAH()
+{
+    QMetaObject::invokeMethod(this, &Worker::actualDownloadSetsMTGAH, Qt::QueuedConnection);
 }
 void Worker::actualDownloadSetsMTGAH()
 {
@@ -204,14 +208,21 @@ void Worker::saveMTGAHSets(QStringList sets)
     }
     std::sort(sets.begin(), sets.end());
     sets.erase(std::unique(sets.begin(), sets.end()), sets.end());
+    Q_ASSUME(workerdb.transaction());
     for (auto i = sets.cbegin(), iEnd = sets.cend(); i != iEnd; ++i) {
         QSqlQuery insertSetsQuery(workerdb);
         insertSetsQuery.prepare(QStringLiteral("INSERT INTO [Sets] ([id]) VALUES (?)"));
         insertSetsQuery.addBindValue(*i);
         if (!insertSetsQuery.exec()) {
+            Q_ASSUME(workerdb.rollback());
             emit downloadSetsMTGAHFailed();
             return;
         }
+    }
+    if (!workerdb.commit()) {
+        Q_ASSUME(workerdb.rollback());
+        emit downloadSetsMTGAHFailed();
+        return;
     }
     emit setsMTGAH(true);
 }
@@ -400,8 +411,9 @@ int Worker::setTypeCode(const QString &setType) const
         return stmemorabilia;
     return 0;
 }
-void Worker::getCustomRatingTemplate(){
-    QMetaObject::invokeMethod(this,&Worker::getCustomRatingTemplate,Qt::QueuedConnection);
+void Worker::getCustomRatingTemplate()
+{
+    QMetaObject::invokeMethod(this, &Worker::actualGetCustomRatingTemplate, Qt::QueuedConnection);
 }
 void Worker::actualGetCustomRatingTemplate()
 {
@@ -411,8 +423,9 @@ void Worker::actualGetCustomRatingTemplate()
     connect(reply, &QNetworkReply::finished, reply, &QNetworkReply::deleteLater);
     connect(reply, &QNetworkReply::finished, this, std::bind(&Worker::onCustomRatingTemplateFinished, this, reply));
 }
-void Worker::get17LRatings(const QStringList &sets, const QString &format){
-    QMetaObject::invokeMethod(this,std::bind(&Worker::actualGet17LRatings,this,sets,format),Qt::QueuedConnection);
+void Worker::get17LRatings(const QStringList &sets, const QString &format)
+{
+    QMetaObject::invokeMethod(this, std::bind(&Worker::actualGet17LRatings, this, sets, format), Qt::QueuedConnection);
 }
 void Worker::actualGet17LRatings(const QStringList &sets, const QString &format)
 {
@@ -454,7 +467,7 @@ void Worker::processSLrequestQueue()
             emit failed17LRatings();
             return;
         }
-        const QDateTime currDateTime = QDateTime::currentDateTime();
+        const QString currDateTime = QDateTime::currentDateTime().toString(Qt::ISODate);
         QSqlDatabase workerdb = openWorkerDb();
         Q_ASSUME(workerdb.transaction());
         bool oneFound = false;
@@ -468,41 +481,45 @@ void Worker::processSLrequestQueue()
             if (nameStr.isEmpty())
                 continue;
             QSqlQuery updateRatingQuery(workerdb);
-            updateRatingQuery.prepare(
-                    QStringLiteral("INSERT OR REPLACE INTO [SLRatings] ([name], [seen_count], [avg_seen], [pick_count], [avg_pick], [game_count], [win_rate], [opening_hand_game_count], [opening_hand_win_rate], [drawn_game_count], [drawn_win_rate], [ever_drawn_game_count], [ever_drawn_win_rate], [never_drawn_game_count], [never_drawn_win_rate], [drawn_improvement_win_rate], [lastUpdate]) "
-                                   "VALUES"
-                                   "(:name, :seen_count, :avg_seen, :pick_count, :avg_pick, :game_count, :win_rate, :opening_hand_game_count, :opening_hand_win_rate, :drawn_game_count, :drawn_win_rate, :ever_drawn_game_count, :ever_drawn_win_rate, :never_drawn_game_count, :never_drawn_win_rate, :drawn_improvement_win_rate, :lastUpdate)")
-                        );
-            updateRatingQuery.bindValue(QStringLiteral(":lastUpdate"),currDateTime.toString(Qt::ISODate));
-            updateRatingQuery.bindValue(QStringLiteral(":name"),nameStr);
-            updateRatingQuery.bindValue(QStringLiteral("seen_count"),ratingObject[QLatin1String("seen_count")].toInt());
-            updateRatingQuery.bindValue(QStringLiteral("avg_seen"),ratingObject[QLatin1String("avg_seen")].toDouble());
-            updateRatingQuery.bindValue(QStringLiteral("pick_count"),ratingObject[QLatin1String("pick_count")].toInt());
-            updateRatingQuery.bindValue(QStringLiteral("avg_pick"),ratingObject[QLatin1String("avg_pick")].toDouble());
-            updateRatingQuery.bindValue(QStringLiteral("game_count"),ratingObject[QLatin1String("game_count")].toInt());
-            updateRatingQuery.bindValue(QStringLiteral("win_rate"),ratingObject[QLatin1String("win_rate")].toDouble());
-            updateRatingQuery.bindValue(QStringLiteral("opening_hand_game_count"),ratingObject[QLatin1String("opening_hand_game_count")].toInt());
-            updateRatingQuery.bindValue(QStringLiteral("opening_hand_win_rate"),ratingObject[QLatin1String("opening_hand_win_rate")].toDouble());
-            updateRatingQuery.bindValue(QStringLiteral("drawn_game_count"),ratingObject[QLatin1String("drawn_game_count")].toInt());
-            updateRatingQuery.bindValue(QStringLiteral("drawn_win_rate"),ratingObject[QLatin1String("drawn_win_rate")].toDouble());
-            updateRatingQuery.bindValue(QStringLiteral("ever_drawn_game_count"),ratingObject[QLatin1String("ever_drawn_game_count")].toInt());
-            updateRatingQuery.bindValue(QStringLiteral("ever_drawn_win_rate"),ratingObject[QLatin1String("ever_drawn_win_rate")].toDouble());
-            updateRatingQuery.bindValue(QStringLiteral("never_drawn_game_count"),ratingObject[QLatin1String("never_drawn_game_count")].toInt());
-            updateRatingQuery.bindValue(QStringLiteral("never_drawn_win_rate"),ratingObject[QLatin1String("never_drawn_win_rate")].toDouble());
-            updateRatingQuery.bindValue(QStringLiteral("drawn_improvement_win_rate"),ratingObject[QLatin1String("drawn_improvement_win_rate")].toDouble());
-            if(!updateRatingQuery.exec()){
+            updateRatingQuery.prepare(QStringLiteral(
+                    "INSERT OR REPLACE INTO [SLRatings] ([name], [seen_count], [avg_seen], [pick_count], [avg_pick], [game_count], [win_rate], "
+                    "[opening_hand_game_count], [opening_hand_win_rate], [drawn_game_count], [drawn_win_rate], [ever_drawn_game_count], "
+                    "[ever_drawn_win_rate], [never_drawn_game_count], [never_drawn_win_rate], [drawn_improvement_win_rate], [lastUpdate]) "
+                    "VALUES"
+                    "(:name, :seen_count, :avg_seen, :pick_count, :avg_pick, :game_count, :win_rate, :opening_hand_game_count, "
+                    ":opening_hand_win_rate, :drawn_game_count, :drawn_win_rate, :ever_drawn_game_count, :ever_drawn_win_rate, "
+                    ":never_drawn_game_count, :never_drawn_win_rate, :drawn_improvement_win_rate, :lastUpdate)"));
+            updateRatingQuery.bindValue(QStringLiteral(":lastUpdate"), currDateTime);
+            updateRatingQuery.bindValue(QStringLiteral(":name"), nameStr);
+            updateRatingQuery.bindValue(QStringLiteral(":seen_count"), ratingObject[QLatin1String("seen_count")].toInt());
+            updateRatingQuery.bindValue(QStringLiteral(":avg_seen"), ratingObject[QLatin1String("avg_seen")].toDouble());
+            updateRatingQuery.bindValue(QStringLiteral(":pick_count"), ratingObject[QLatin1String("pick_count")].toInt());
+            updateRatingQuery.bindValue(QStringLiteral(":avg_pick"), ratingObject[QLatin1String("avg_pick")].toDouble());
+            updateRatingQuery.bindValue(QStringLiteral(":game_count"), ratingObject[QLatin1String("game_count")].toInt());
+            updateRatingQuery.bindValue(QStringLiteral(":win_rate"), ratingObject[QLatin1String("win_rate")].toDouble());
+            updateRatingQuery.bindValue(QStringLiteral(":opening_hand_game_count"), ratingObject[QLatin1String("opening_hand_game_count")].toInt());
+            updateRatingQuery.bindValue(QStringLiteral(":opening_hand_win_rate"), ratingObject[QLatin1String("opening_hand_win_rate")].toDouble());
+            updateRatingQuery.bindValue(QStringLiteral(":drawn_game_count"), ratingObject[QLatin1String("drawn_game_count")].toInt());
+            updateRatingQuery.bindValue(QStringLiteral(":drawn_win_rate"), ratingObject[QLatin1String("drawn_win_rate")].toDouble());
+            updateRatingQuery.bindValue(QStringLiteral(":ever_drawn_game_count"), ratingObject[QLatin1String("ever_drawn_game_count")].toInt());
+            updateRatingQuery.bindValue(QStringLiteral(":ever_drawn_win_rate"), ratingObject[QLatin1String("ever_drawn_win_rate")].toDouble());
+            updateRatingQuery.bindValue(QStringLiteral(":never_drawn_game_count"), ratingObject[QLatin1String("never_drawn_game_count")].toInt());
+            updateRatingQuery.bindValue(QStringLiteral(":never_drawn_win_rate"), ratingObject[QLatin1String("never_drawn_win_rate")].toDouble());
+            updateRatingQuery.bindValue(QStringLiteral(":drawn_improvement_win_rate"),
+                                        ratingObject[QLatin1String("drawn_improvement_win_rate")].toDouble());
+            if (!updateRatingQuery.exec()) {
                 emit failed17LRatings();
                 Q_ASSUME(workerdb.rollback());
                 return;
             }
-            oneFound=true;
+            oneFound = true;
         }
         if (!oneFound) {
             emit failed17LRatings();
             Q_ASSUME(workerdb.rollback());
             return;
         }
-        if(!workerdb.commit()){
+        if (!workerdb.commit()) {
             emit failed17LRatings();
             Q_ASSUME(workerdb.rollback());
             return;
@@ -510,14 +527,14 @@ void Worker::processSLrequestQueue()
         emit downloaded17LRatings(currSet);
         if (m_SLrequestQueue.size() + m_SLrequestOutstanding == 0)
             emit downloadedAll17LRatings();
-        emit download17LRatingsProgress(m_SLrequestQueue.size() + m_SLrequestOutstanding);
     });
 }
 
 void Worker::uploadRatings(const QStringList &sets)
 {
+    /*
     for (const QString &set : sets) {
-        /*auto cardsRange = qAsConst(m_ratingsTemplate).equal_range(set);
+        auto cardsRange = qAsConst(m_ratingsTemplate).equal_range(set);
         if (cardsRange.first == m_ratingsTemplate.cend())
             continue;
         for (auto i = cardsRange.first; i != cardsRange.second; ++i) {
@@ -525,15 +542,17 @@ void Worker::uploadRatings(const QStringList &sets)
             QNetworkRequest ratingReq(ratingUrl);
             ratingReq.setHeader(QNetworkRequest::ContentTypeHeader, QStringLiteral("application/json"));
             m_MTGAHrequestQueue.append(std::make_pair(*i, ratingReq));
-        }*/
+        }
     }
     if (!m_requestTimer->isActive())
         m_requestTimer->start();
     emit ratingsUploadMaxProgress(m_MTGAHrequestQueue.size());
+    */
 }
 
 void Worker::processMTGAHrequestQueue()
 {
+    /*
     if (m_MTGAHrequestQueue.isEmpty())
         return;
     const std::pair<MtgahCard, QNetworkRequest> currReq = m_MTGAHrequestQueue.takeFirst();
@@ -568,4 +587,5 @@ void Worker::processMTGAHrequestQueue()
             emit allRatingsUploaded();
         emit ratingsUploadProgress(m_MTGAHrequestQueue.size() + m_MTGAHrequestOutstanding);
     });
+    */
 }

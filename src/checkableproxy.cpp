@@ -30,7 +30,7 @@ QVariant CheckableProxy::data(const QModelIndex &index, int role) const
         return Qt::Unchecked;
     return result;
 }
-
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 void CheckableProxy::multiData(const QModelIndex &index, QModelRoleDataSpan roleDataSpan) const
 {
     RoleMaskProxyModel::multiData(index, roleDataSpan);
@@ -39,3 +39,4 @@ void CheckableProxy::multiData(const QModelIndex &index, QModelRoleDataSpan role
             roleData.setData(Qt::Unchecked);
     }
 }
+#endif

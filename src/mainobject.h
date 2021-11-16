@@ -18,7 +18,6 @@
 class QThread;
 class QStandardItemModel;
 class QAbstractItemModel;
-class SeventeenCard;
 class QSqlQueryModel;
 class CheckableProxy;
 class RatingsModel;
@@ -78,7 +77,7 @@ public slots:
     void tryLogin(const QString &userName, const QString &password, bool rememberMe = false);
     void logOut();
     void retranslateModels();
-    void download17Lands(const QStringList &sets);
+    void download17Lands(const QStringList &sets, const QString &format);
 private slots:
     void onWorkerInit();
     void onLoggedIn();
@@ -86,8 +85,11 @@ private slots:
     void onLoggedOut();
     void onLogoutFalied(const QString &error);
     void onSetsScryfall(bool needsUpdate);
-    void onSetsMTGAH();
+    void onSetsMTGAH(bool needsUpdate);
     void onRatingsTemplate(bool needsUpdate);
+    void on17LandsSetDownload(const QString &set);
+    void on17LandsDownloadFinished();
+    void on17LandsDownloadError();
 signals:
     void loggedIn();
     void loginFalied(const QString &error);
@@ -97,12 +99,14 @@ signals:
     void setsReady();
     void startProgress(Operations op, const QString &description, int max, int min);
     void updateProgress(Operations op, int val);
+    void increaseProgress(Operations op, int val);
     void endProgress(Operations op);
-    void last17Dowload(const QDateTime &date);
+    void SLDownloadFinished();
+    void SLDownloadFailed();
 
 private:
-    double ratingValue(const SeventeenCard &card, SLMetrics method) const;
-    QString commentString(const SeventeenCard &card, const QLocale &locale) const;
+    // double ratingValue(const SeventeenCard &card, SLMetrics method) const;
+    // QString commentString(const SeventeenCard &card, const QLocale &locale) const;
     void fillMetrics();
     void fillFormats();
     void selectSetsModel();

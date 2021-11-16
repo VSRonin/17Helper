@@ -95,20 +95,14 @@ void MainWindow::onLogoutError(const QString &error)
 
 void MainWindow::do17Ldownload()
 {
-    /* ui->downloadButton->setEnabled(false);
-     ui->setsGroup->setEnabled(false);
-     QStringList sets;
-     for (int i = 0, iEnd = m_setsModel->rowCount(); i < iEnd; ++i) {
-         const QModelIndex &idx = m_setsModel->index(i, 0);
-         if (idx.data(Qt::CheckStateRole).toInt() == Qt::Checked)
-             sets.append(idx.data(Qt::UserRole).toString());
-     }
-     ui->progressBar->setVisible(true);
-     ui->progressLabel->setVisible(true);
-     ui->progressBar->setRange(0, sets.size());
-     ui->progressBar->setValue(0);
-     ui->progressLabel->setText(tr("Downloading 17 Lands Data"));
-     m_worker->get17LRatings(sets, ui->formatsCombo->currentData().toString());*/
+    ui->downloadButton->setEnabled(false);
+    ui->setsGroup->setEnabled(false);
+    QStringList sets;
+    for (int i = 0, iEnd = m_object->setsModel()->rowCount(); i < iEnd; ++i) {
+        if (m_object->setsModel()->index(i, 0).data(Qt::CheckStateRole).toInt() == Qt::Checked)
+            sets.append(m_object->setsModel()->index(i, 1).data().toString());
+    }
+    m_object->download17Lands(sets, ui->formatsCombo->currentData().toString());
 }
 
 void MainWindow::doMtgahUpload()
@@ -314,6 +308,7 @@ MainWindow::MainWindow(QWidget *parent)
     // connect(m_worker, &Worker::downloadSetsScryfallFailed, this, &MainWindow::onScryfallSetsError);
     connect(m_object, &MainObject::startProgress, this, &MainWindow::onStartProgress);
     connect(m_object, &MainObject::updateProgress, this, &MainWindow::onUpdateProgress);
+    connect(m_object, &MainObject::increaseProgress, this, &MainWindow::onIncreaseProgress);
     connect(m_object, &MainObject::endProgress, this, &MainWindow::onEndProgress);
     connect(m_object, &MainObject::loggedIn, this, &MainWindow::onLogin);
     connect(m_object, &MainObject::loginFalied, this, &MainWindow::onLoginError);
@@ -386,12 +381,6 @@ void MainWindow::setAllSetsSelection(Qt::CheckState check)
         m_object->setsModel()->setData(m_object->setsModel()->index(i, 0), check, Qt::CheckStateRole);
 }
 
-void MainWindow::onLast17lDownload(const QDateTime &dt)
-{
-    last17lDownload = dt;
-    retranslateUi();
-}
-
 void MainWindow::onStartProgress(MainObject::Operations op, const QString &description, int max, int min)
 {
 #ifdef QT_DEBUG
@@ -415,7 +404,19 @@ void MainWindow::onUpdateProgress(MainObject::Operations op, int val)
         if (i->m_operation == op) {
             i->m_val = val;
             if (i == pBegin)
-                ui->progressBar->setValue(val);
+                ui->progressBar->setValue(i->m_val);
+        }
+    }
+}
+
+void MainWindow::onIncreaseProgress(MainObject::Operations op, int val)
+{
+    const auto pBegin = progressQueue.begin();
+    for (auto i = pBegin, iEnd = progressQueue.end(); i != iEnd; ++i) {
+        if (i->m_operation == op) {
+            i->m_val += val;
+            if (i == pBegin)
+                ui->progressBar->setValue(i->m_val);
         }
     }
 }

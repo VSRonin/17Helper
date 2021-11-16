@@ -37,7 +37,7 @@ MainObject::MainObject(QObject *parent)
     m_setsProxy = new CheckableProxy(this);
     m_setsProxy->setSourceModel(m_setsModel);
     m_ratingTemplateModel = new RatingsModel(this, openDb(m_objectDbName));
-    QMetaObject::invokeMethod(this, std::bind(&MainObject::startProgress, this, opInitWorker, tr("Initialising"), 0, 0),Qt::QueuedConnection);
+    QMetaObject::invokeMethod(this, std::bind(&MainObject::startProgress, this, opInitWorker, tr("Initialising"), 0, 0), Qt::QueuedConnection);
     m_worker = new Worker;
 #ifndef DEBUG_SINGLE_THREAD
     m_workerThread = new QThread(this);
@@ -55,6 +55,9 @@ MainObject::MainObject(QObject *parent)
     connect(m_worker, &Worker::setsScryfall, this, &MainObject::onSetsScryfall);
     connect(m_worker, &Worker::setsMTGAH, this, &MainObject::onSetsMTGAH);
     connect(m_worker, &Worker::customRatingTemplate, this, &MainObject::onRatingsTemplate);
+    connect(m_worker, &Worker::downloadedAll17LRatings, this, &MainObject::on17LandsDownloadFinished);
+    connect(m_worker, &Worker::downloaded17LRatings, this, &MainObject::on17LandsSetDownload);
+    connect(m_worker, &Worker::failed17LRatings, this, &MainObject::on17LandsDownloadError);
 #ifndef DEBUG_SINGLE_THREAD
     m_workerThread->start();
 #else
@@ -106,16 +109,13 @@ void MainObject::filterRatings(QString name, QStringList sets)
             filterString += QLatin1String(" AND ");
         filterString += QLatin1String("[name] like ") + driver->escapeIdentifier(QLatin1Char('%') + name + QLatin1Char('%'), QSqlDriver::FieldName);
     }
-#ifdef QT_DEBUG
-    qDebug() << filterString;
-#endif
     m_ratingTemplateModel->setFilter(filterString);
 }
 
 void MainObject::tryLogin(const QString &userName, const QString &password, bool rememberMe)
 {
     emit startProgress(opLogIn, tr("Logging in"), 1, 0);
-    m_worker->tryLogin(userName,password);
+    m_worker->tryLogin(userName, password);
     if (rememberMe) {
         const QString configPath = appSettingsPath();
         QJsonObject configObject;
@@ -191,16 +191,19 @@ void MainObject::retranslateModels()
             ->setData(tr("Improvement When Drawn (%1)").arg(SLcodes.at(SLdrawn_improvement_win_rate)), Qt::DisplayRole);
 }
 
-void MainObject::download17Lands(const QStringList &sets)
+void MainObject::download17Lands(const QStringList &sets, const QString &format)
 {
-    // #TODO
+    if (sets.isEmpty() || format.isEmpty())
+        return;
+    emit startProgress(opDownload17Ratings, tr("Downloading 17Lands Data"), sets.size(), 0);
+    m_worker->get17LRatings(sets, format);
 }
 
 void MainObject::onWorkerInit()
 {
     emit endProgress(opInitWorker);
-    selectSetsModel();
     m_ratingTemplateModel->setTable();
+    selectSetsModel();
     emit startProgress(opDownloadSets, tr("Loading Sets"), 0, 0);
     emit startProgress(opDownloadSetsData, tr("Downloading Set Details"), 0, 0);
     m_worker->downloadSetsMTGAH();
@@ -234,11 +237,13 @@ void MainObject::selectSetsModel()
     QSqlDatabase objectDb = openDb(m_objectDbName);
     QSqlQuery setsQuery(objectDb);
     setsQuery.prepare(QStringLiteral(
-            "select [name], [id] from (SELECT [id], CASE WHEN [name] is NULL then [id] ELSE [name] END as [name], CASE WHEN [release_date] is "
-            "NULL then DATE() ELSE [release_date] END as [release_date] FROM [Sets] where [type] & ?) order by [release_date] desc"));
+            "select [name], [id] from (SELECT [id], CASE WHEN [name] is NULL then [id] ELSE [name] END as [name], CASE WHEN [release_date] is  NULL "
+            "then DATE() ELSE [release_date] END as [release_date] FROM [Sets] where [type] is null or [type] & ?) order by [release_date] desc"));
     setsQuery.addBindValue(DraftableSet);
     Q_ASSUME(setsQuery.exec());
     m_setsModel->setQuery(std::move(setsQuery));
+    qDebug() << m_setsProxy->rowCount();
+    m_setsProxy->setData(m_setsProxy->index(0, 0), Qt::Checked, Qt::CheckStateRole);
 }
 
 void MainObject::onLoggedIn()
@@ -274,10 +279,11 @@ void MainObject::onSetsScryfall(bool needsUpdate)
         selectSetsModel();
 }
 
-void MainObject::onSetsMTGAH()
+void MainObject::onSetsMTGAH(bool needsUpdate)
 {
     emit endProgress(opDownloadSets);
-    m_setsProxy->setData(m_setsProxy->index(0, 0), Qt::Checked, Qt::CheckStateRole);
+    if (needsUpdate)
+        selectSetsModel();
 }
 
 void MainObject::onRatingsTemplate(bool needsUpdate)
@@ -287,6 +293,25 @@ void MainObject::onRatingsTemplate(bool needsUpdate)
         m_ratingTemplateModel->select();
 }
 
+void MainObject::on17LandsSetDownload(const QString &set)
+{
+    Q_UNUSED(set)
+    emit increaseProgress(opDownload17Ratings, 1);
+}
+
+void MainObject::on17LandsDownloadFinished()
+{
+    emit endProgress(opDownload17Ratings);
+    emit SLDownloadFinished();
+}
+
+void MainObject::on17LandsDownloadError()
+{
+    emit endProgress(opDownload17Ratings);
+    emit SLDownloadFailed();
+}
+
+/*
 QString MainObject::commentString(const SeventeenCard &card, const QLocale &locale) const
 {
     QStringList result;
@@ -362,3 +387,4 @@ double MainObject::ratingValue(const SeventeenCard &card, SLMetrics method) cons
         return 0;
     }
 }
+*/

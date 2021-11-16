@@ -64,13 +64,12 @@ private:
     MainObject *m_object;
     Ui::MainWindow *ui;
     QList<ProgressElement> progressQueue;
-    QDateTime last17lDownload;
     void setSetsSectionEnabled(bool enabled);
     void setAllSetsSelection(Qt::CheckState check);
 private slots:
-    void onLast17lDownload(const QDateTime &dt);
     void onStartProgress(MainObject::Operations op, const QString &description, int max, int min);
     void onUpdateProgress(MainObject::Operations op, int val);
+    void onIncreaseProgress(MainObject::Operations op, int val);
     void onEndProgress(MainObject::Operations op);
     void toggleLoginLogoutButtons();
     void doLogin();

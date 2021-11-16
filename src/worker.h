@@ -59,8 +59,8 @@ public slots:
     void logOut();
     void downloadSetsMTGAH();
     void getCustomRatingTemplate();
-
     void get17LRatings(const QStringList &sets, const QString &format);
+
     void uploadRatings(const QStringList &sets);
 private slots:
     void processSLrequestQueue();
@@ -82,13 +82,12 @@ signals:
     void setsScryfall(bool needsUpdate);
     void failed17LRatings();
     void downloadedAll17LRatings();
-    void download17LRatingsProgress(int progress);
+    void downloaded17LRatings(const QString &set);
     void allRatingsUploaded();
     void ratingUploaded(const QString &card);
     void ratingsUploadMaxProgress(int progress);
     void ratingsUploadProgress(int progress);
     // void failedUploadRating(const MtgahCard &card);
-    void downloaded17LRatings(const QString &set);
     void customRatingTemplate(bool needsUpdate);
 
 private:
@@ -103,7 +102,7 @@ private:
     void downloadSetsScryfall();
     int setTypeCode(const QString &setType) const;
     QList<std::pair<QString, QNetworkRequest>> m_SLrequestQueue;
-    //QList<std::pair<MtgahCard, QNetworkRequest>> m_MTGAHrequestQueue;
+    // QList<std::pair<MtgahCard, QNetworkRequest>> m_MTGAHrequestQueue;
     QNetworkAccessManager *m_nam;
     int m_SLrequestOutstanding;
     int m_MTGAHrequestOutstanding;
