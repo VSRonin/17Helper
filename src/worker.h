@@ -13,8 +13,6 @@
 
 #ifndef WORKER_H
 #define WORKER_H
-#include "mtgahcard.h"
-#include "seventeencard.h"
 #include <QMultiHash>
 #include <QNetworkRequest>
 #include <QObject>
@@ -60,8 +58,8 @@ public slots:
     void tryLogin(const QString &userName, const QString &password);
     void logOut();
     void downloadSetsMTGAH();
-
     void getCustomRatingTemplate();
+
     void get17LRatings(const QStringList &sets, const QString &format);
     void uploadRatings(const QStringList &sets);
 private slots:
@@ -89,16 +87,23 @@ signals:
     void ratingUploaded(const QString &card);
     void ratingsUploadMaxProgress(int progress);
     void ratingsUploadProgress(int progress);
-    void failedUploadRating(const MtgahCard &card);
-    void downloaded17LRatings(const QString &set, const QSet<SeventeenCard> &ratings);
+    // void failedUploadRating(const MtgahCard &card);
+    void downloaded17LRatings(const QString &set);
     void customRatingTemplate(bool needsUpdate);
 
 private:
+    void actualInit();
+    void actualTryLogin(const QString &userName, const QString &password);
+    void actualLogOut();
+    void actualDownloadSetsMTGAH();
+    void actualGetCustomRatingTemplate();
+    void actualGet17LRatings(const QStringList &sets, const QString &format);
+
     void saveMTGAHSets(QStringList sets);
     void downloadSetsScryfall();
     int setTypeCode(const QString &setType) const;
     QList<std::pair<QString, QNetworkRequest>> m_SLrequestQueue;
-    QList<std::pair<MtgahCard, QNetworkRequest>> m_MTGAHrequestQueue;
+    //QList<std::pair<MtgahCard, QNetworkRequest>> m_MTGAHrequestQueue;
     QNetworkAccessManager *m_nam;
     int m_SLrequestOutstanding;
     int m_MTGAHrequestOutstanding;

@@ -3,7 +3,6 @@ find_package(QT NAMES Qt6 Qt5 COMPONENTS Core REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets Gui Core Network Sql LinguistTools REQUIRED)
 find_package(OpenSSL REQUIRED)
 include(FetchContent)
-set(FETCHCONTENT_QUIET OFF)
 FetchContent_Declare(QtModelUtilitiesFC
     GIT_REPOSITORY https://github.com/VSRonin/QtModelUtilities.git
     GIT_TAG master
@@ -17,10 +16,6 @@ set(ui_SRCS
 set(backend_SRCS
     globals.h
     globals.cpp
-    seventeencard.cpp
-    seventeencard.h
-    mtgahcard.h
-    mtgahcard.cpp
     worker.h
     worker.cpp
     mainobject.h

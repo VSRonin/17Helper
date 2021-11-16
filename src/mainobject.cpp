@@ -15,7 +15,6 @@
 #include "checkableproxy.h"
 #include "ratingsmodel.h"
 #include <QThread>
-#include <QTimer>
 #include <QStandardPaths>
 #include <QDir>
 #include <QJsonDocument>
@@ -38,7 +37,7 @@ MainObject::MainObject(QObject *parent)
     m_setsProxy = new CheckableProxy(this);
     m_setsProxy->setSourceModel(m_setsModel);
     m_ratingTemplateModel = new RatingsModel(this, openDb(m_objectDbName));
-    QTimer::singleShot(0, this, std::bind(&MainObject::startProgress, this, opInitWorker, tr("Initialising"), 0, 0));
+    QMetaObject::invokeMethod(this, std::bind(&MainObject::startProgress, this, opInitWorker, tr("Initialising"), 0, 0),Qt::QueuedConnection);
     m_worker = new Worker;
 #ifndef DEBUG_SINGLE_THREAD
     m_workerThread = new QThread(this);
@@ -116,7 +115,7 @@ void MainObject::filterRatings(QString name, QStringList sets)
 void MainObject::tryLogin(const QString &userName, const QString &password, bool rememberMe)
 {
     emit startProgress(opLogIn, tr("Logging in"), 1, 0);
-    QTimer::singleShot(0, m_worker, std::bind(&Worker::tryLogin, m_worker, userName, password));
+    m_worker->tryLogin(userName,password);
     if (rememberMe) {
         const QString configPath = appSettingsPath();
         QJsonObject configObject;
@@ -136,7 +135,7 @@ void MainObject::tryLogin(const QString &userName, const QString &password, bool
 void MainObject::logOut()
 {
     emit startProgress(opLogOut, tr("Logging out"), 1, 0);
-    QTimer::singleShot(0, m_worker, &Worker::logOut);
+    m_worker->logOut();
 }
 
 void MainObject::retranslateModels()
@@ -204,7 +203,7 @@ void MainObject::onWorkerInit()
     m_ratingTemplateModel->setTable();
     emit startProgress(opDownloadSets, tr("Loading Sets"), 0, 0);
     emit startProgress(opDownloadSetsData, tr("Downloading Set Details"), 0, 0);
-    QTimer::singleShot(0, m_worker, &Worker::downloadSetsMTGAH);
+    m_worker->downloadSetsMTGAH();
 }
 
 void MainObject::fillMetrics()
@@ -247,7 +246,7 @@ void MainObject::onLoggedIn()
     emit endProgress(opLogIn);
     emit loggedIn();
     emit startProgress(opDownloadRatingTemplate, tr("Downloading custom ratings from MTGA Helper"), 0, 0);
-    QTimer::singleShot(0, m_worker, &Worker::getCustomRatingTemplate);
+    m_worker->getCustomRatingTemplate();
 }
 
 void MainObject::onLoggedOut()
