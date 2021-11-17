@@ -34,6 +34,7 @@ public:
         dfPremierDraft,
         dfQuickDraft,
         dfTradDraft,
+        dfDraftChallenge,
         dfSealed,
         dfTradSealed,
 

@@ -160,6 +160,7 @@ void MainObject::retranslateModels()
     m_formatsModel->setData(m_formatsModel->index(dfPremierDraft, 0), tr("Premier Draft"));
     m_formatsModel->setData(m_formatsModel->index(dfQuickDraft, 0), tr("Quick Draft"));
     m_formatsModel->setData(m_formatsModel->index(dfTradDraft, 0), tr("Traditional Draft"));
+    m_formatsModel->setData(m_formatsModel->index(dfDraftChallenge, 0), tr("Draft Challenge"));
     m_formatsModel->setData(m_formatsModel->index(dfSealed, 0), tr("Sealed"));
     m_formatsModel->setData(m_formatsModel->index(dfTradSealed, 0), tr("Traditional Sealed"));
 
@@ -296,6 +297,7 @@ void MainObject::fillFormats()
     m_formatsModel->setData(m_formatsModel->index(dfPremierDraft, 0), QStringLiteral("PremierDraft"), Qt::UserRole);
     m_formatsModel->setData(m_formatsModel->index(dfQuickDraft, 0), QStringLiteral("QuickDraft"), Qt::UserRole);
     m_formatsModel->setData(m_formatsModel->index(dfTradDraft, 0), QStringLiteral("TradDraft"), Qt::UserRole);
+    m_formatsModel->setData(m_formatsModel->index(dfDraftChallenge, 0), QStringLiteral("DraftChallenge"), Qt::UserRole);
     m_formatsModel->setData(m_formatsModel->index(dfSealed, 0), QStringLiteral("Sealed"), Qt::UserRole);
     m_formatsModel->setData(m_formatsModel->index(dfTradSealed, 0), QStringLiteral("TradSealed"), Qt::UserRole);
 }
