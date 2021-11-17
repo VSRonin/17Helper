@@ -75,7 +75,7 @@ private slots:
     void doLogin();
     void doLogout();
     void do17Ldownload();
-    void doMtgahUpload();
+    void doMtgahUpload(bool clear);
     void onDownloadedAll17LRatings();
     void enableSetsSection() { setSetsSectionEnabled(true); }
     void disableSetsSection() { setSetsSectionEnabled(false); }

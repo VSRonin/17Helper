@@ -69,7 +69,8 @@ void Worker::actualInit()
         return;
     }
     QSqlQuery create17RatingsQuery(workerdb);
-    create17RatingsQuery.prepare(QStringLiteral("CREATE TABLE IF NOT EXISTS [SLRatings] ([name] TEXT PRIMARY KEY "
+    create17RatingsQuery.prepare(QStringLiteral("CREATE TABLE IF NOT EXISTS [SLRatings] ([name] TEXT NOT NULL "
+                                                ", [set] TEXT NOT NULL "
                                                 ", [seen_count] INTEGER NOT NULL "
                                                 ", [avg_seen] REAL NOT NULL "
                                                 ", [pick_count] INTEGER NOT NULL "
@@ -86,6 +87,7 @@ void Worker::actualInit()
                                                 ", [never_drawn_win_rate] REAL NOT NULL "
                                                 ", [drawn_improvement_win_rate] REAL NOT NULL "
                                                 ", [lastUpdate] TEXT NOT NULL "
+                                                ", PRIMARY KEY ([set], [name]) "
                                                 ")"));
     if (!create17RatingsQuery.exec()) {
         emit initialisationFailed();
@@ -292,9 +294,8 @@ void Worker::parseSetsScryfall(QNetworkReply *reply, const QStringList &sets)
 
 void Worker::onCustomRatingTemplateFinished(QNetworkReply *reply)
 {
-    if (reply->error() != QNetworkReply::NoError)
-        return;
-    if (reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() != 200) {
+    if (reply->error() != QNetworkReply::NoError || reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() != 200) {
+        qDebug() << "CustomRatingTemplate Failed: " << reply->readAll();
         emit customRatingTemplateFailed();
         return;
     }
@@ -326,8 +327,8 @@ void Worker::onCustomRatingTemplateFinished(QNetworkReply *reply)
         oneFound = true;
         const QJsonValue noteValue = ratingObject[QLatin1String("note")];
         const QString noteStr = noteValue.toString();
-        const QJsonValue ratingValue = ratingObject[QLatin1String("rating")];
-        const int ratingNum = ratingValue.isNull() ? -1 : ratingValue.toInt();
+        const QJsonValue ratngValue = ratingObject[QLatin1String("rating")];
+        const int ratingNum = ratngValue.isNull() ? -1 : ratngValue.toInt();
         if (!needUpdate) {
             QSqlQuery checkRatingQuery(workerdb);
             checkRatingQuery.prepare(
@@ -348,7 +349,15 @@ void Worker::onCustomRatingTemplateFinished(QNetworkReply *reply)
         updateRatingQuery.bindValue(QStringLiteral(":name"), nameStr);
         updateRatingQuery.bindValue(QStringLiteral(":set"), setStr);
         updateRatingQuery.bindValue(QStringLiteral(":rating"), ratingNum);
-        updateRatingQuery.bindValue(QStringLiteral(":note"), noteStr);
+        if (noteValue.isNull()) {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+            updateRatingQuery.bindValue(QStringLiteral(":note"), QVariant(QMetaType::QString));
+#else
+            updateRatingQuery.bindValue(QStringLiteral(":note"), QVariant(QVariant::String));
+#endif
+        } else {
+            updateRatingQuery.bindValue(QStringLiteral(":note"), noteStr);
+        }
         if (!updateRatingQuery.exec()) {
             Q_ASSUME(workerdb.rollback());
             emit customRatingTemplateFailed();
@@ -361,6 +370,7 @@ void Worker::onCustomRatingTemplateFinished(QNetworkReply *reply)
         return;
     }
     if (!workerdb.commit()) {
+        qDebug() << workerdb.lastError().text();
         Q_ASSUME(workerdb.rollback());
         emit customRatingTemplateFailed();
         return;
@@ -420,7 +430,6 @@ void Worker::actualGetCustomRatingTemplate()
 {
     const QUrl setsUrl = QUrl::fromUserInput(QStringLiteral("https://mtgahelper.com/api/User/customDraftRatingsForDisplay"));
     QNetworkReply *reply = m_nam->get(QNetworkRequest(setsUrl));
-    connect(reply, &QNetworkReply::errorOccurred, this, &Worker::customRatingTemplateFailed);
     connect(reply, &QNetworkReply::finished, reply, &QNetworkReply::deleteLater);
     connect(reply, &QNetworkReply::finished, this, std::bind(&Worker::onCustomRatingTemplateFinished, this, reply));
 }
@@ -483,13 +492,15 @@ void Worker::processSLrequestQueue()
                 continue;
             QSqlQuery updateRatingQuery(workerdb);
             updateRatingQuery.prepare(QStringLiteral(
-                    "INSERT OR REPLACE INTO [SLRatings] ([name], [seen_count], [avg_seen], [pick_count], [avg_pick], [game_count], [win_rate], "
+                    "INSERT OR REPLACE INTO [SLRatings] ([set], [name], [seen_count], [avg_seen], [pick_count], [avg_pick], [game_count], "
+                    "[win_rate], "
                     "[opening_hand_game_count], [opening_hand_win_rate], [drawn_game_count], [drawn_win_rate], [ever_drawn_game_count], "
                     "[ever_drawn_win_rate], [never_drawn_game_count], [never_drawn_win_rate], [drawn_improvement_win_rate], [lastUpdate]) "
                     "VALUES"
-                    "(:name, :seen_count, :avg_seen, :pick_count, :avg_pick, :game_count, :win_rate, :opening_hand_game_count, "
+                    "(:set, :name, :seen_count, :avg_seen, :pick_count, :avg_pick, :game_count, :win_rate, :opening_hand_game_count, "
                     ":opening_hand_win_rate, :drawn_game_count, :drawn_win_rate, :ever_drawn_game_count, :ever_drawn_win_rate, "
                     ":never_drawn_game_count, :never_drawn_win_rate, :drawn_improvement_win_rate, :lastUpdate)"));
+            updateRatingQuery.bindValue(QStringLiteral(":set"), currSet);
             updateRatingQuery.bindValue(QStringLiteral(":lastUpdate"), currDateTime);
             updateRatingQuery.bindValue(QStringLiteral(":name"), nameStr);
             updateRatingQuery.bindValue(QStringLiteral(":seen_count"), ratingObject[QLatin1String("seen_count")].toInt());
@@ -530,18 +541,23 @@ void Worker::processSLrequestQueue()
             emit downloadedAll17LRatings();
     });
 }
-
+void Worker::clearRatings(const QStringList &sets, SLMetrics ratingMethod, const QVector<SLMetrics> &commentStats, const QStringList &SLcodes,
+                          const QLocale &locale)
+{
+    QMetaObject::invokeMethod(this, std::bind(&Worker::actualUploadRatings, this, sets, ratingMethod, commentStats, SLcodes, locale, true),
+                              Qt::QueuedConnection);
+}
 void Worker::uploadRatings(const QStringList &sets, SLMetrics ratingMethod, const QVector<SLMetrics> &commentStats, const QStringList &SLcodes,
                            const QLocale &locale)
 {
-    QMetaObject::invokeMethod(this, std::bind(&Worker::actualUploadRatings, this, sets, ratingMethod, commentStats, SLcodes, locale),
+    QMetaObject::invokeMethod(this, std::bind(&Worker::actualUploadRatings, this, sets, ratingMethod, commentStats, SLcodes, locale, false),
                               Qt::QueuedConnection);
 }
 void Worker::actualUploadRatings(QStringList sets, SLMetrics ratingMethod, QVector<SLMetrics> commentStats, const QStringList &SLcodes,
-                                 const QLocale &locale)
+                                 const QLocale &locale, bool clear)
 {
     if (sets.isEmpty() || SLcodes.isEmpty()) {
-        emit failedUploadRating();
+        emit failedRatingCalculation();
         return;
     }
     std::sort(commentStats.begin(), commentStats.end());
@@ -549,7 +565,7 @@ void Worker::actualUploadRatings(QStringList sets, SLMetrics ratingMethod, QVect
     QSqlDatabase workerdb = openWorkerDb();
     const QString ratingMethodField = fieldName(ratingMethod);
     if (ratingMethodField.isEmpty()) {
-        emit failedUploadRating();
+        emit failedRatingCalculation();
         return;
     }
     QStringList commentFields;
@@ -558,24 +574,27 @@ void Worker::actualUploadRatings(QStringList sets, SLMetrics ratingMethod, QVect
         commentFields.append(fieldName(i));
     for (auto i = sets.begin(), iEnd = sets.end(); i != iEnd; ++i)
         *i = workerdb.driver()->escapeIdentifier(*i, QSqlDriver::FieldName);
-    QSqlQuery minMaxRatingQuery(workerdb);
-    minMaxRatingQuery.prepare(QLatin1String("SELECT MIN([") + ratingMethodField + QLatin1String("]) as MinVal, MAX([") + ratingMethodField
-                              + QLatin1String("]) as MaxVal FROM [Ratings] LEFT JOIN [SLRatings] on [Ratings].[name]=[SLRatings].[name] WHERE "
-                                              "[seen_count] NOT NULL AND [Ratings].[set] in (")
-                              + sets.join(QLatin1Char(',')) + QLatin1Char(')'));
-    Q_ASSUME(minMaxRatingQuery.exec());
-    if (!minMaxRatingQuery.next()) {
-        emit failedUploadRating();
+    QSqlQuery percentilesRatingQuery(workerdb);
+    percentilesRatingQuery.prepare(QLatin1String("SELECT [") + ratingMethodField
+                                   + QLatin1String("] FROM [Ratings] LEFT JOIN [SLRatings] on [Ratings].[name]=[SLRatings].[name] and "
+                                                   "[Ratings].[set]=[SLRatings].[set] WHERE  [seen_count] NOT NULL AND [Ratings].[set] in (")
+                                   + sets.join(QLatin1Char(',')) + QLatin1String(") order by [") + ratingMethodField + QLatin1String("] asc"));
+    Q_ASSUME(percentilesRatingQuery.exec());
+    QVector<double> percentiles;
+    while (percentilesRatingQuery.next())
+        percentiles.append(percentilesRatingQuery.value(0).toDouble());
+    if (percentiles.isEmpty()) {
+        emit failedRatingCalculation();
         return;
     }
-    const double minVal = minMaxRatingQuery.value(0).toDouble();
-    const double maxVal = minMaxRatingQuery.value(1).toDouble();
-    minMaxRatingQuery.clear();
+    percentiles = reduceDeciles(percentiles);
+    percentilesRatingQuery.clear();
     QString ratingsToUploadQueryString = QLatin1String("SELECT [id_arena], [Ratings].[name], [") + ratingMethodField + QLatin1Char(']');
     if (!commentFields.isEmpty()) {
         ratingsToUploadQueryString += QLatin1String(", [") + commentFields.join(QLatin1String("], [")) + QLatin1Char(']');
     }
-    ratingsToUploadQueryString += QLatin1String(+" FROM [Ratings] LEFT JOIN [SLRatings] on [Ratings].[name]=[SLRatings].[name] WHERE [seen_count] "
+    ratingsToUploadQueryString += QLatin1String(+" FROM [Ratings] LEFT JOIN [SLRatings] on [Ratings].[name]=[SLRatings].[name] and "
+                                                 "[Ratings].[set]=[SLRatings].[set] WHERE [seen_count] "
                                                  "NOT NULL AND [Ratings].[set] in (")
             + sets.join(QLatin1Char(',')) + QLatin1Char(')');
     QSqlQuery ratingsToUploadQuery(workerdb);
@@ -585,24 +604,43 @@ void Worker::actualUploadRatings(QStringList sets, SLMetrics ratingMethod, QVect
     while (ratingsToUploadQuery.next()) {
         QJsonObject cardData;
         cardData[QLatin1String("idArena")] = ratingsToUploadQuery.value(0).toInt();
-        const int cardRating = ratingValue(ratingMethod, ratingsToUploadQuery.value(2).toDouble(), minVal, maxVal);
-        if (cardRating < 0)
+        const int cardRating = ratingValue(ratingMethod, ratingsToUploadQuery.value(2).toDouble(), percentiles);
+        if (cardRating < 0 || clear)
             cardData[QLatin1String("rating")] = QJsonValue();
         else
             cardData[QLatin1String("rating")] = cardRating;
         const QString commentStr = commentString(ratingsToUploadQuery, commentStats, SLcodes, locale);
-        if (commentStr.isEmpty())
+        if (commentStr.isEmpty() || clear)
             cardData[QLatin1String("note")] = QJsonValue();
         else
             cardData[QLatin1String("note")] = commentStr;
         cardData[QLatin1String("attempt")] = 0;
-        cardData[QLatin1String("name")] = ratingsToUploadQuery.value(1).toString();
+        const QString cardName = ratingsToUploadQuery.value(1).toString();
+        ;
+        cardData[QLatin1String("name")] = cardName;
         m_MTGAHrequestQueue.enqueue(cardData);
+        emit ratingCalculated(cardName);
     }
-    if (!m_MTGAHrequestQueue.isEmpty()) {
-        emit failedUploadRating();
+    if (m_MTGAHrequestQueue.isEmpty()) {
+        emit failedRatingCalculation();
         return;
     }
+    emit ratingsCalculated();
+    QObject *contextObject = new QObject(this);
+    connect(this, &Worker::failedUploadRating, contextObject, &QObject::deleteLater);
+    connect(this, &Worker::allRatingsUploaded, contextObject, &QObject::deleteLater);
+    connect(this, &Worker::allRatingsUploaded, contextObject, [sets, this]() {
+        QSqlDatabase workerdb = openWorkerDb();
+        Q_ASSUME(workerdb.transaction());
+        QSqlQuery ratingsUpdateDateQuery(workerdb);
+        const QString ratingsUpdateDateQueryString = QLatin1String("UPDATE [Ratings] SET [lastUpdate]='")
+                + QDateTime::currentDateTime().toString(Qt::ISODate) + QLatin1String("' WHERE [set] in (") + sets.join(QLatin1Char(','))
+                + QLatin1Char(')');
+        ratingsUpdateDateQuery.prepare(ratingsUpdateDateQueryString);
+        Q_ASSUME(ratingsUpdateDateQuery.exec());
+        if (!workerdb.commit())
+            Q_ASSUME(workerdb.rollback());
+    });
     if (!m_requestTimer->isActive())
         m_requestTimer->start();
 }
@@ -625,22 +663,22 @@ void Worker::processMTGAHrequestQueue()
     connect(reply, &QNetworkReply::finished, reply, &QNetworkReply::deleteLater);
     connect(reply, &QNetworkReply::finished, this, [reply, this, reqData]() -> void {
         --m_MTGAHrequestOutstanding;
-#ifdef QT_DEBUG
-        if (reply->error() != QNetworkReply::NoError)
-            qDebug() << QStringLiteral("Failed (Error): ") << reqData.value(QLatin1String("name")).toString();
-        if (reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() != 200)
-            qDebug() << QStringLiteral("Failed (Not 200): ") << reqData.value(QLatin1String("name")).toString();
-#endif
         if (reply->error() != QNetworkReply::NoError || reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() != 200) {
+            qDebug().noquote() << QStringLiteral("Failed: ") << reqData.value(QLatin1String("idArena")).toInt()
+                               << reqData.value(QLatin1String("name")).toString() << QStringLiteral(" Body: ") << reply->readAll();
             reqData[QLatin1String("attempt")] = reqData.value(QLatin1String("attempt")).toInt() + 1;
             m_MTGAHrequestQueue.enqueue(reqData);
             if (!m_requestTimer->isActive())
                 m_requestTimer->start();
             return;
         }
+        qDebug().noquote() << QStringLiteral("Done: ") << reqData.value(QLatin1String("idArena")).toInt()
+                           << reqData.value(QLatin1String("name")).toString();
         emit ratingUploaded(reqData.value(QLatin1String("name")).toString());
-        if (m_MTGAHrequestQueue.size() + m_MTGAHrequestOutstanding == 0)
+        if (m_MTGAHrequestQueue.size() + m_MTGAHrequestOutstanding == 0) {
             emit allRatingsUploaded();
+            getCustomRatingTemplate();
+        }
     });
 }
 
@@ -713,11 +751,8 @@ QString Worker::commentString(const QSqlQuery &query, const QVector<SLMetrics> &
         result.append(SLcodes.at(metric) + QLatin1Char(':') + commentvalue(metric, query.value(fieldName(metric)), locale));
     return result.join(QLatin1Char(' '));
 }
-int Worker::ratingValue(SLMetrics metric, const double &val, const double &minVal, const double &maxVal)
+int Worker::ratingValue(SLMetrics metric, const double &val, const QVector<double> &deciles)
 {
-    double ratingDenominator = maxVal - minVal;
-    if (ratingDenominator == 0.0)
-        ratingDenominator = 1.0;
     switch (metric) {
     case SLseen_count:
     case SLavg_seen:
@@ -733,10 +768,24 @@ int Worker::ratingValue(SLMetrics metric, const double &val, const double &minVa
     case SLnever_drawn_win_rate:
     case SLdrawn_improvement_win_rate:
     case SLpick_count:
-        return qRound(10.0 * (val - minVal) / ratingDenominator);
+        return std::distance(deciles.cbegin(), std::lower_bound(deciles.cbegin(), deciles.cend(), val)) + 1;
     case SLavg_pick:
-        return qRound(10.0 * (1 - ((val - minVal) / ratingDenominator)));
+        return std::distance(std::lower_bound(deciles.cbegin(), deciles.cend(), val), deciles.cend());
     default:
         return 0;
     }
+}
+
+QVector<double> Worker::reduceDeciles(const QVector<double> &data)
+{
+    if (data.size() <= 10)
+        return data;
+    QVector<double> deciles;
+    deciles.reserve(10);
+    const int dataSize = data.size();
+    for (int i = 1; i < 10; ++i)
+        deciles.append(data.at((i * dataSize) / 10));
+    deciles.append(data.last());
+    Q_ASSERT(deciles.size() == 10);
+    return deciles;
 }

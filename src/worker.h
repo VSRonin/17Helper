@@ -84,6 +84,8 @@ public slots:
     void get17LRatings(const QStringList &sets, const QString &format);
     void uploadRatings(const QStringList &sets, SLMetrics ratingMethod, const QVector<SLMetrics> &commentStats, const QStringList &SLcodes,
                        const QLocale &locale);
+    void clearRatings(const QStringList &sets, SLMetrics ratingMethod, const QVector<SLMetrics> &commentStats, const QStringList &SLcodes,
+                      const QLocale &locale);
 private slots:
     void processSLrequestQueue();
     void processMTGAHrequestQueue();
@@ -109,6 +111,9 @@ signals:
     void ratingUploaded(const QString &card);
     void failedUploadRating();
     void customRatingTemplate(bool needsUpdate);
+    void ratingsCalculated();
+    void ratingCalculated(const QString &card);
+    void failedRatingCalculation();
 
 private:
     void actualInit();
@@ -118,8 +123,9 @@ private:
     void actualGetCustomRatingTemplate();
     void actualGet17LRatings(const QStringList &sets, const QString &format);
     void actualUploadRatings(QStringList sets, SLMetrics ratingMethod, QVector<SLMetrics> commentStats, const QStringList &SLcodes,
-                             const QLocale &locale);
-    static int ratingValue(SLMetrics metric, const double &val, const double &minVal, const double &maxVal);
+                             const QLocale &locale, bool clear);
+    static int ratingValue(SLMetrics metric, const double &val, const QVector<double> &deciles);
+    static QVector<double> reduceDeciles(const QVector<double> &data);
     QString commentvalue(SLMetrics metric, const QVariant &value, const QLocale &locale) const;
     QString commentString(const QSqlQuery &query, const QVector<SLMetrics> &commentStats, const QStringList &SLcodes, const QLocale &locale) const;
     QString fieldName(SLMetrics metric) const;

@@ -19,6 +19,7 @@ class QThread;
 class QStandardItemModel;
 class QAbstractItemModel;
 class QSqlQueryModel;
+class QSqlTableModel;
 class CheckableProxy;
 class RatingsModel;
 class MainObject : public QObject
@@ -48,6 +49,7 @@ public:
         opLogOut,
         opDownloadRatingTemplate,
         opDownload17Ratings,
+        opCalculateRatings,
         opUploadMTGAH
     };
 
@@ -55,13 +57,14 @@ public:
     QAbstractItemModel *setsModel() const;
     QAbstractItemModel *formatsModel() const;
     QAbstractItemModel *ratingsModel() const;
+    QAbstractItemModel *SLRatingsModel() const;
     void filterRatings(QString name, QStringList sets);
 public slots:
     void tryLogin(const QString &userName, const QString &password, bool rememberMe = false);
     void logOut();
     void retranslateModels();
     void download17Lands(const QString &format);
-    void uploadMTGAH(Worker::SLMetrics ratingMethod, const QLocale &locale);
+    void uploadMTGAH(Worker::SLMetrics ratingMethod, const QLocale &locale, bool clear);
 private slots:
     void onWorkerInit();
     void onLoggedIn();
@@ -74,12 +77,20 @@ private slots:
     void on17LandsSetDownload(const QString &set);
     void on17LandsDownloadFinished();
     void on17LandsDownloadError();
+    void onRatingsCalculated();
+    void onRatingCalculated(const QString &card);
+    void onRatingsCalculationFailed();
+    void onAllRatingsUploaded();
+    void onRatingUploaded(const QString &card);
+    void onFailedUploadRating();
+    void onCustomRatingTemplateFailed();
 signals:
     void loggedIn();
     void loginFalied(const QString &error);
     void loggedOut();
     void logoutFailed(const QString &error);
     void initialisationFailed();
+    void customRatingTemplateFailed();
     void setsReady();
     void startProgress(Operations op, const QString &description, int max, int min);
     void updateProgress(Operations op, int val);
@@ -87,6 +98,8 @@ signals:
     void endProgress(Operations op);
     void SLDownloadFinished();
     void SLDownloadFailed();
+    void ratingsCalculationFailed();
+    void failedUploadRating();
 
 private:
     // double ratingValue(const SeventeenCard &card, SLMetrics method) const;
@@ -103,6 +116,8 @@ private:
     QSqlQueryModel *m_setsModel;
     CheckableProxy *m_setsProxy;
     RatingsModel *m_ratingTemplateModel;
+    QSqlTableModel *m_SLratingsModel;
+    int ratingsToUpload;
 };
 
 #endif

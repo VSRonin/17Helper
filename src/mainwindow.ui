@@ -13,7 +13,7 @@
   <property name="windowTitle">
    <string>17 Helper</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_4">
+  <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_5">
      <item>
@@ -346,17 +346,44 @@
         </property>
        </spacer>
       </item>
-      <item row="1" column="0" colspan="4">
-       <widget class="QTableView" name="ratingsView">
-        <property name="sortingEnabled">
-         <bool>true</bool>
+      <item row="1" column="0" colspan="3">
+       <widget class="QTabWidget" name="tabWidget">
+        <property name="tabPosition">
+         <enum>QTabWidget::South</enum>
         </property>
-        <attribute name="horizontalHeaderStretchLastSection">
-         <bool>true</bool>
-        </attribute>
-        <attribute name="verticalHeaderVisible">
-         <bool>false</bool>
-        </attribute>
+        <property name="currentIndex">
+         <number>0</number>
+        </property>
+        <widget class="QWidget" name="MTGAHTab">
+         <attribute name="title">
+          <string>MTGA Helper Ratings</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="verticalLayout_4">
+          <item>
+           <widget class="QTableView" name="ratingsView">
+            <property name="sortingEnabled">
+             <bool>true</bool>
+            </property>
+            <attribute name="horizontalHeaderStretchLastSection">
+             <bool>true</bool>
+            </attribute>
+            <attribute name="verticalHeaderVisible">
+             <bool>false</bool>
+            </attribute>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="SLTab">
+         <attribute name="title">
+          <string>17 Lands Ratings</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="verticalLayout_5">
+          <item>
+           <widget class="QTableView" name="slRatingsView"/>
+          </item>
+         </layout>
+        </widget>
        </widget>
       </item>
      </layout>
@@ -381,7 +408,7 @@
     </layout>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_4">
+    <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
       <spacer name="horizontalSpacer_2">
        <property name="orientation">
@@ -401,7 +428,14 @@
         <bool>true</bool>
        </property>
        <property name="text">
-        <string>Download Data</string>
+        <string>Download Ratings from 17 Lands</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="clearRatingsButton">
+       <property name="text">
+        <string>Clear Ratings</string>
        </property>
       </widget>
      </item>
@@ -411,7 +445,7 @@
         <bool>true</bool>
        </property>
        <property name="text">
-        <string>Upload Data</string>
+        <string>Upload Ratings to MTGA Helper</string>
        </property>
       </widget>
      </item>

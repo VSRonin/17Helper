@@ -95,28 +95,26 @@ void MainWindow::onLogoutError(const QString &error)
 
 void MainWindow::do17Ldownload()
 {
-    ui->downloadButton->setEnabled(false);
-    ui->setsGroup->setEnabled(false);
+    // ui->downloadButton->setEnabled(false);
+    // ui->setsGroup->setEnabled(false);
     m_object->download17Lands(ui->formatsCombo->currentData().toString());
 }
 
-void MainWindow::doMtgahUpload()
+void MainWindow::doMtgahUpload(bool clear)
 {
-    ui->uploadButton->setEnabled(false);
-    m_object->uploadMTGAH(ui->ratingBasedCombo->currentData().value<Worker::SLMetrics>(), locale());
+    // ui->uploadButton->setEnabled(false);
+    m_object->uploadMTGAH(ui->ratingBasedCombo->currentData().value<Worker::SLMetrics>(), locale(), clear);
 }
 
 void MainWindow::onAllRatingsUploaded()
 {
-    ui->uploadButton->setEnabled(true);
+    // ui->uploadButton->setEnabled(true);
 }
 
 void MainWindow::onDownloadedAll17LRatings()
 {
-    ui->downloadButton->setEnabled(true);
-    ui->setsGroup->setEnabled(true);
-    ui->progressBar->setVisible(false);
-    ui->progressLabel->setVisible(false);
+    // ui->downloadButton->setEnabled(true);
+    // ui->setsGroup->setEnabled(true);
 }
 
 void MainWindow::onMTGAHSetsError()
@@ -193,6 +191,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->ratingsView->sortByColumn(RatingsModel::rmcName, Qt::AscendingOrder);
     ui->ratingsView->setItemDelegateForColumn(RatingsModel::rmcRating, new RatingsDelegate(this));
     ui->ratingsView->setItemDelegateForColumn(RatingsModel::rmcLastUpdate, new TextDateDelegate(this));
+    ui->slRatingsView->setModel(m_object->SLRatingsModel());
     QCompleter *searchCompleter = new QCompleter(this);
     searchCompleter->setModel(m_object->ratingsModel());
     searchCompleter->setCompletionColumn(RatingsModel::rmcName);
@@ -213,7 +212,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->retryBasicDownloadButton, &QPushButton::clicked, this, &MainWindow::retrySetsDownload);
     connect(ui->retryTemplateButton, &QPushButton::clicked, this, &MainWindow::retryTemplateDownload);
     connect(ui->downloadButton, &QPushButton::clicked, this, &MainWindow::do17Ldownload);
-    connect(ui->uploadButton, &QPushButton::clicked, this, &MainWindow::doMtgahUpload);
+    connect(ui->uploadButton, &QPushButton::clicked, this, std::bind(&MainWindow::doMtgahUpload, this, false));
+    connect(ui->clearRatingsButton, &QPushButton::clicked, this, std::bind(&MainWindow::doMtgahUpload, this, true));
     connect(ui->allSetsButton, &QPushButton::clicked, this, &MainWindow::selectAllSets);
     connect(ui->noSetButton, &QPushButton::clicked, this, &MainWindow::selectNoSets);
     connect(ui->searchCardEdit, &QLineEdit::textChanged, this, &MainWindow::updateRatingsFiler);
@@ -286,8 +286,8 @@ void MainWindow::retranslateUi()
 
 void MainWindow::setSetsSectionEnabled(bool enabled)
 {
-    ui->setsGroup->setEnabled(enabled);
-    ui->customRatingsGroup->setEnabled(enabled);
+    // ui->setsGroup->setEnabled(enabled);
+    // ui->customRatingsGroup->setEnabled(enabled);
 }
 
 void MainWindow::setAllSetsSelection(Qt::CheckState check)

@@ -23,20 +23,24 @@
 #include <QSqlQueryModel>
 #include <QSqlQuery>
 #include <QSqlDriver>
+#include <QSqlError>
 //#define DEBUG_SINGLE_THREAD
 MainObject::MainObject(QObject *parent)
     : QObject(parent)
     , m_workerThread(nullptr)
     , m_objectDbName(QStringLiteral("ObjectDb"))
+    , ratingsToUpload(0)
 {
     m_SLMetricsModel = new QStandardItemModel(Worker::SLCount, 1, this);
     fillMetrics();
     m_formatsModel = new QStandardItemModel(dfCount, 1, this);
     fillFormats();
+    QSqlDatabase objectDb = openDb(m_objectDbName);
+    m_SLratingsModel = new QSqlTableModel(this, objectDb);
     m_setsModel = new QSqlQueryModel(this);
     m_setsProxy = new CheckableProxy(this);
     m_setsProxy->setSourceModel(m_setsModel);
-    m_ratingTemplateModel = new RatingsModel(this, openDb(m_objectDbName));
+    m_ratingTemplateModel = new RatingsModel(this, objectDb);
     QMetaObject::invokeMethod(this, std::bind(&MainObject::startProgress, this, opInitWorker, tr("Initialising"), 0, 0), Qt::QueuedConnection);
     m_worker = new Worker;
 #ifndef DEBUG_SINGLE_THREAD
@@ -55,9 +59,16 @@ MainObject::MainObject(QObject *parent)
     connect(m_worker, &Worker::setsScryfall, this, &MainObject::onSetsScryfall);
     connect(m_worker, &Worker::setsMTGAH, this, &MainObject::onSetsMTGAH);
     connect(m_worker, &Worker::customRatingTemplate, this, &MainObject::onRatingsTemplate);
+    connect(m_worker, &Worker::customRatingTemplateFailed, this, &MainObject::onCustomRatingTemplateFailed);
     connect(m_worker, &Worker::downloadedAll17LRatings, this, &MainObject::on17LandsDownloadFinished);
     connect(m_worker, &Worker::downloaded17LRatings, this, &MainObject::on17LandsSetDownload);
     connect(m_worker, &Worker::failed17LRatings, this, &MainObject::on17LandsDownloadError);
+    connect(m_worker, &Worker::ratingsCalculated, this, &MainObject::onRatingsCalculated);
+    connect(m_worker, &Worker::ratingCalculated, this, &MainObject::onRatingCalculated);
+    connect(m_worker, &Worker::failedRatingCalculation, this, &MainObject::onRatingsCalculationFailed);
+    connect(m_worker, &Worker::allRatingsUploaded, this, &MainObject::onAllRatingsUploaded);
+    connect(m_worker, &Worker::ratingUploaded, this, &MainObject::onRatingUploaded);
+    connect(m_worker, &Worker::failedUploadRating, this, &MainObject::onFailedUploadRating);
 #ifndef DEBUG_SINGLE_THREAD
     m_workerThread->start();
 #else
@@ -93,6 +104,11 @@ QAbstractItemModel *MainObject::ratingsModel() const
     return m_ratingTemplateModel;
 }
 
+QAbstractItemModel *MainObject::SLRatingsModel() const
+{
+    return m_SLratingsModel;
+}
+
 void MainObject::filterRatings(QString name, QStringList sets)
 {
     if (sets.isEmpty() && name.isEmpty())
@@ -110,6 +126,7 @@ void MainObject::filterRatings(QString name, QStringList sets)
         filterString += QLatin1String("[name] like ") + driver->escapeIdentifier(QLatin1Char('%') + name + QLatin1Char('%'), QSqlDriver::FieldName);
     }
     m_ratingTemplateModel->setFilter(filterString);
+    m_SLratingsModel->setFilter(filterString);
 }
 
 void MainObject::tryLogin(const QString &userName, const QString &password, bool rememberMe)
@@ -209,7 +226,7 @@ void MainObject::download17Lands(const QString &format)
     m_worker->get17LRatings(sets, format);
 }
 
-void MainObject::uploadMTGAH(Worker::SLMetrics ratingMethod, const QLocale &locale)
+void MainObject::uploadMTGAH(Worker::SLMetrics ratingMethod, const QLocale &locale, bool clear)
 {
     QStringList sets;
     for (int i = 0, iEnd = m_setsProxy->rowCount(); i < iEnd; ++i) {
@@ -229,21 +246,30 @@ void MainObject::uploadMTGAH(Worker::SLMetrics ratingMethod, const QLocale &loca
     for (auto i = setsEscaped.begin(), iEnd = setsEscaped.end(); i != iEnd; ++i)
         *i = objectDb.driver()->escapeIdentifier(*i, QSqlDriver::FieldName);
     QSqlQuery setsQuery(objectDb);
-    setsQuery.prepare(QLatin1String("SELECT COUNT([id_arena]) FROM Ratings WHERE [set] in (") + setsEscaped.join(QLatin1Char(','))
-                      + QLatin1Char(')'));
+    setsQuery.prepare(QLatin1String("SELECT COUNT([id_arena]) FROM [Ratings] LEFT JOIN [SLRatings] on [Ratings].[name]=[SLRatings].[name] and "
+                                    "[Ratings].[set]=[SLRatings].[set] WHERE "
+                                    "[seen_count] NOT NULL AND [Ratings].[set] in (")
+                      + setsEscaped.join(QLatin1Char(',')) + QLatin1Char(')'));
     Q_ASSUME(setsQuery.exec());
     int resultSize = 0;
     if (setsQuery.next())
         resultSize = setsQuery.value(0).toInt();
     if (resultSize <= 0)
         return;
-    emit startProgress(opUploadMTGAH, tr("Uploading Data to MTGA Helper"), resultSize, 0);
-    m_worker->uploadRatings(sets, ratingMethod, commentMetrics, SLcodes, locale);
+    ratingsToUpload = resultSize;
+    emit startProgress(opCalculateRatings, tr("Formatting Ratings"), ratingsToUpload, 0);
+    if (clear)
+        m_worker->clearRatings(sets, ratingMethod, commentMetrics, SLcodes, locale);
+    else
+        m_worker->uploadRatings(sets, ratingMethod, commentMetrics, SLcodes, locale);
 }
 
 void MainObject::onWorkerInit()
 {
     emit endProgress(opInitWorker);
+    m_SLratingsModel->setTable(QStringLiteral("SLRatings"));
+    m_SLratingsModel->select();
+    Q_ASSERT(m_SLratingsModel->lastError().type() == QSqlError::NoError);
     m_ratingTemplateModel->setTable();
     selectSetsModel();
     emit startProgress(opDownloadSets, tr("Loading Sets"), 0, 0);
@@ -284,7 +310,6 @@ void MainObject::selectSetsModel()
     setsQuery.addBindValue(DraftableSet);
     Q_ASSUME(setsQuery.exec());
     m_setsModel->setQuery(std::move(setsQuery));
-    qDebug() << m_setsProxy->rowCount();
     m_setsProxy->setData(m_setsProxy->index(0, 0), Qt::Checked, Qt::CheckStateRole);
 }
 
@@ -334,6 +359,11 @@ void MainObject::onRatingsTemplate(bool needsUpdate)
     if (needsUpdate)
         m_ratingTemplateModel->select();
 }
+void MainObject::onCustomRatingTemplateFailed()
+{
+    emit endProgress(opDownloadRatingTemplate);
+    emit customRatingTemplateFailed();
+}
 
 void MainObject::on17LandsSetDownload(const QString &set)
 {
@@ -343,6 +373,7 @@ void MainObject::on17LandsSetDownload(const QString &set)
 
 void MainObject::on17LandsDownloadFinished()
 {
+    m_SLratingsModel->select();
     emit endProgress(opDownload17Ratings);
     emit SLDownloadFinished();
 }
@@ -351,4 +382,40 @@ void MainObject::on17LandsDownloadError()
 {
     emit endProgress(opDownload17Ratings);
     emit SLDownloadFailed();
+}
+
+void MainObject::onRatingsCalculated()
+{
+    emit endProgress(opCalculateRatings);
+    emit startProgress(opUploadMTGAH, tr("Uploading Data to MTGA Helper"), ratingsToUpload, 0);
+}
+
+void MainObject::onRatingCalculated(const QString &card)
+{
+    Q_UNUSED(card)
+    emit increaseProgress(opCalculateRatings, 1);
+}
+
+void MainObject::onRatingsCalculationFailed()
+{
+    emit endProgress(opCalculateRatings);
+    emit ratingsCalculationFailed();
+}
+
+void MainObject::onAllRatingsUploaded()
+{
+    emit endProgress(opUploadMTGAH);
+    emit startProgress(opDownloadRatingTemplate, tr("Refreshing Ratings"), 0, 0);
+}
+
+void MainObject::onRatingUploaded(const QString &card)
+{
+    Q_UNUSED(card)
+    emit increaseProgress(opUploadMTGAH, 1);
+}
+
+void MainObject::onFailedUploadRating()
+{
+    emit endProgress(opUploadMTGAH);
+    emit failedUploadRating();
 }
