@@ -11,20 +11,23 @@
    limitations under the License.
 \****************************************************************************/
 
-#ifndef MTGAHCARD_H
-#define MTGAHCARD_H
-#include <QString>
-class MtgahCard
+#ifndef SLRATINGSMODEL_H
+#define SLRATINGSMODEL_H
+#include <QSqlTableModel>
+class SLRatingsModel : public QSqlTableModel
 {
+    Q_OBJECT
+    Q_DISABLE_COPY_MOVE(SLRatingsModel)
 public:
-    MtgahCard();
-    MtgahCard(const MtgahCard &other) = default;
-    MtgahCard &operator=(const MtgahCard &other) = default;
-    int id_arena;
-    QString name;
-    QString set;
-    char rating;
-    QString note;
+    int columnCount(const QModelIndex &parent) const override;
+    QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
+    Qt::ItemFlags flags(const QModelIndex &index) const override;
+    explicit SLRatingsModel(QObject *parent = nullptr, QSqlDatabase db = QSqlDatabase());
+    void setTable(const QString &tableName = QString()) override;
+    void setSLcodes(const QStringList &newSLcodes);
+
+private:
+    QStringList SLcodes;
 };
 
 #endif

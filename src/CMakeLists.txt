@@ -26,6 +26,8 @@ set(models_SRCS
     ratingsmodel.cpp
     checkableproxy.h
     checkableproxy.cpp
+    slratingsmodel.h
+    slratingsmodel.cpp
 )
 set(delegates_SRCS
     ratingsdelegate.h

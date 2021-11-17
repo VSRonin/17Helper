@@ -191,7 +191,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->ratingsView->sortByColumn(RatingsModel::rmcName, Qt::AscendingOrder);
     ui->ratingsView->setItemDelegateForColumn(RatingsModel::rmcRating, new RatingsDelegate(this));
     ui->ratingsView->setItemDelegateForColumn(RatingsModel::rmcLastUpdate, new TextDateDelegate(this));
-    ui->slRatingsView->setModel(m_object->SLRatingsModel());
+    ui->slRatingsView->setModel(m_object->seventeenLandsRatingsModel());
     QCompleter *searchCompleter = new QCompleter(this);
     searchCompleter->setModel(m_object->ratingsModel());
     searchCompleter->setCompletionColumn(RatingsModel::rmcName);

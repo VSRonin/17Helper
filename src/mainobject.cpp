@@ -24,6 +24,7 @@
 #include <QSqlQuery>
 #include <QSqlDriver>
 #include <QSqlError>
+#include "slratingsmodel.h"
 //#define DEBUG_SINGLE_THREAD
 MainObject::MainObject(QObject *parent)
     : QObject(parent)
@@ -36,7 +37,7 @@ MainObject::MainObject(QObject *parent)
     m_formatsModel = new QStandardItemModel(dfCount, 1, this);
     fillFormats();
     QSqlDatabase objectDb = openDb(m_objectDbName);
-    m_SLratingsModel = new QSqlTableModel(this, objectDb);
+    m_SLratingsModel = new SLRatingsModel(this, objectDb);
     m_setsModel = new QSqlQueryModel(this);
     m_setsProxy = new CheckableProxy(this);
     m_setsProxy->setSourceModel(m_setsModel);
@@ -104,7 +105,7 @@ QAbstractItemModel *MainObject::ratingsModel() const
     return m_ratingTemplateModel;
 }
 
-QAbstractItemModel *MainObject::SLRatingsModel() const
+QAbstractItemModel *MainObject::seventeenLandsRatingsModel() const
 {
     return m_SLratingsModel;
 }
@@ -186,30 +187,30 @@ void MainObject::retranslateModels()
     SLcodes[Worker::SLnever_drawn_win_rate] = tr("GNDWR");
     SLcodes[Worker::SLdrawn_improvement_win_rate] = tr("IWD");
 
-    m_SLMetricsModel->item(Worker::SLseen_count)->setData(tr("Number Seen (%1)").arg(SLcodes.at(Worker::SLseen_count)), Qt::DisplayRole);
-    m_SLMetricsModel->item(Worker::SLavg_seen)->setData(tr("Average Last Seen At (%1)").arg(SLcodes.at(Worker::SLavg_seen)), Qt::DisplayRole);
-    m_SLMetricsModel->item(Worker::SLpick_count)->setData(tr("Number Picked (%1)").arg(SLcodes.at(Worker::SLpick_count)), Qt::DisplayRole);
-    m_SLMetricsModel->item(Worker::SLavg_pick)->setData(tr("Average Taken At (%1)").arg(SLcodes.at(Worker::SLavg_pick)), Qt::DisplayRole);
-    m_SLMetricsModel->item(Worker::SLgame_count)->setData(tr("Number of Games Played (%1)").arg(SLcodes.at(Worker::SLgame_count)), Qt::DisplayRole);
-    m_SLMetricsModel->item(Worker::SLwin_rate)->setData(tr("Games Played Win Rate (%1)").arg(SLcodes.at(Worker::SLwin_rate)), Qt::DisplayRole);
-    m_SLMetricsModel->item(Worker::SLopening_hand_game_count)
-            ->setData(tr("Number of Games in Opening Hand (%1)").arg(SLcodes.at(Worker::SLopening_hand_game_count)), Qt::DisplayRole);
-    m_SLMetricsModel->item(Worker::SLopening_hand_win_rate)
-            ->setData(tr("Opening Hand Win Rate (%1)").arg(SLcodes.at(Worker::SLopening_hand_win_rate)), Qt::DisplayRole);
-    m_SLMetricsModel->item(Worker::SLdrawn_game_count)
-            ->setData(tr("Number of Games Drawn (%1)").arg(SLcodes.at(Worker::SLdrawn_game_count)), Qt::DisplayRole);
-    m_SLMetricsModel->item(Worker::SLdrawn_win_rate)
-            ->setData(tr("Games Drawn Win Rate (%1)").arg(SLcodes.at(Worker::SLdrawn_win_rate)), Qt::DisplayRole);
-    m_SLMetricsModel->item(Worker::SLever_drawn_game_count)
-            ->setData(tr("Number of Games In Hand (%1)").arg(SLcodes.at(Worker::SLever_drawn_game_count)), Qt::DisplayRole);
-    m_SLMetricsModel->item(Worker::SLever_drawn_win_rate)
-            ->setData(tr("Games in Hand Win Rate (%1)").arg(SLcodes.at(Worker::SLever_drawn_win_rate)), Qt::DisplayRole);
-    m_SLMetricsModel->item(Worker::SLnever_drawn_game_count)
-            ->setData(tr("Number of Games Not Drawn (%1)").arg(SLcodes.at(Worker::SLnever_drawn_game_count)), Qt::DisplayRole);
-    m_SLMetricsModel->item(Worker::SLnever_drawn_win_rate)
-            ->setData(tr("Games Not Drawn Win Rate (%1)").arg(SLcodes.at(Worker::SLnever_drawn_win_rate)), Qt::DisplayRole);
-    m_SLMetricsModel->item(Worker::SLdrawn_improvement_win_rate)
-            ->setData(tr("Improvement When Drawn (%1)").arg(SLcodes.at(Worker::SLdrawn_improvement_win_rate)), Qt::DisplayRole);
+    QStringList translatedSLCodes;
+    translatedSLCodes.reserve(Worker::SLCount);
+    for (int i = 0; i < Worker::SLCount; ++i)
+        translatedSLCodes.append(QString());
+    translatedSLCodes[Worker::SLseen_count] = tr("Number Seen (%1)");
+    translatedSLCodes[Worker::SLavg_seen] = tr("Average Last Seen At (%1)");
+    translatedSLCodes[Worker::SLpick_count] = tr("Number Picked (%1)");
+    translatedSLCodes[Worker::SLavg_pick] = tr("Average Taken At (%1)");
+    translatedSLCodes[Worker::SLgame_count] = tr("Number of Games Played (%1)");
+    translatedSLCodes[Worker::SLwin_rate] = tr("Games Played Win Rate (%1)");
+    translatedSLCodes[Worker::SLopening_hand_game_count] = tr("Number of Games in Opening Hand (%1)");
+    translatedSLCodes[Worker::SLopening_hand_win_rate] = tr("Opening Hand Win Rate (%1)");
+    translatedSLCodes[Worker::SLdrawn_game_count] = tr("Number of Games Drawn (%1)");
+    translatedSLCodes[Worker::SLdrawn_win_rate] = tr("Games Drawn Win Rate (%1)");
+    translatedSLCodes[Worker::SLever_drawn_game_count] = tr("Number of Games In Hand (%1)");
+    translatedSLCodes[Worker::SLever_drawn_win_rate] = tr("Games in Hand Win Rate (%1)");
+    translatedSLCodes[Worker::SLnever_drawn_game_count] = tr("Number of Games Not Drawn (%1)");
+    translatedSLCodes[Worker::SLnever_drawn_win_rate] = tr("Games Not Drawn Win Rate (%1)");
+    translatedSLCodes[Worker::SLdrawn_improvement_win_rate] = tr("Improvement When Drawn (%1)");
+    for (int i = 0; i < Worker::SLCount; ++i)
+        translatedSLCodes[i] = translatedSLCodes.at(i).arg(SLcodes.at(i));
+    m_SLratingsModel->setSLcodes(translatedSLCodes);
+    for (int i = 0, iEnd = m_SLMetricsModel->rowCount(); i < iEnd; ++i)
+        m_SLMetricsModel->item(i)->setData(translatedSLCodes.at(i), Qt::DisplayRole);
 }
 
 void MainObject::download17Lands(const QString &format)

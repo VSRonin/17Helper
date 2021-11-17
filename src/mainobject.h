@@ -19,7 +19,7 @@ class QThread;
 class QStandardItemModel;
 class QAbstractItemModel;
 class QSqlQueryModel;
-class QSqlTableModel;
+class SLRatingsModel;
 class CheckableProxy;
 class RatingsModel;
 class MainObject : public QObject
@@ -58,7 +58,7 @@ public:
     QAbstractItemModel *setsModel() const;
     QAbstractItemModel *formatsModel() const;
     QAbstractItemModel *ratingsModel() const;
-    QAbstractItemModel *SLRatingsModel() const;
+    QAbstractItemModel *seventeenLandsRatingsModel() const;
     void filterRatings(QString name, QStringList sets);
 public slots:
     void tryLogin(const QString &userName, const QString &password, bool rememberMe = false);
@@ -117,7 +117,7 @@ private:
     QSqlQueryModel *m_setsModel;
     CheckableProxy *m_setsProxy;
     RatingsModel *m_ratingTemplateModel;
-    QSqlTableModel *m_SLratingsModel;
+    SLRatingsModel *m_SLratingsModel;
     int ratingsToUpload;
 };
 
