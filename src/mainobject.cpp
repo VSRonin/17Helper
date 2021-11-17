@@ -29,7 +29,7 @@ MainObject::MainObject(QObject *parent)
     , m_workerThread(nullptr)
     , m_objectDbName(QStringLiteral("ObjectDb"))
 {
-    m_SLMetricsModel = new QStandardItemModel(SLCount, 1, this);
+    m_SLMetricsModel = new QStandardItemModel(Worker::SLCount, 1, this);
     fillMetrics();
     m_formatsModel = new QStandardItemModel(dfCount, 1, this);
     fillFormats();
@@ -147,56 +147,98 @@ void MainObject::retranslateModels()
     m_formatsModel->setData(m_formatsModel->index(dfTradSealed, 0), tr("Traditional Sealed"));
 
     if (SLcodes.isEmpty()) {
-        SLcodes.reserve(SLCount);
-        for (int i = 0; i < SLCount; ++i)
+        SLcodes.reserve(Worker::SLCount);
+        for (int i = 0; i < Worker::SLCount; ++i)
             SLcodes.append(QString());
     }
-    Q_ASSERT(SLcodes.size() == SLCount);
-    SLcodes[SLseen_count] = tr("#S");
-    SLcodes[SLavg_seen] = tr("ALSA");
-    SLcodes[SLpick_count] = tr("#P");
-    SLcodes[SLavg_pick] = tr("ATA");
-    SLcodes[SLgame_count] = tr("#GP");
-    SLcodes[SLwin_rate] = tr("GPWR");
-    SLcodes[SLopening_hand_game_count] = tr("#OH");
-    SLcodes[SLopening_hand_win_rate] = tr("OHWR");
-    SLcodes[SLdrawn_game_count] = tr("#GD");
-    SLcodes[SLdrawn_win_rate] = tr("GDWR");
-    SLcodes[SLever_drawn_game_count] = tr("#GIH");
-    SLcodes[SLever_drawn_win_rate] = tr("GIHWR");
-    SLcodes[SLnever_drawn_game_count] = tr("#GND");
-    SLcodes[SLnever_drawn_win_rate] = tr("GNDWR");
-    SLcodes[SLdrawn_improvement_win_rate] = tr("IWD");
+    Q_ASSERT(SLcodes.size() == Worker::SLCount);
+    SLcodes[Worker::SLseen_count] = tr("#S");
+    SLcodes[Worker::SLavg_seen] = tr("ALSA");
+    SLcodes[Worker::SLpick_count] = tr("#P");
+    SLcodes[Worker::SLavg_pick] = tr("ATA");
+    SLcodes[Worker::SLgame_count] = tr("#GP");
+    SLcodes[Worker::SLwin_rate] = tr("GPWR");
+    SLcodes[Worker::SLopening_hand_game_count] = tr("#OH");
+    SLcodes[Worker::SLopening_hand_win_rate] = tr("OHWR");
+    SLcodes[Worker::SLdrawn_game_count] = tr("#GD");
+    SLcodes[Worker::SLdrawn_win_rate] = tr("GDWR");
+    SLcodes[Worker::SLever_drawn_game_count] = tr("#GIH");
+    SLcodes[Worker::SLever_drawn_win_rate] = tr("GIHWR");
+    SLcodes[Worker::SLnever_drawn_game_count] = tr("#GND");
+    SLcodes[Worker::SLnever_drawn_win_rate] = tr("GNDWR");
+    SLcodes[Worker::SLdrawn_improvement_win_rate] = tr("IWD");
 
-    m_SLMetricsModel->item(SLseen_count)->setData(tr("Number Seen (%1)").arg(SLcodes.at(SLseen_count)), Qt::DisplayRole);
-    m_SLMetricsModel->item(SLavg_seen)->setData(tr("Average Last Seen At (%1)").arg(SLcodes.at(SLavg_seen)), Qt::DisplayRole);
-    m_SLMetricsModel->item(SLpick_count)->setData(tr("Number Picked (%1)").arg(SLcodes.at(SLpick_count)), Qt::DisplayRole);
-    m_SLMetricsModel->item(SLavg_pick)->setData(tr("Average Taken At (%1)").arg(SLcodes.at(SLavg_pick)), Qt::DisplayRole);
-    m_SLMetricsModel->item(SLgame_count)->setData(tr("Number of Games Played (%1)").arg(SLcodes.at(SLgame_count)), Qt::DisplayRole);
-    m_SLMetricsModel->item(SLwin_rate)->setData(tr("Games Played Win Rate (%1)").arg(SLcodes.at(SLwin_rate)), Qt::DisplayRole);
-    m_SLMetricsModel->item(SLopening_hand_game_count)
-            ->setData(tr("Number of Games in Opening Hand (%1)").arg(SLcodes.at(SLopening_hand_game_count)), Qt::DisplayRole);
-    m_SLMetricsModel->item(SLopening_hand_win_rate)
-            ->setData(tr("Opening Hand Win Rate (%1)").arg(SLcodes.at(SLopening_hand_win_rate)), Qt::DisplayRole);
-    m_SLMetricsModel->item(SLdrawn_game_count)->setData(tr("Number of Games Drawn (%1)").arg(SLcodes.at(SLdrawn_game_count)), Qt::DisplayRole);
-    m_SLMetricsModel->item(SLdrawn_win_rate)->setData(tr("Games Drawn Win Rate (%1)").arg(SLcodes.at(SLdrawn_win_rate)), Qt::DisplayRole);
-    m_SLMetricsModel->item(SLever_drawn_game_count)
-            ->setData(tr("Number of Games In Hand (%1)").arg(SLcodes.at(SLever_drawn_game_count)), Qt::DisplayRole);
-    m_SLMetricsModel->item(SLever_drawn_win_rate)->setData(tr("Games in Hand Win Rate (%1)").arg(SLcodes.at(SLever_drawn_win_rate)), Qt::DisplayRole);
-    m_SLMetricsModel->item(SLnever_drawn_game_count)
-            ->setData(tr("Number of Games Not Drawn (%1)").arg(SLcodes.at(SLnever_drawn_game_count)), Qt::DisplayRole);
-    m_SLMetricsModel->item(SLnever_drawn_win_rate)
-            ->setData(tr("Games Not Drawn Win Rate (%1)").arg(SLcodes.at(SLnever_drawn_win_rate)), Qt::DisplayRole);
-    m_SLMetricsModel->item(SLdrawn_improvement_win_rate)
-            ->setData(tr("Improvement When Drawn (%1)").arg(SLcodes.at(SLdrawn_improvement_win_rate)), Qt::DisplayRole);
+    m_SLMetricsModel->item(Worker::SLseen_count)->setData(tr("Number Seen (%1)").arg(SLcodes.at(Worker::SLseen_count)), Qt::DisplayRole);
+    m_SLMetricsModel->item(Worker::SLavg_seen)->setData(tr("Average Last Seen At (%1)").arg(SLcodes.at(Worker::SLavg_seen)), Qt::DisplayRole);
+    m_SLMetricsModel->item(Worker::SLpick_count)->setData(tr("Number Picked (%1)").arg(SLcodes.at(Worker::SLpick_count)), Qt::DisplayRole);
+    m_SLMetricsModel->item(Worker::SLavg_pick)->setData(tr("Average Taken At (%1)").arg(SLcodes.at(Worker::SLavg_pick)), Qt::DisplayRole);
+    m_SLMetricsModel->item(Worker::SLgame_count)->setData(tr("Number of Games Played (%1)").arg(SLcodes.at(Worker::SLgame_count)), Qt::DisplayRole);
+    m_SLMetricsModel->item(Worker::SLwin_rate)->setData(tr("Games Played Win Rate (%1)").arg(SLcodes.at(Worker::SLwin_rate)), Qt::DisplayRole);
+    m_SLMetricsModel->item(Worker::SLopening_hand_game_count)
+            ->setData(tr("Number of Games in Opening Hand (%1)").arg(SLcodes.at(Worker::SLopening_hand_game_count)), Qt::DisplayRole);
+    m_SLMetricsModel->item(Worker::SLopening_hand_win_rate)
+            ->setData(tr("Opening Hand Win Rate (%1)").arg(SLcodes.at(Worker::SLopening_hand_win_rate)), Qt::DisplayRole);
+    m_SLMetricsModel->item(Worker::SLdrawn_game_count)
+            ->setData(tr("Number of Games Drawn (%1)").arg(SLcodes.at(Worker::SLdrawn_game_count)), Qt::DisplayRole);
+    m_SLMetricsModel->item(Worker::SLdrawn_win_rate)
+            ->setData(tr("Games Drawn Win Rate (%1)").arg(SLcodes.at(Worker::SLdrawn_win_rate)), Qt::DisplayRole);
+    m_SLMetricsModel->item(Worker::SLever_drawn_game_count)
+            ->setData(tr("Number of Games In Hand (%1)").arg(SLcodes.at(Worker::SLever_drawn_game_count)), Qt::DisplayRole);
+    m_SLMetricsModel->item(Worker::SLever_drawn_win_rate)
+            ->setData(tr("Games in Hand Win Rate (%1)").arg(SLcodes.at(Worker::SLever_drawn_win_rate)), Qt::DisplayRole);
+    m_SLMetricsModel->item(Worker::SLnever_drawn_game_count)
+            ->setData(tr("Number of Games Not Drawn (%1)").arg(SLcodes.at(Worker::SLnever_drawn_game_count)), Qt::DisplayRole);
+    m_SLMetricsModel->item(Worker::SLnever_drawn_win_rate)
+            ->setData(tr("Games Not Drawn Win Rate (%1)").arg(SLcodes.at(Worker::SLnever_drawn_win_rate)), Qt::DisplayRole);
+    m_SLMetricsModel->item(Worker::SLdrawn_improvement_win_rate)
+            ->setData(tr("Improvement When Drawn (%1)").arg(SLcodes.at(Worker::SLdrawn_improvement_win_rate)), Qt::DisplayRole);
 }
 
-void MainObject::download17Lands(const QStringList &sets, const QString &format)
+void MainObject::download17Lands(const QString &format)
 {
-    if (sets.isEmpty() || format.isEmpty())
+    if (format.isEmpty())
+        return;
+    QStringList sets;
+    for (int i = 0, iEnd = m_setsProxy->rowCount(); i < iEnd; ++i) {
+        if (m_setsProxy->index(i, 0).data(Qt::CheckStateRole).toInt() == Qt::Checked)
+            sets.append(m_setsProxy->index(i, 1).data().toString());
+    }
+    if (sets.isEmpty())
         return;
     emit startProgress(opDownload17Ratings, tr("Downloading 17Lands Data"), sets.size(), 0);
     m_worker->get17LRatings(sets, format);
+}
+
+void MainObject::uploadMTGAH(Worker::SLMetrics ratingMethod, const QLocale &locale)
+{
+    QStringList sets;
+    for (int i = 0, iEnd = m_setsProxy->rowCount(); i < iEnd; ++i) {
+        if (m_setsProxy->index(i, 0).data(Qt::CheckStateRole).toInt() == Qt::Checked)
+            sets.append(m_setsProxy->index(i, 1).data().toString());
+    }
+    if (sets.isEmpty())
+        return;
+    QVector<Worker::SLMetrics> commentMetrics;
+    for (int i = 0, iEnd = m_SLMetricsModel->rowCount(); i < iEnd; ++i) {
+        const QModelIndex currIdx = m_SLMetricsModel->index(i, 0);
+        if (currIdx.data(Qt::CheckStateRole).toInt() == Qt::Checked)
+            commentMetrics.append(currIdx.data(Qt::UserRole).value<Worker::SLMetrics>());
+    }
+    QSqlDatabase objectDb = openDb(m_objectDbName);
+    QStringList setsEscaped = sets;
+    for (auto i = setsEscaped.begin(), iEnd = setsEscaped.end(); i != iEnd; ++i)
+        *i = objectDb.driver()->escapeIdentifier(*i, QSqlDriver::FieldName);
+    QSqlQuery setsQuery(objectDb);
+    setsQuery.prepare(QLatin1String("SELECT COUNT([id_arena]) FROM Ratings WHERE [set] in (") + setsEscaped.join(QLatin1Char(','))
+                      + QLatin1Char(')'));
+    Q_ASSUME(setsQuery.exec());
+    int resultSize = 0;
+    if (setsQuery.next())
+        resultSize = setsQuery.value(0).toInt();
+    if (resultSize <= 0)
+        return;
+    emit startProgress(opUploadMTGAH, tr("Uploading Data to MTGA Helper"), resultSize, 0);
+    m_worker->uploadRatings(sets, ratingMethod, commentMetrics, SLcodes, locale);
 }
 
 void MainObject::onWorkerInit()
@@ -211,10 +253,10 @@ void MainObject::onWorkerInit()
 
 void MainObject::fillMetrics()
 {
-    for (int i = 0; i < SLCount; ++i) {
+    for (int i = 0; i < Worker::SLCount; ++i) {
         QStandardItem *item = new QStandardItem;
         item->setData(i, Qt::UserRole);
-        if (i == SLdrawn_win_rate || i == SLavg_pick)
+        if (i == Worker::SLdrawn_win_rate || i == Worker::SLavg_pick)
             item->setData(Qt::Checked, Qt::CheckStateRole);
         else
             item->setData(Qt::Unchecked, Qt::CheckStateRole);
@@ -310,81 +352,3 @@ void MainObject::on17LandsDownloadError()
     emit endProgress(opDownload17Ratings);
     emit SLDownloadFailed();
 }
-
-/*
-QString MainObject::commentString(const SeventeenCard &card, const QLocale &locale) const
-{
-    QStringList result;
-    const QString percent = locale.percent();
-    if (m_SLMetricsModel->index(SLseen_count, 0).data(Qt::CheckStateRole).toInt() == Qt::Checked)
-        result.append(SLcodes.at(SLseen_count) + QLatin1Char(':') + locale.toString(card.seen_count));
-    if (m_SLMetricsModel->index(SLavg_seen, 0).data(Qt::CheckStateRole).toInt() == Qt::Checked)
-        result.append(SLcodes.at(SLavg_seen) + QLatin1Char(':') + locale.toString(card.avg_seen, 'f', 2));
-    if (m_SLMetricsModel->index(SLpick_count, 0).data(Qt::CheckStateRole).toInt() == Qt::Checked)
-        result.append(SLcodes.at(SLpick_count) + QLatin1Char(':') + locale.toString(card.pick_count));
-    if (m_SLMetricsModel->index(SLavg_pick, 0).data(Qt::CheckStateRole).toInt() == Qt::Checked)
-        result.append(SLcodes.at(SLavg_pick) + QLatin1Char(':') + locale.toString(card.avg_pick, 'f', 2));
-    if (m_SLMetricsModel->index(SLgame_count, 0).data(Qt::CheckStateRole).toInt() == Qt::Checked)
-        result.append(SLcodes.at(SLgame_count) + QLatin1Char(':') + locale.toString(card.game_count));
-    if (m_SLMetricsModel->index(SLwin_rate, 0).data(Qt::CheckStateRole).toInt() == Qt::Checked)
-        result.append(SLcodes.at(SLwin_rate) + QLatin1Char(':') + locale.toString(card.win_rate * 100.0, 'f', 2) + percent);
-    if (m_SLMetricsModel->index(SLopening_hand_game_count, 0).data(Qt::CheckStateRole).toInt() == Qt::Checked)
-        result.append(SLcodes.at(SLopening_hand_game_count) + QLatin1Char(':') + locale.toString(card.opening_hand_game_count));
-    if (m_SLMetricsModel->index(SLopening_hand_win_rate, 0).data(Qt::CheckStateRole).toInt() == Qt::Checked)
-        result.append(SLcodes.at(SLopening_hand_win_rate) + QLatin1Char(':') + locale.toString(card.opening_hand_win_rate * 100.0, 'f', 2) + percent);
-    if (m_SLMetricsModel->index(SLdrawn_game_count, 0).data(Qt::CheckStateRole).toInt() == Qt::Checked)
-        result.append(SLcodes.at(SLdrawn_game_count) + QLatin1Char(':') + locale.toString(card.drawn_game_count));
-    if (m_SLMetricsModel->index(SLdrawn_win_rate, 0).data(Qt::CheckStateRole).toInt() == Qt::Checked)
-        result.append(SLcodes.at(SLdrawn_win_rate) + QLatin1Char(':') + locale.toString(card.drawn_win_rate * 100.0, 'f', 2) + percent);
-    if (m_SLMetricsModel->index(SLever_drawn_game_count, 0).data(Qt::CheckStateRole).toInt() == Qt::Checked)
-        result.append(SLcodes.at(SLever_drawn_game_count) + QLatin1Char(':') + locale.toString(card.ever_drawn_game_count));
-    if (m_SLMetricsModel->index(SLever_drawn_win_rate, 0).data(Qt::CheckStateRole).toInt() == Qt::Checked)
-        result.append(SLcodes.at(SLever_drawn_win_rate) + QLatin1Char(':') + locale.toString(card.ever_drawn_win_rate * 100.0, 'f', 2) + percent);
-    if (m_SLMetricsModel->index(SLnever_drawn_game_count, 0).data(Qt::CheckStateRole).toInt() == Qt::Checked)
-        result.append(SLcodes.at(SLnever_drawn_game_count) + QLatin1Char(':') + locale.toString(card.never_drawn_game_count));
-    if (m_SLMetricsModel->index(SLnever_drawn_win_rate, 0).data(Qt::CheckStateRole).toInt() == Qt::Checked)
-        result.append(SLcodes.at(SLnever_drawn_win_rate) + QLatin1Char(':') + locale.toString(card.never_drawn_win_rate * 100.0, 'f', 2) + percent);
-    if (m_SLMetricsModel->index(SLdrawn_improvement_win_rate, 0).data(Qt::CheckStateRole).toInt() == Qt::Checked)
-        result.append(SLcodes.at(SLdrawn_improvement_win_rate) + QLatin1Char(':') + locale.toString(card.drawn_improvement_win_rate * 100.0, 'f', 2)
-                      + percent);
-    return result.join(QLatin1Char(' '));
-}
-
-double MainObject::ratingValue(const SeventeenCard &card, SLMetrics method) const
-{
-    switch (method) {
-    case SLseen_count:
-        return card.seen_count;
-    case SLavg_seen:
-        return card.avg_seen;
-    case SLpick_count:
-        return card.pick_count;
-    case SLavg_pick:
-        return card.avg_pick;
-    case SLgame_count:
-        return card.game_count;
-    case SLwin_rate:
-        return card.win_rate;
-    case SLopening_hand_game_count:
-        return card.opening_hand_game_count;
-    case SLopening_hand_win_rate:
-        return card.opening_hand_win_rate;
-    case SLdrawn_game_count:
-        return card.drawn_game_count;
-    case SLdrawn_win_rate:
-        return card.drawn_win_rate;
-    case SLever_drawn_game_count:
-        return card.ever_drawn_game_count;
-    case SLever_drawn_win_rate:
-        return card.ever_drawn_win_rate;
-    case SLnever_drawn_game_count:
-        return card.never_drawn_game_count;
-    case SLnever_drawn_win_rate:
-        return card.never_drawn_win_rate;
-    case SLdrawn_improvement_win_rate:
-        return card.drawn_improvement_win_rate;
-    default:
-        return 0;
-    }
-}
-*/

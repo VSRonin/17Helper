@@ -28,25 +28,7 @@ class MainObject : public QObject
 public:
     explicit MainObject(QObject *parent = nullptr);
     ~MainObject();
-    enum SLMetrics {
-        SLseen_count,
-        SLavg_seen,
-        SLpick_count,
-        SLavg_pick,
-        SLgame_count,
-        SLwin_rate,
-        SLopening_hand_game_count,
-        SLopening_hand_win_rate,
-        SLdrawn_game_count,
-        SLdrawn_win_rate,
-        SLever_drawn_game_count,
-        SLever_drawn_win_rate,
-        SLnever_drawn_game_count,
-        SLnever_drawn_win_rate,
-        SLdrawn_improvement_win_rate,
 
-        SLCount
-    };
     enum DraftFormats {
         dfPremierDraft,
         dfQuickDraft,
@@ -66,6 +48,7 @@ public:
         opLogOut,
         opDownloadRatingTemplate,
         opDownload17Ratings,
+        opUploadMTGAH
     };
 
     QAbstractItemModel *SLMetricsModel() const;
@@ -77,7 +60,8 @@ public slots:
     void tryLogin(const QString &userName, const QString &password, bool rememberMe = false);
     void logOut();
     void retranslateModels();
-    void download17Lands(const QStringList &sets, const QString &format);
+    void download17Lands(const QString &format);
+    void uploadMTGAH(Worker::SLMetrics ratingMethod, const QLocale &locale);
 private slots:
     void onWorkerInit();
     void onLoggedIn();

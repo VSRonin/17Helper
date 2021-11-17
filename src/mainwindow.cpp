@@ -97,87 +97,18 @@ void MainWindow::do17Ldownload()
 {
     ui->downloadButton->setEnabled(false);
     ui->setsGroup->setEnabled(false);
-    QStringList sets;
-    for (int i = 0, iEnd = m_object->setsModel()->rowCount(); i < iEnd; ++i) {
-        if (m_object->setsModel()->index(i, 0).data(Qt::CheckStateRole).toInt() == Qt::Checked)
-            sets.append(m_object->setsModel()->index(i, 1).data().toString());
-    }
-    m_object->download17Lands(sets, ui->formatsCombo->currentData().toString());
+    m_object->download17Lands(ui->formatsCombo->currentData().toString());
 }
 
 void MainWindow::doMtgahUpload()
 {
-    /*ui->uploadButton->setEnabled(false);
-    ui->progressBar->setVisible(true);
-    ui->progressBar->setRange(0, 1);
-    ui->progressBar->setValue(0);
-    ui->progressLabel->setVisible(true);
-    ui->progressLabel->setText(tr("Uploading"));
-    QStringList sets;
-    for (int i = 0, iEnd = m_setsModel->rowCount(); i < iEnd; ++i) {
-        const QModelIndex &idx = m_setsModel->index(i, 0);
-        if (idx.data(Qt::CheckStateRole).toInt() == Qt::Checked)
-            sets.append(idx.data(Qt::UserRole).toString());
-    }
-    m_worker->uploadRatings(sets);*/
+    ui->uploadButton->setEnabled(false);
+    m_object->uploadMTGAH(ui->ratingBasedCombo->currentData().value<Worker::SLMetrics>(), locale());
 }
 
 void MainWindow::onAllRatingsUploaded()
 {
     ui->uploadButton->setEnabled(true);
-    ui->progressBar->setVisible(false);
-    ui->progressLabel->setVisible(false);
-}
-
-void MainWindow::fillSets(const QStringList &sets)
-{
-    /*m_error &= ~MTGAHSetsError;
-    m_setsModel->removeRows(0, m_setsModel->rowCount());
-    Qt::CheckState checkState = Qt::Checked;
-    for (int i = sets.size() - 1; i >= 0; --i) {
-        auto item = new QStandardItem;
-        item->setData(sets.at(i), Qt::DisplayRole);
-        item->setData(sets.at(i), Qt::UserRole);
-        item->setData(checkState, Qt::CheckStateRole);
-        item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsUserCheckable);
-        m_setsModel->insertRow(m_setsModel->rowCount(), item);
-        checkState = Qt::Unchecked;
-    }
-    m_worker->downloadSetsScryfall();
-    retranslateUi();*/
-}
-
-void MainWindow::fillSetNames(const QHash<QString, QString> &setNames)
-{
-    /*for (int i = 0, iEnd = m_setsModel->rowCount(); i < iEnd; ++i) {
-        const QString setToFind = m_setsModel->index(i, 0).data(Qt::UserRole).toString();
-        auto nameIter = setNames.constFind(setToFind);
-        if (nameIter != setNames.constEnd())
-            m_setsModel->setData(m_setsModel->index(i, 0), nameIter.value());
-    }
-    retranslateUi();*/
-}
-
-void MainWindow::onDownloaded17LRatings(const QString &set, const QSet<SeventeenCard> &ratings)
-{
-    /*Q_ASSERT(!ratings.isEmpty());
-    const auto ratingComparison = [this](const SeventeenCard &a, const SeventeenCard &b) -> bool { return ratingValue(a) < ratingValue(b); };
-    const auto minMaxRtg = std::minmax_element(ratings.cbegin(), ratings.cend(), ratingComparison);
-    const double minRtgValue = ratingValue(*minMaxRtg.first);
-    double ratingDenominator = ratingValue(*minMaxRtg.second) - minRtgValue;
-    if (ratingDenominator == 0.0)
-        ratingDenominator = 1.0;
-    for (int i = 0, iEnd = m_ratingsModel->rowCount(); i < iEnd; ++i) {
-        QCoreApplication::processEvents();
-        if (m_ratingsModel->index(i, RatingsModel::rmcSet).data().toString() != set)
-            continue;
-        const auto rtgIter = ratings.constFind(SeventeenCard(m_ratingsModel->index(i, RatingsModel::rmcName).data().toString()));
-        if (rtgIter == ratings.constEnd())
-            continue;
-        m_ratingsModel->setData(m_ratingsModel->index(i, RatingsModel::rmcRating),
-                                qRound(10.0 * (ratingValue(*rtgIter) - minRtgValue) / ratingDenominator));
-        m_ratingsModel->setData(m_ratingsModel->index(i, RatingsModel::rmcNote), commentString(*rtgIter));
-    }*/
 }
 
 void MainWindow::onDownloadedAll17LRatings()
@@ -188,27 +119,11 @@ void MainWindow::onDownloadedAll17LRatings()
     ui->progressLabel->setVisible(false);
 }
 
-void MainWindow::onDownload17LRatingsProgress(int progress)
-{
-    /*int setCount = 0;
-    for (int i = 0, iEnd = m_setsModel->rowCount(); i < iEnd; ++i) {
-        const QModelIndex &idx = m_setsModel->index(i, 0);
-        if (idx.data(Qt::CheckStateRole).toInt() == Qt::Checked)
-            ++setCount;
-    }
-    ui->progressBar->setValue(ui->progressBar->maximum() - progress);*/
-}
-
 void MainWindow::onMTGAHSetsError()
 {
     m_error |= MTGAHSetsError;
     ui->retryBasicDownloadButton->setEnabled(true);
     retranslateUi();
-}
-
-void MainWindow::onScryfallSetsError()
-{
-    fillSetNames(QHash<QString, QString>());
 }
 
 void MainWindow::onTemplateDownloadFailed()
@@ -286,7 +201,7 @@ MainWindow::MainWindow(QWidget *parent)
     auto SLMetricsProxy = new NoCheckProxy(this);
     SLMetricsProxy->setSourceModel(m_object->SLMetricsModel());
     ui->ratingBasedCombo->setModel(SLMetricsProxy);
-    ui->ratingBasedCombo->setCurrentIndex(MainObject::SLdrawn_win_rate);
+    ui->ratingBasedCombo->setCurrentIndex(Worker::SLdrawn_win_rate);
     disableSetsSection();
     retranslateUi();
 

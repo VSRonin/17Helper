@@ -76,11 +76,7 @@ private slots:
     void doLogout();
     void do17Ldownload();
     void doMtgahUpload();
-    void fillSets(const QStringList &sets);
-    void fillSetNames(const QHash<QString, QString> &setNames);
-    void onDownloaded17LRatings(const QString &set, const QSet<SeventeenCard> &ratings);
     void onDownloadedAll17LRatings();
-    void onDownload17LRatingsProgress(int progress);
     void enableSetsSection() { setSetsSectionEnabled(true); }
     void disableSetsSection() { setSetsSectionEnabled(false); }
     void onLogin();
@@ -88,7 +84,6 @@ private slots:
     void onLogout();
     void onLogoutError(const QString &error);
     void onMTGAHSetsError();
-    void onScryfallSetsError();
     void onTemplateDownloadFailed();
     void selectAllSets() { setAllSetsSelection(Qt::Checked); }
     void selectNoSets() { setAllSetsSelection(Qt::Unchecked); }
