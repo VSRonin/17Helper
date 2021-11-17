@@ -25,7 +25,7 @@ jobs:
         strategy:
           fail-fast: false
           matrix:
-              qt_ver: [5.15.2 6.2.0]
+              qt_ver: [5.15.2, 6.2.1]
               platforms:
                 - { os: windows-latest, generator: "NMake Makefiles", friendly_name: MSVC }
                 - { os: ubuntu-latest, generator: "Unix Makefiles", friendly_name: Ubuntu }
