@@ -28,6 +28,8 @@ set(models_SRCS
     checkableproxy.cpp
     slratingsmodel.h
     slratingsmodel.cpp
+    offlinesqltable.h
+    offlinesqltable.cpp
 )
 set(delegates_SRCS
     ratingsdelegate.h

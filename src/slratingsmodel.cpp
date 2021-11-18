@@ -12,27 +12,27 @@
 \****************************************************************************/
 #include "slratingsmodel.h"
 #include "worker.h"
-SLRatingsModel::SLRatingsModel(QObject *parent, QSqlDatabase db)
-    : QSqlTableModel(parent, db)
+SLRatingsModel::SLRatingsModel(QObject *parent)
+    : OfflineSqlTable(parent)
 { }
 
-void SLRatingsModel::setTable(const QString &)
+void SLRatingsModel::setTable(const QString &databaseName, const QString &)
 {
-    QSqlTableModel::setTable(QStringLiteral("SLRatings"));
+    OfflineSqlTable::setTable(databaseName, QStringLiteral("SLRatings"));
     select();
 }
 
 void SLRatingsModel::setSLcodes(const QStringList &newSLcodes)
 {
     SLcodes = newSLcodes;
-    headerDataChanged(Qt::Horizontal, 2, Worker::SLCount + 2);
+    emit headerDataChanged(Qt::Horizontal, 2, Worker::SLCount + 2);
 }
 
 int SLRatingsModel::columnCount(const QModelIndex &parent) const
 {
     if (parent.isValid())
-        return QSqlTableModel::columnCount(parent);
-    return qMax(int(Worker::SLCount) + 3, QSqlTableModel::columnCount(parent));
+        return OfflineSqlTable::columnCount(parent);
+    return qMax(int(Worker::SLCount) + 3, OfflineSqlTable::columnCount(parent));
 }
 
 QVariant SLRatingsModel::headerData(int section, Qt::Orientation orientation, int role) const
@@ -57,5 +57,5 @@ QVariant SLRatingsModel::headerData(int section, Qt::Orientation orientation, in
 
 Qt::ItemFlags SLRatingsModel::flags(const QModelIndex &index) const
 {
-    return QSqlTableModel::flags(index) & ~Qt::ItemIsEditable;
+    return OfflineSqlTable::flags(index) & ~Qt::ItemIsEditable;
 }

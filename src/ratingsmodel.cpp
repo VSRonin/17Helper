@@ -11,25 +11,22 @@
    limitations under the License.
 \****************************************************************************/
 #include "ratingsmodel.h"
-#ifdef QT_DEBUG
-#    include <QDebug>
-#    include <QSqlError>
-#endif
-RatingsModel::RatingsModel(QObject *parent, QSqlDatabase db)
-    : QSqlTableModel(parent, db)
+
+RatingsModel::RatingsModel(QObject *parent)
+    : OfflineSqlTable(parent)
 { }
 
-void RatingsModel::setTable(const QString &)
+void RatingsModel::setTable(const QString &databaseName, const QString &)
 {
-    QSqlTableModel::setTable(QStringLiteral("Ratings"));
+    OfflineSqlTable::setTable(databaseName, QStringLiteral("Ratings"));
     select();
 }
 
 int RatingsModel::columnCount(const QModelIndex &parent) const
 {
     if (parent.isValid())
-        return QSqlTableModel::columnCount(parent);
-    return qMax(int(rmcCount), QSqlTableModel::columnCount(parent));
+        return OfflineSqlTable::columnCount(parent);
+    return qMax(int(rmcCount), OfflineSqlTable::columnCount(parent));
 }
 
 QVariant RatingsModel::headerData(int section, Qt::Orientation orientation, int role) const
@@ -60,7 +57,7 @@ Qt::ItemFlags RatingsModel::flags(const QModelIndex &index) const
 {
     if (!index.isValid() || index.parent().isValid())
         return Qt::NoItemFlags;
-    Qt::ItemFlags result = QSqlTableModel::flags(index);
+    Qt::ItemFlags result = OfflineSqlTable::flags(index);
     switch (index.column()) {
     case rmcSet:
     case rmcName:

@@ -13,8 +13,8 @@
 
 #ifndef RATINGSMODEL_H
 #define RATINGSMODEL_H
-#include <QSqlTableModel>
-class RatingsModel : public QSqlTableModel
+#include "offlinesqltable.h"
+class RatingsModel : public OfflineSqlTable
 {
     Q_OBJECT
     Q_DISABLE_COPY_MOVE(RatingsModel)
@@ -32,8 +32,8 @@ public:
     int columnCount(const QModelIndex &parent) const override;
     QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
     Qt::ItemFlags flags(const QModelIndex &index) const override;
-    explicit RatingsModel(QObject *parent = nullptr, QSqlDatabase db = QSqlDatabase());
-    void setTable(const QString &tableName = QString()) override;
+    explicit RatingsModel(QObject *parent = nullptr);
+    void setTable(const QString &databaseName, const QString &tableName = QString()) override;
 };
 
 #endif

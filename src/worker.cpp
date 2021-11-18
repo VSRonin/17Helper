@@ -361,7 +361,7 @@ void Worker::onCustomRatingTemplateFinished(QNetworkReply *reply)
         updateRatingQuery.bindValue(QStringLiteral(":name"), nameStr);
         updateRatingQuery.bindValue(QStringLiteral(":set"), setStr);
         updateRatingQuery.bindValue(QStringLiteral(":rating"), ratingNum);
-        if (noteValue.isNull()) {
+        if (noteStr.isEmpty()) {
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
             updateRatingQuery.bindValue(QStringLiteral(":note"), QVariant(QMetaType(QMetaType::QString)));
 #else
@@ -664,6 +664,8 @@ void Worker::actualUploadRatings(QStringList sets, SLMetrics ratingMethod, QVect
 void Worker::processMTGAHrequestQueue()
 {
     if (m_MTGAHrequestQueue.isEmpty())
+        return;
+    if (m_MTGAHrequestOutstanding > 0)
         return;
     QJsonObject reqData = m_MTGAHrequestQueue.takeFirst();
     if (reqData.value(QLatin1String("attempt")).toInt() >= 3) {

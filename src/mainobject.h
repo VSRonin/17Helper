@@ -22,6 +22,7 @@ class QSqlQueryModel;
 class SLRatingsModel;
 class CheckableProxy;
 class RatingsModel;
+class QSortFilterProxyModel;
 class MainObject : public QObject
 {
     Q_OBJECT
@@ -118,6 +119,8 @@ private:
     CheckableProxy *m_setsProxy;
     RatingsModel *m_ratingTemplateModel;
     SLRatingsModel *m_SLratingsModel;
+    QSortFilterProxyModel *m_ratingTemplateProxy;
+    QSortFilterProxyModel *m_SLratingsProxy;
     int ratingsToUpload;
 };
 

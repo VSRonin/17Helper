@@ -27,7 +27,7 @@ class Worker : public QObject
 {
     Q_OBJECT
     Q_DISABLE_COPY_MOVE(Worker)
-    enum { RequestTimerTimeout = 200 };
+    enum { RequestTimerTimeout = 100 };
 
 public:
     enum SetType {

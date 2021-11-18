@@ -24,6 +24,7 @@
 #include <QSqlQuery>
 #include <QSqlDriver>
 #include <QSqlError>
+#include <QSortFilterProxyModel>
 #include "slratingsmodel.h"
 //#define DEBUG_SINGLE_THREAD
 MainObject::MainObject(QObject *parent)
@@ -37,11 +38,15 @@ MainObject::MainObject(QObject *parent)
     m_formatsModel = new QStandardItemModel(dfCount, 1, this);
     fillFormats();
     QSqlDatabase objectDb = openDb(m_objectDbName);
-    m_SLratingsModel = new SLRatingsModel(this, objectDb);
+    m_SLratingsModel = new SLRatingsModel(this);
+    m_SLratingsProxy = new QSortFilterProxyModel(this);
+    m_SLratingsProxy->setSourceModel(m_SLratingsModel);
     m_setsModel = new QSqlQueryModel(this);
     m_setsProxy = new CheckableProxy(this);
     m_setsProxy->setSourceModel(m_setsModel);
-    m_ratingTemplateModel = new RatingsModel(this, objectDb);
+    m_ratingTemplateModel = new RatingsModel(this);
+    m_ratingTemplateProxy = new QSortFilterProxyModel(this);
+    m_ratingTemplateProxy->setSourceModel(m_ratingTemplateModel);
     QMetaObject::invokeMethod(this, std::bind(&MainObject::startProgress, this, opInitWorker, tr("Initialising"), 0, 0), Qt::QueuedConnection);
     m_worker = new Worker;
 #ifndef DEBUG_SINGLE_THREAD
@@ -102,12 +107,12 @@ QAbstractItemModel *MainObject::formatsModel() const
 
 QAbstractItemModel *MainObject::ratingsModel() const
 {
-    return m_ratingTemplateModel;
+    return m_ratingTemplateProxy;
 }
 
 QAbstractItemModel *MainObject::seventeenLandsRatingsModel() const
 {
-    return m_SLratingsModel;
+    return m_SLratingsProxy;
 }
 
 void MainObject::filterRatings(QString name, QStringList sets)
@@ -269,10 +274,9 @@ void MainObject::uploadMTGAH(Worker::SLMetrics ratingMethod, const QLocale &loca
 void MainObject::onWorkerInit()
 {
     emit endProgress(opInitWorker);
-    m_SLratingsModel->setTable(QStringLiteral("SLRatings"));
+    m_SLratingsModel->setTable(m_objectDbName);
     m_SLratingsModel->select();
-    Q_ASSERT(m_SLratingsModel->lastError().type() == QSqlError::NoError);
-    m_ratingTemplateModel->setTable();
+    m_ratingTemplateModel->setTable(m_objectDbName);
     selectSetsModel();
     emit startProgress(opDownloadSets, tr("Loading Sets"), 0, 0);
     emit startProgress(opDownloadSetsData, tr("Downloading Set Details"), 0, 0);
