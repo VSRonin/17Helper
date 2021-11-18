@@ -125,7 +125,7 @@ private:
     void actualUploadRatings(QStringList sets, SLMetrics ratingMethod, QVector<SLMetrics> commentStats, const QStringList &SLcodes,
                              const QLocale &locale, bool clear);
     static int ratingValue(SLMetrics metric, const double &val, const QVector<double> &deciles);
-    static QVector<double> reduceDeciles(const QVector<double> &data);
+    static QMap<QString, QVector<double>> reduceDeciles(const QMap<QString, QVector<double>> &data);
     QString commentvalue(SLMetrics metric, const QVariant &value, const QLocale &locale) const;
     QString commentString(const QSqlQuery &query, const QVector<SLMetrics> &commentStats, const QStringList &SLcodes, const QLocale &locale) const;
     QString fieldName(SLMetrics metric) const;

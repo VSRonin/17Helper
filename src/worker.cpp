@@ -587,21 +587,24 @@ void Worker::actualUploadRatings(QStringList sets, SLMetrics ratingMethod, QVect
     for (auto i = sets.begin(), iEnd = sets.end(); i != iEnd; ++i)
         *i = workerdb.driver()->escapeIdentifier(*i, QSqlDriver::FieldName);
     QSqlQuery percentilesRatingQuery(workerdb);
-    percentilesRatingQuery.prepare(QLatin1String("SELECT [") + ratingMethodField
+    percentilesRatingQuery.prepare(QLatin1String("SELECT [Ratings].[set], [") + ratingMethodField
                                    + QLatin1String("] FROM [Ratings] LEFT JOIN [SLRatings] on [Ratings].[name]=[SLRatings].[name] and "
                                                    "[Ratings].[set]=[SLRatings].[set] WHERE  [seen_count] NOT NULL AND [Ratings].[set] in (")
                                    + sets.join(QLatin1Char(',')) + QLatin1String(") order by [") + ratingMethodField + QLatin1String("] asc"));
     Q_ASSUME(percentilesRatingQuery.exec());
-    QVector<double> percentiles;
-    while (percentilesRatingQuery.next())
-        percentiles.append(percentilesRatingQuery.value(0).toDouble());
-    if (percentiles.isEmpty()) {
+    QMap<QString, QVector<double>> percentiles;
+    while (percentilesRatingQuery.next()) {
+        percentiles[percentilesRatingQuery.value(0).toString()].append(percentilesRatingQuery.value(1).toDouble());
+    }
+    if (percentiles.isEmpty()
+        || std::any_of(percentiles.cbegin(), percentiles.cend(), [](const QVector<double> &vec) -> bool { return vec.isEmpty(); })) {
         emit failedRatingCalculation();
         return;
     }
     percentiles = reduceDeciles(percentiles);
     percentilesRatingQuery.clear();
-    QString ratingsToUploadQueryString = QLatin1String("SELECT [id_arena], [Ratings].[name], [") + ratingMethodField + QLatin1Char(']');
+    QString ratingsToUploadQueryString =
+            QLatin1String("SELECT [id_arena], [Ratings].[set], [Ratings].[name], [") + ratingMethodField + QLatin1Char(']');
     if (!commentFields.isEmpty()) {
         ratingsToUploadQueryString += QLatin1String(", [") + commentFields.join(QLatin1String("], [")) + QLatin1Char(']');
     }
@@ -616,7 +619,8 @@ void Worker::actualUploadRatings(QStringList sets, SLMetrics ratingMethod, QVect
     while (ratingsToUploadQuery.next()) {
         QJsonObject cardData;
         cardData[QLatin1String("idArena")] = ratingsToUploadQuery.value(0).toInt();
-        const int cardRating = ratingValue(ratingMethod, ratingsToUploadQuery.value(2).toDouble(), percentiles);
+        const int cardRating =
+                ratingValue(ratingMethod, ratingsToUploadQuery.value(3).toDouble(), percentiles.value(ratingsToUploadQuery.value(1).toString()));
         if (cardRating < 0 || clear)
             cardData[QLatin1String("rating")] = QJsonValue();
         else
@@ -627,7 +631,7 @@ void Worker::actualUploadRatings(QStringList sets, SLMetrics ratingMethod, QVect
         else
             cardData[QLatin1String("note")] = commentStr;
         cardData[QLatin1String("attempt")] = 0;
-        const QString cardName = ratingsToUploadQuery.value(1).toString();
+        const QString cardName = ratingsToUploadQuery.value(2).toString();
         ;
         cardData[QLatin1String("name")] = cardName;
         m_MTGAHrequestQueue.enqueue(cardData);
@@ -765,6 +769,7 @@ QString Worker::commentString(const QSqlQuery &query, const QVector<SLMetrics> &
 }
 int Worker::ratingValue(SLMetrics metric, const double &val, const QVector<double> &deciles)
 {
+    Q_ASSERT(!deciles.isEmpty());
     switch (metric) {
     case SLseen_count:
     case SLavg_seen:
@@ -788,16 +793,21 @@ int Worker::ratingValue(SLMetrics metric, const double &val, const QVector<doubl
     }
 }
 
-QVector<double> Worker::reduceDeciles(const QVector<double> &data)
+QMap<QString, QVector<double>> Worker::reduceDeciles(const QMap<QString, QVector<double>> &data)
 {
-    if (data.size() <= 10)
-        return data;
-    QVector<double> deciles;
-    deciles.reserve(10);
-    const int dataSize = data.size();
-    for (int i = 1; i < 10; ++i)
-        deciles.append(data.at((i * dataSize) / 10));
-    deciles.append(data.last());
-    Q_ASSERT(deciles.size() == 10);
+    QMap<QString, QVector<double>> deciles;
+    for (auto j = data.cbegin(), jEnd = data.cend(); j != jEnd; ++j) {
+        const int dataSize = j->size();
+        if (dataSize <= 10) {
+            deciles.insert(j.key(), j.value());
+            continue;
+        }
+        const auto setIter = deciles.insert(j.key(), QVector<double>());
+        setIter->reserve(10);
+        for (int i = 1; i < 10; ++i)
+            setIter->append(j->at((i * dataSize) / 10));
+        setIter->append(j->last());
+        Q_ASSERT(setIter->size() == 10);
+    }
     return deciles;
 }
