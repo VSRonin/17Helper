@@ -28,8 +28,14 @@ set(models_SRCS
     checkableproxy.cpp
     slratingsmodel.h
     slratingsmodel.cpp
+    offlinesqlquerymodel.h
+    offlinesqlquerymodel.cpp
     offlinesqltable.h
     offlinesqltable.cpp
+    setsmodel.h
+    setsmodel.cpp
+    setsfiltermodel.h
+    setsfiltermodel.cpp
 )
 set(delegates_SRCS
     ratingsdelegate.h
@@ -68,7 +74,7 @@ set_target_properties(17HelperLib PROPERTIES
     CXX_STANDARD_REQUIRED ON
     VERSION ${VERSION_SHORT}
 )
-add_executable(17Helper main.cpp)
+add_executable(17Helper guimain.cpp)
 target_link_libraries(17Helper PUBLIC 17HelperLib::17HelperLib)
 set_target_properties(17Helper PROPERTIES
     WIN32_EXECUTABLE TRUE

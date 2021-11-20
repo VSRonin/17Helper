@@ -26,6 +26,8 @@
 #include <QSqlError>
 #include <QSortFilterProxyModel>
 #include "slratingsmodel.h"
+#include "setsmodel.h"
+#include "setsfiltermodel.h"
 //#define DEBUG_SINGLE_THREAD
 MainObject::MainObject(QObject *parent)
     : QObject(parent)
@@ -41,9 +43,12 @@ MainObject::MainObject(QObject *parent)
     m_SLratingsModel = new SLRatingsModel(this);
     m_SLratingsProxy = new QSortFilterProxyModel(this);
     m_SLratingsProxy->setSourceModel(m_SLratingsModel);
-    m_setsModel = new QSqlQueryModel(this);
+    m_setsModel = new SetsModel(this);
+    m_setsFilter = new SetsFilterModel(this);
+    m_setsFilter->setSourceModel(m_setsModel);
+    m_setsFilter->setFilterEnabled(true);
     m_setsProxy = new CheckableProxy(this);
-    m_setsProxy->setSourceModel(m_setsModel);
+    m_setsProxy->setSourceModel(m_setsFilter);
     m_ratingTemplateModel = new RatingsModel(this);
     m_ratingTemplateProxy = new QSortFilterProxyModel(this);
     m_ratingTemplateProxy->setSourceModel(m_ratingTemplateModel);
@@ -133,6 +138,11 @@ void MainObject::filterRatings(QString name, QStringList sets)
     }
     m_ratingTemplateModel->setFilter(filterString);
     m_SLratingsModel->setFilter(filterString);
+}
+
+void MainObject::showOnlyDraftableSets(bool showOnly)
+{
+    m_setsFilter->setFilterEnabled(showOnly);
 }
 
 void MainObject::tryLogin(const QString &userName, const QString &password, bool rememberMe)
@@ -311,11 +321,12 @@ void MainObject::selectSetsModel()
 {
     QSqlDatabase objectDb = openDb(m_objectDbName);
     QSqlQuery setsQuery(objectDb);
-    setsQuery.prepare(QStringLiteral(
-            "select [name], [id] from (SELECT [id], CASE WHEN [name] is NULL then [id] ELSE [name] END as [name], CASE WHEN [release_date] is  NULL "
-            "then DATE() ELSE [release_date] END as [release_date] FROM [Sets] where [type] is null or [type] & ?) order by [release_date] desc"));
-    setsQuery.addBindValue(DraftableSet);
-    Q_ASSUME(setsQuery.exec());
+    setsQuery.prepare(QStringLiteral("select [name], [id], [type] from ( "
+                                     "SELECT [id], "
+                                     "CASE WHEN [name] is NULL then [id] ELSE [name] END as [name], "
+                                     "CASE WHEN [release_date] is  NULL then DATE() ELSE [release_date] END as [release_date], "
+                                     "CASE WHEN [type] is  NULL then 1 ELSE [type] END as [type] "
+                                     "FROM [Sets]) order by [release_date] desc"));
     m_setsModel->setQuery(std::move(setsQuery));
     m_setsProxy->setData(m_setsProxy->index(0, 0), Qt::Checked, Qt::CheckStateRole);
 }

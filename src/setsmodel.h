@@ -11,28 +11,24 @@
    limitations under the License.
 \****************************************************************************/
 
-#ifndef OFFLINESQLTABLE_H
-#define OFFLINESQLTABLE_H
+#ifndef SETSMODEL_H
+#define SETSMODEL_H
 #include "offlinesqlquerymodel.h"
-#include <QSqlDatabase>
-#include <QVector>
-#include <QVariant>
-class OfflineSqlTable : public OfflineSqlQueryModel
+class SetsModel : public OfflineSqlQueryModel
 {
     Q_OBJECT
-    Q_DISABLE_COPY_MOVE(OfflineSqlTable)
+    Q_DISABLE_COPY_MOVE(SetsModel)
 public:
-    explicit OfflineSqlTable(QObject *parent = nullptr);
-    virtual void setTable(const QString &databaseName, const QString &tableName);
-    virtual void setFilter(const QString &filter);
-    bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
-    Qt::ItemFlags flags(const QModelIndex &index) const override;
+    enum SetsModelColumns {
+        smcSetName,
+        smcSetID,
+        smcType,
 
-private:
-    QSqlQuery createQuery() const;
-    QString m_tableName;
-    QString m_databaseName;
-    QString m_filter;
+        smcCount
+    };
+    int columnCount(const QModelIndex &parent) const override;
+    QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
+    explicit SetsModel(QObject *parent = nullptr);
 };
 
 #endif

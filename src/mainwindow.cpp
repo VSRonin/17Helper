@@ -217,6 +217,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->allSetsButton, &QPushButton::clicked, this, &MainWindow::selectAllSets);
     connect(ui->noSetButton, &QPushButton::clicked, this, &MainWindow::selectNoSets);
     connect(ui->searchCardEdit, &QLineEdit::textChanged, this, &MainWindow::updateRatingsFiler);
+    connect(ui->draftableSetsCheck, &QCheckBox::clicked, m_object, &MainObject::showOnlyDraftableSets);
     // connect(m_worker, &Worker::setsMTGAH, this, &MainWindow::fillSets);
     // connect(m_worker, &Worker::downloadSetsMTGAHFailed, this, &MainWindow::onMTGAHSetsError);
     // connect(m_worker, &Worker::setsScryfall, this, &MainWindow::fillSetNames);

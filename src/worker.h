@@ -92,6 +92,9 @@ private slots:
     void checkStopTimer();
     void parseSetsScryfall(QNetworkReply *reply, const QStringList &sets);
     void onCustomRatingTemplateFinished(QNetworkReply *reply);
+    void on17LDownloadFinished(QNetworkReply *reply, const QString &currSet);
+    void onSetsMTGAHDownloaded(QNetworkReply *reply);
+    void onLogIn(QNetworkReply *reply);
 signals:
     void initialised();
     void initialisationFailed();

@@ -18,11 +18,12 @@
 class QThread;
 class QStandardItemModel;
 class QAbstractItemModel;
-class QSqlQueryModel;
+class SetsModel;
 class SLRatingsModel;
 class CheckableProxy;
 class RatingsModel;
 class QSortFilterProxyModel;
+class SetsFilterModel;
 class MainObject : public QObject
 {
     Q_OBJECT
@@ -41,7 +42,6 @@ public:
 
         dfCount
     };
-    enum { DraftableSet = Worker::stcore | Worker::stexpansion | Worker::stdraft_innovation };
     enum Operations {
         opNoOperation = 0,
         opInitWorker = 1,
@@ -61,6 +61,7 @@ public:
     QAbstractItemModel *ratingsModel() const;
     QAbstractItemModel *seventeenLandsRatingsModel() const;
     void filterRatings(QString name, QStringList sets);
+    void showOnlyDraftableSets(bool showOnly);
 public slots:
     void tryLogin(const QString &userName, const QString &password, bool rememberMe = false);
     void logOut();
@@ -115,7 +116,8 @@ private:
     QStringList SLcodes;
     QStandardItemModel *m_SLMetricsModel;
     QStandardItemModel *m_formatsModel;
-    QSqlQueryModel *m_setsModel;
+    SetsModel *m_setsModel;
+    SetsFilterModel *m_setsFilter;
     CheckableProxy *m_setsProxy;
     RatingsModel *m_ratingTemplateModel;
     SLRatingsModel *m_SLratingsModel;

@@ -11,28 +11,26 @@
    limitations under the License.
 \****************************************************************************/
 
-#ifndef OFFLINESQLTABLE_H
-#define OFFLINESQLTABLE_H
-#include "offlinesqlquerymodel.h"
-#include <QSqlDatabase>
-#include <QVector>
-#include <QVariant>
-class OfflineSqlTable : public OfflineSqlQueryModel
+#ifndef SETSFILTERMODEL_H
+#define SETSFILTERMODEL_H
+#include <QSortFilterProxyModel>
+#include "worker.h"
+class SetsFilterModel : public QSortFilterProxyModel
 {
     Q_OBJECT
-    Q_DISABLE_COPY_MOVE(OfflineSqlTable)
+    Q_DISABLE_COPY_MOVE(SetsFilterModel)
+    enum { DraftableSet = Worker::stcore | Worker::stexpansion | Worker::stdraft_innovation };
+
 public:
-    explicit OfflineSqlTable(QObject *parent = nullptr);
-    virtual void setTable(const QString &databaseName, const QString &tableName);
-    virtual void setFilter(const QString &filter);
-    bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
-    Qt::ItemFlags flags(const QModelIndex &index) const override;
+    explicit SetsFilterModel(QObject *parent = nullptr);
+    bool filterEnabled() const;
+    void setFilterEnabled(bool newFilterEnabled);
+
+protected:
+    bool filterAcceptsRow(int source_row, const QModelIndex &source_parent) const override;
 
 private:
-    QSqlQuery createQuery() const;
-    QString m_tableName;
-    QString m_databaseName;
-    QString m_filter;
+    bool m_filterEnabled;
 };
 
 #endif

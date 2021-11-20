@@ -55,17 +55,5 @@ QVariant RatingsModel::headerData(int section, Qt::Orientation orientation, int 
 
 Qt::ItemFlags RatingsModel::flags(const QModelIndex &index) const
 {
-    if (!index.isValid() || index.parent().isValid())
-        return Qt::NoItemFlags;
-    Qt::ItemFlags result = OfflineSqlTable::flags(index);
-    switch (index.column()) {
-    case rmcSet:
-    case rmcName:
-    case rmcArenaId:
-        result &= ~Qt::ItemIsEditable;
-        break;
-    default:
-        break;
-    }
-    return result;
+    return OfflineSqlTable::flags(index) & ~Qt::ItemIsEditable;
 }

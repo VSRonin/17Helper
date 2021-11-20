@@ -121,28 +121,8 @@ void Worker::actualTryLogin(const QString &userName, const QString &password)
     const QUrl loginUrl = QUrl::fromUserInput(QStringLiteral("https://mtgahelper.com/api/Account/Signin?email=") + userName
                                               + QStringLiteral("&password=") + password);
     QNetworkReply *reply = m_nam->get(QNetworkRequest(loginUrl));
-    connect(reply, &QNetworkReply::errorOccurred, this, [reply, this]() { emit loginFalied(tr("Error: %1").arg(reply->errorString())); });
     connect(reply, &QNetworkReply::finished, reply, &QNetworkReply::deleteLater);
-    connect(reply, &QNetworkReply::finished, this, [reply, this]() -> void {
-        if (reply->error() != QNetworkReply::NoError)
-            return;
-        if (reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() != 200) {
-            emit loginFalied(tr("Error: %1").arg(reply->errorString()));
-            return;
-        }
-        QJsonParseError parseErr;
-        QJsonDocument loginDocument = QJsonDocument::fromJson(reply->readAll(), &parseErr);
-        if (parseErr.error != QJsonParseError::NoError || !loginDocument.isObject()) {
-            emit loginFalied(tr("Invalid response from mtgahelper.com"));
-            return;
-        }
-        QJsonObject loginObject = loginDocument.object();
-        if (!loginObject[QLatin1String("isAuthenticated")].toBool(false)) {
-            emit loginFalied(tr("Invalid response from mtgahelper.com"));
-            return;
-        }
-        emit loggedIn();
-    });
+    connect(reply, &QNetworkReply::finished, this, std::bind(&Worker::onLogIn, this, reply));
 }
 void Worker::logOut()
 {
@@ -168,41 +148,8 @@ void Worker::actualDownloadSetsMTGAH()
 {
     const QUrl setsUrl = QUrl::fromUserInput(QStringLiteral("https://mtgahelper.com/api/Misc/Sets"));
     QNetworkReply *reply = m_nam->get(QNetworkRequest(setsUrl));
-    connect(reply, &QNetworkReply::errorOccurred, this, &Worker::downloadSetsMTGAHFailed);
     connect(reply, &QNetworkReply::finished, reply, &QNetworkReply::deleteLater);
-    connect(reply, &QNetworkReply::finished, this, [reply, this]() -> void {
-        if (reply->error() != QNetworkReply::NoError)
-            return;
-        if (reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() != 200) {
-            emit downloadSetsMTGAHFailed();
-            return;
-        }
-        QJsonParseError parseErr;
-        QJsonDocument setsDocument = QJsonDocument::fromJson(reply->readAll(), &parseErr);
-        if (parseErr.error != QJsonParseError::NoError || !setsDocument.isObject()) {
-            emit downloadSetsMTGAHFailed();
-            return;
-        }
-        QJsonObject setsObject = setsDocument.object();
-        QJsonValue setsArrVal = setsObject[QLatin1String("sets")];
-        if (!setsArrVal.isArray()) {
-            emit downloadSetsMTGAHFailed();
-            return;
-        }
-        QJsonArray setsArray = setsArrVal.toArray();
-        QStringList setList;
-        for (auto i = setsArray.cbegin(), iEnd = setsArray.cend(); i != iEnd; ++i) {
-            const QString setStr = i->toObject()[QLatin1String("name")].toString().trimmed().toUpper();
-            if (!setStr.isEmpty())
-                setList.append(setStr.toUpper());
-        }
-        if (setList.isEmpty()) {
-            emit downloadSetsMTGAHFailed();
-            return;
-        }
-        saveMTGAHSets(setList);
-        downloadSetsScryfall();
-    });
+    connect(reply, &QNetworkReply::finished, this, std::bind(&Worker::onSetsMTGAHDownloaded, this, reply));
 }
 
 void Worker::saveMTGAHSets(QStringList sets)
@@ -382,12 +329,150 @@ void Worker::onCustomRatingTemplateFinished(QNetworkReply *reply)
         return;
     }
     if (!workerdb.commit()) {
-        qDebug() << workerdb.lastError().text();
         Q_ASSUME(workerdb.rollback());
         emit customRatingTemplateFailed();
         return;
     }
     emit customRatingTemplate(needUpdate);
+}
+
+void Worker::on17LDownloadFinished(QNetworkReply *reply, const QString &currSet)
+{
+    --m_SLrequestOutstanding;
+    if (reply->error() != QNetworkReply::NoError)
+        return;
+    if (reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() != 200) {
+        emit failed17LRatings();
+        return;
+    }
+    QJsonParseError parseErr;
+    const QJsonDocument ratingsDocument = QJsonDocument::fromJson(reply->readAll(), &parseErr);
+    if (parseErr.error != QJsonParseError::NoError || !ratingsDocument.isArray()) {
+        emit failed17LRatings();
+        return;
+    }
+    const QString currDateTime = QDateTime::currentDateTime().toString(Qt::ISODate);
+    QSqlDatabase workerdb = openWorkerDb();
+    Q_ASSUME(workerdb.transaction());
+    bool oneFound = false;
+    const QJsonArray ratingsArray = ratingsDocument.array();
+    for (auto i = ratingsArray.cbegin(), iEnd = ratingsArray.cend(); i != iEnd; ++i) {
+        if (!i->isObject())
+            continue;
+        const QJsonObject ratingObject = i->toObject();
+        const QString nameStr = ratingObject[QLatin1String("name")].toString();
+        if (nameStr.isEmpty())
+            continue;
+        QSqlQuery updateRatingQuery(workerdb);
+        updateRatingQuery.prepare(
+                QStringLiteral("INSERT OR REPLACE INTO [SLRatings] ([set], [name], [seen_count], [avg_seen], [pick_count], [avg_pick], [game_count], "
+                               "[win_rate], "
+                               "[opening_hand_game_count], [opening_hand_win_rate], [drawn_game_count], [drawn_win_rate], [ever_drawn_game_count], "
+                               "[ever_drawn_win_rate], [never_drawn_game_count], [never_drawn_win_rate], [drawn_improvement_win_rate], [lastUpdate]) "
+                               "VALUES"
+                               "(:set, :name, :seen_count, :avg_seen, :pick_count, :avg_pick, :game_count, :win_rate, :opening_hand_game_count, "
+                               ":opening_hand_win_rate, :drawn_game_count, :drawn_win_rate, :ever_drawn_game_count, :ever_drawn_win_rate, "
+                               ":never_drawn_game_count, :never_drawn_win_rate, :drawn_improvement_win_rate, :lastUpdate)"));
+        updateRatingQuery.bindValue(QStringLiteral(":set"), currSet);
+        updateRatingQuery.bindValue(QStringLiteral(":lastUpdate"), currDateTime);
+        updateRatingQuery.bindValue(QStringLiteral(":name"), nameStr);
+        updateRatingQuery.bindValue(QStringLiteral(":seen_count"), ratingObject[QLatin1String("seen_count")].toInt());
+        updateRatingQuery.bindValue(QStringLiteral(":avg_seen"), ratingObject[QLatin1String("avg_seen")].toDouble());
+        updateRatingQuery.bindValue(QStringLiteral(":pick_count"), ratingObject[QLatin1String("pick_count")].toInt());
+        updateRatingQuery.bindValue(QStringLiteral(":avg_pick"), ratingObject[QLatin1String("avg_pick")].toDouble());
+        updateRatingQuery.bindValue(QStringLiteral(":game_count"), ratingObject[QLatin1String("game_count")].toInt());
+        updateRatingQuery.bindValue(QStringLiteral(":win_rate"), ratingObject[QLatin1String("win_rate")].toDouble());
+        updateRatingQuery.bindValue(QStringLiteral(":opening_hand_game_count"), ratingObject[QLatin1String("opening_hand_game_count")].toInt());
+        updateRatingQuery.bindValue(QStringLiteral(":opening_hand_win_rate"), ratingObject[QLatin1String("opening_hand_win_rate")].toDouble());
+        updateRatingQuery.bindValue(QStringLiteral(":drawn_game_count"), ratingObject[QLatin1String("drawn_game_count")].toInt());
+        updateRatingQuery.bindValue(QStringLiteral(":drawn_win_rate"), ratingObject[QLatin1String("drawn_win_rate")].toDouble());
+        updateRatingQuery.bindValue(QStringLiteral(":ever_drawn_game_count"), ratingObject[QLatin1String("ever_drawn_game_count")].toInt());
+        updateRatingQuery.bindValue(QStringLiteral(":ever_drawn_win_rate"), ratingObject[QLatin1String("ever_drawn_win_rate")].toDouble());
+        updateRatingQuery.bindValue(QStringLiteral(":never_drawn_game_count"), ratingObject[QLatin1String("never_drawn_game_count")].toInt());
+        updateRatingQuery.bindValue(QStringLiteral(":never_drawn_win_rate"), ratingObject[QLatin1String("never_drawn_win_rate")].toDouble());
+        updateRatingQuery.bindValue(QStringLiteral(":drawn_improvement_win_rate"),
+                                    ratingObject[QLatin1String("drawn_improvement_win_rate")].toDouble());
+        if (!updateRatingQuery.exec()) {
+            emit failed17LRatings();
+            Q_ASSUME(workerdb.rollback());
+            return;
+        }
+        oneFound = true;
+    }
+    if (!oneFound) {
+        emit failed17LRatings();
+        Q_ASSUME(workerdb.rollback());
+        return;
+    }
+    if (!workerdb.commit()) {
+        emit failed17LRatings();
+        Q_ASSUME(workerdb.rollback());
+        return;
+    }
+    emit downloaded17LRatings(currSet);
+    if (m_SLrequestQueue.size() + m_SLrequestOutstanding == 0)
+        emit downloadedAll17LRatings();
+}
+
+void Worker::onSetsMTGAHDownloaded(QNetworkReply *reply)
+{
+    if (reply->error() != QNetworkReply::NoError) {
+        emit downloadSetsMTGAHFailed();
+        return;
+    }
+    if (reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() != 200) {
+        emit downloadSetsMTGAHFailed();
+        return;
+    }
+    QJsonParseError parseErr;
+    QJsonDocument setsDocument = QJsonDocument::fromJson(reply->readAll(), &parseErr);
+    if (parseErr.error != QJsonParseError::NoError || !setsDocument.isObject()) {
+        emit downloadSetsMTGAHFailed();
+        return;
+    }
+    QJsonObject setsObject = setsDocument.object();
+    QJsonValue setsArrVal = setsObject[QLatin1String("sets")];
+    if (!setsArrVal.isArray()) {
+        emit downloadSetsMTGAHFailed();
+        return;
+    }
+    QJsonArray setsArray = setsArrVal.toArray();
+    QStringList setList;
+    for (auto i = setsArray.cbegin(), iEnd = setsArray.cend(); i != iEnd; ++i) {
+        const QString setStr = i->toObject()[QLatin1String("name")].toString().trimmed().toUpper();
+        if (!setStr.isEmpty())
+            setList.append(setStr.toUpper());
+    }
+    if (setList.isEmpty()) {
+        emit downloadSetsMTGAHFailed();
+        return;
+    }
+    saveMTGAHSets(setList);
+    downloadSetsScryfall();
+}
+
+void Worker::onLogIn(QNetworkReply *reply)
+{
+    if (reply->error() != QNetworkReply::NoError) {
+        emit loginFalied(tr("Error: %1").arg(reply->errorString()));
+        return;
+    }
+    if (reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() != 200) {
+        emit loginFalied(tr("Error: %1").arg(reply->errorString()));
+        return;
+    }
+    QJsonParseError parseErr;
+    QJsonDocument loginDocument = QJsonDocument::fromJson(reply->readAll(), &parseErr);
+    if (parseErr.error != QJsonParseError::NoError || !loginDocument.isObject()) {
+        emit loginFalied(tr("Invalid response from mtgahelper.com"));
+        return;
+    }
+    QJsonObject loginObject = loginDocument.object();
+    if (!loginObject[QLatin1String("isAuthenticated")].toBool(false)) {
+        emit loginFalied(tr("Invalid response from mtgahelper.com"));
+        return;
+    }
+    emit loggedIn();
 }
 
 int Worker::setTypeCode(const QString &setType) const
@@ -475,83 +560,7 @@ void Worker::processSLrequestQueue()
     QNetworkReply *reply = m_nam->get(currReq.second);
     connect(reply, &QNetworkReply::errorOccurred, this, &Worker::failed17LRatings);
     connect(reply, &QNetworkReply::finished, reply, &QNetworkReply::deleteLater);
-    connect(reply, &QNetworkReply::finished, this, [reply, this, currSet]() -> void {
-        --m_SLrequestOutstanding;
-        if (reply->error() != QNetworkReply::NoError)
-            return;
-        if (reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() != 200) {
-            emit failed17LRatings();
-            return;
-        }
-        QJsonParseError parseErr;
-        const QJsonDocument ratingsDocument = QJsonDocument::fromJson(reply->readAll(), &parseErr);
-        if (parseErr.error != QJsonParseError::NoError || !ratingsDocument.isArray()) {
-            emit failed17LRatings();
-            return;
-        }
-        const QString currDateTime = QDateTime::currentDateTime().toString(Qt::ISODate);
-        QSqlDatabase workerdb = openWorkerDb();
-        Q_ASSUME(workerdb.transaction());
-        bool oneFound = false;
-        const QJsonArray ratingsArray = ratingsDocument.array();
-        for (auto i = ratingsArray.cbegin(), iEnd = ratingsArray.cend(); i != iEnd; ++i) {
-            QCoreApplication::processEvents();
-            if (!i->isObject())
-                continue;
-            const QJsonObject ratingObject = i->toObject();
-            const QString nameStr = ratingObject[QLatin1String("name")].toString();
-            if (nameStr.isEmpty())
-                continue;
-            QSqlQuery updateRatingQuery(workerdb);
-            updateRatingQuery.prepare(QStringLiteral(
-                    "INSERT OR REPLACE INTO [SLRatings] ([set], [name], [seen_count], [avg_seen], [pick_count], [avg_pick], [game_count], "
-                    "[win_rate], "
-                    "[opening_hand_game_count], [opening_hand_win_rate], [drawn_game_count], [drawn_win_rate], [ever_drawn_game_count], "
-                    "[ever_drawn_win_rate], [never_drawn_game_count], [never_drawn_win_rate], [drawn_improvement_win_rate], [lastUpdate]) "
-                    "VALUES"
-                    "(:set, :name, :seen_count, :avg_seen, :pick_count, :avg_pick, :game_count, :win_rate, :opening_hand_game_count, "
-                    ":opening_hand_win_rate, :drawn_game_count, :drawn_win_rate, :ever_drawn_game_count, :ever_drawn_win_rate, "
-                    ":never_drawn_game_count, :never_drawn_win_rate, :drawn_improvement_win_rate, :lastUpdate)"));
-            updateRatingQuery.bindValue(QStringLiteral(":set"), currSet);
-            updateRatingQuery.bindValue(QStringLiteral(":lastUpdate"), currDateTime);
-            updateRatingQuery.bindValue(QStringLiteral(":name"), nameStr);
-            updateRatingQuery.bindValue(QStringLiteral(":seen_count"), ratingObject[QLatin1String("seen_count")].toInt());
-            updateRatingQuery.bindValue(QStringLiteral(":avg_seen"), ratingObject[QLatin1String("avg_seen")].toDouble());
-            updateRatingQuery.bindValue(QStringLiteral(":pick_count"), ratingObject[QLatin1String("pick_count")].toInt());
-            updateRatingQuery.bindValue(QStringLiteral(":avg_pick"), ratingObject[QLatin1String("avg_pick")].toDouble());
-            updateRatingQuery.bindValue(QStringLiteral(":game_count"), ratingObject[QLatin1String("game_count")].toInt());
-            updateRatingQuery.bindValue(QStringLiteral(":win_rate"), ratingObject[QLatin1String("win_rate")].toDouble());
-            updateRatingQuery.bindValue(QStringLiteral(":opening_hand_game_count"), ratingObject[QLatin1String("opening_hand_game_count")].toInt());
-            updateRatingQuery.bindValue(QStringLiteral(":opening_hand_win_rate"), ratingObject[QLatin1String("opening_hand_win_rate")].toDouble());
-            updateRatingQuery.bindValue(QStringLiteral(":drawn_game_count"), ratingObject[QLatin1String("drawn_game_count")].toInt());
-            updateRatingQuery.bindValue(QStringLiteral(":drawn_win_rate"), ratingObject[QLatin1String("drawn_win_rate")].toDouble());
-            updateRatingQuery.bindValue(QStringLiteral(":ever_drawn_game_count"), ratingObject[QLatin1String("ever_drawn_game_count")].toInt());
-            updateRatingQuery.bindValue(QStringLiteral(":ever_drawn_win_rate"), ratingObject[QLatin1String("ever_drawn_win_rate")].toDouble());
-            updateRatingQuery.bindValue(QStringLiteral(":never_drawn_game_count"), ratingObject[QLatin1String("never_drawn_game_count")].toInt());
-            updateRatingQuery.bindValue(QStringLiteral(":never_drawn_win_rate"), ratingObject[QLatin1String("never_drawn_win_rate")].toDouble());
-            updateRatingQuery.bindValue(QStringLiteral(":drawn_improvement_win_rate"),
-                                        ratingObject[QLatin1String("drawn_improvement_win_rate")].toDouble());
-            if (!updateRatingQuery.exec()) {
-                emit failed17LRatings();
-                Q_ASSUME(workerdb.rollback());
-                return;
-            }
-            oneFound = true;
-        }
-        if (!oneFound) {
-            emit failed17LRatings();
-            Q_ASSUME(workerdb.rollback());
-            return;
-        }
-        if (!workerdb.commit()) {
-            emit failed17LRatings();
-            Q_ASSUME(workerdb.rollback());
-            return;
-        }
-        emit downloaded17LRatings(currSet);
-        if (m_SLrequestQueue.size() + m_SLrequestOutstanding == 0)
-            emit downloadedAll17LRatings();
-    });
+    connect(reply, &QNetworkReply::finished, this, std::bind(&Worker::on17LDownloadFinished, this, reply, currSet));
 }
 void Worker::clearRatings(const QStringList &sets, SLMetrics ratingMethod, const QVector<SLMetrics> &commentStats, const QStringList &SLcodes,
                           const QLocale &locale)
@@ -765,6 +774,7 @@ QString Worker::commentvalue(SLMetrics metric, const QVariant &value, const QLoc
 QString Worker::commentString(const QSqlQuery &query, const QVector<SLMetrics> &commentStats, const QStringList &SLcodes, const QLocale &locale) const
 {
     QStringList result;
+    result.reserve(commentStats.size());
     for (SLMetrics metric : commentStats)
         result.append(SLcodes.at(metric) + QLatin1Char(':') + commentvalue(metric, query.value(fieldName(metric)), locale));
     return result.join(QLatin1Char(' '));
