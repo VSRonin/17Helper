@@ -15,6 +15,7 @@
 #include "ratingsdelegate.h"
 #include "textdatedelegate.h"
 #include "ratingsmodel.h"
+#include "slratingsmodel.h"
 #include "ui_mainwindow.h"
 #include "globals.h"
 #include <QCoreApplication>
@@ -27,6 +28,8 @@
 #include <QDebug>
 #include <QDir>
 #include <QCompleter>
+#include "decimaldelegate.h"
+#include "percentagedelegate.h"
 class NoCheckProxy : public QIdentityProxyModel
 {
     Q_DISABLE_COPY_MOVE(NoCheckProxy)
@@ -65,7 +68,6 @@ void MainWindow::onLogin()
 {
     m_error &= ~LoginError;
     toggleLoginLogoutButtons();
-    enableSetsSection();
     retranslateUi();
 }
 
@@ -95,26 +97,17 @@ void MainWindow::onLogoutError(const QString &error)
 
 void MainWindow::do17Ldownload()
 {
-    // ui->downloadButton->setEnabled(false);
-    // ui->setsGroup->setEnabled(false);
     m_object->download17Lands(ui->formatsCombo->currentData().toString());
 }
 
 void MainWindow::doMtgahUpload(bool clear)
 {
-    // ui->uploadButton->setEnabled(false);
     m_object->uploadMTGAH(ui->ratingBasedCombo->currentData().value<Worker::SLMetrics>(), locale(), clear);
 }
 
-void MainWindow::onAllRatingsUploaded()
+void MainWindow::updatedUploadedLabel(const QString &card)
 {
-    // ui->uploadButton->setEnabled(true);
-}
-
-void MainWindow::onDownloadedAll17LRatings()
-{
-    // ui->downloadButton->setEnabled(true);
-    // ui->setsGroup->setEnabled(true);
+    ui->uploadedLabel->setText(tr("Uploaded: %1").arg(card));
 }
 
 void MainWindow::onMTGAHSetsError()
@@ -166,7 +159,6 @@ void MainWindow::onLogout()
     ui->usernameEdit->setEnabled(true);
     ui->pwdEdit->setEnabled(true);
     toggleLoginLogoutButtons();
-    disableSetsSection();
     retranslateUi();
 }
 
@@ -184,14 +176,22 @@ MainWindow::MainWindow(QWidget *parent)
     ui->progressLabel->hide();
     ui->savePwdWarningLabel->hide();
     ui->retryBasicDownloadButton->hide();
+    ui->uploadedLabel->hide();
     ui->formatsCombo->setModel(m_object->formatsModel());
     ui->ratingsView->setModel(m_object->ratingsModel());
     ui->ratingsView->setColumnHidden(RatingsModel::rmcArenaId, true);
     ui->ratingsView->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
     ui->ratingsView->sortByColumn(RatingsModel::rmcName, Qt::AscendingOrder);
     ui->ratingsView->setItemDelegateForColumn(RatingsModel::rmcRating, new RatingsDelegate(this));
-    ui->ratingsView->setItemDelegateForColumn(RatingsModel::rmcLastUpdate, new TextDateDelegate(this));
     ui->slRatingsView->setModel(m_object->seventeenLandsRatingsModel());
+    ui->slRatingsView->setItemDelegateForColumn(SLRatingsModel::slmLastUpdate, new TextDateDelegate(this));
+    PercentDelegate *percentDelegate = new PercentDelegate(this);
+    for (int metric : {Worker::SLwin_rate, Worker::SLopening_hand_win_rate, Worker::SLdrawn_win_rate, Worker::SLever_drawn_win_rate,
+                       Worker::SLnever_drawn_win_rate, Worker::SLdrawn_improvement_win_rate})
+        ui->slRatingsView->setItemDelegateForColumn(metric + 2, percentDelegate);
+    DecimalDelegate *decimalDelegate = new DecimalDelegate(this);
+    for (int metric : {Worker::SLavg_seen, Worker::SLavg_pick})
+        ui->slRatingsView->setItemDelegateForColumn(metric + 2, decimalDelegate);
     QCompleter *searchCompleter = new QCompleter(this);
     searchCompleter->setModel(m_object->ratingsModel());
     searchCompleter->setCompletionColumn(RatingsModel::rmcName);
@@ -201,7 +201,6 @@ MainWindow::MainWindow(QWidget *parent)
     SLMetricsProxy->setSourceModel(m_object->SLMetricsModel());
     ui->ratingBasedCombo->setModel(SLMetricsProxy);
     ui->ratingBasedCombo->setCurrentIndex(Worker::SLdrawn_win_rate);
-    disableSetsSection();
     retranslateUi();
 
     connect(ui->ratingBasedButton, &QPushButton::clicked, this,
@@ -218,10 +217,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->noSetButton, &QPushButton::clicked, this, &MainWindow::selectNoSets);
     connect(ui->searchCardEdit, &QLineEdit::textChanged, this, &MainWindow::updateRatingsFiler);
     connect(ui->draftableSetsCheck, &QCheckBox::clicked, m_object, &MainObject::showOnlyDraftableSets);
-    // connect(m_worker, &Worker::setsMTGAH, this, &MainWindow::fillSets);
-    // connect(m_worker, &Worker::downloadSetsMTGAHFailed, this, &MainWindow::onMTGAHSetsError);
-    // connect(m_worker, &Worker::setsScryfall, this, &MainWindow::fillSetNames);
-    // connect(m_worker, &Worker::downloadSetsScryfallFailed, this, &MainWindow::onScryfallSetsError);
+    connect(m_object, &MainObject::ratingUploaded, this, &MainWindow::updatedUploadedLabel);
     connect(m_object, &MainObject::startProgress, this, &MainWindow::onStartProgress);
     connect(m_object, &MainObject::updateProgress, this, &MainWindow::onUpdateProgress);
     connect(m_object, &MainObject::increaseProgress, this, &MainWindow::onIncreaseProgress);
@@ -230,19 +226,11 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_object, &MainObject::loginFalied, this, &MainWindow::onLoginError);
     connect(m_object, &MainObject::loggedOut, this, &MainWindow::onLogout);
     connect(m_object, &MainObject::logoutFailed, this, &MainWindow::onLogoutError);
-    // connect(m_worker, &Worker::customRatingTemplate, this, &MainWindow::onCustomRatingsTemplateDownloaded);
-    // connect(m_worker, &Worker::customRatingTemplateFailed, this, &MainWindow::onTemplateDownloadFailed);
-    // connect(m_worker, &Worker::downloaded17LRatings, this, &MainWindow::onDownloaded17LRatings);
-    // connect(m_worker, &Worker::downloadedAll17LRatings, this, &MainWindow::onDownloadedAll17LRatings);
-    // connect(m_worker, &Worker::ratingsUploadMaxProgress, this, &MainWindow::onRatingsUploadMaxProgress);
-    // connect(m_worker, &Worker::ratingsUploadProgress, this, &MainWindow::onRatingsUploadProgress);
-    // connect(m_worker, &Worker::allRatingsUploaded, this, &MainWindow::onAllRatingsUploaded);
     connect(m_object->setsModel(), &QAbstractItemModel::dataChanged, this,
             [this](const QModelIndex &, const QModelIndex &, const QVector<int> &roles) {
                 if (roles.isEmpty() || roles.contains(Qt::CheckStateRole))
                     updateRatingsFiler();
             });
-    // m_worker->downloadSetsMTGAH();
 }
 
 MainWindow::~MainWindow()
@@ -285,12 +273,6 @@ void MainWindow::retranslateUi()
     m_object->retranslateModels();
 }
 
-void MainWindow::setSetsSectionEnabled(bool enabled)
-{
-    // ui->setsGroup->setEnabled(enabled);
-    // ui->customRatingsGroup->setEnabled(enabled);
-}
-
 void MainWindow::setAllSetsSelection(Qt::CheckState check)
 {
     for (int i = 0, iEnd = m_object->setsModel()->rowCount(); i < iEnd; ++i)
@@ -304,11 +286,13 @@ void MainWindow::onStartProgress(MainObject::Operations op, const QString &descr
         Q_ASSERT(i->m_operation != op);
 #endif
     if (progressQueue.isEmpty()) {
+        enableAll(false);
         ui->progressBar->setRange(min, max);
         ui->progressBar->setValue(min);
         ui->progressLabel->setText(description);
         ui->progressBar->show();
         ui->progressLabel->show();
+        ui->uploadedLabel->setVisible(op == MainObject::opUploadMTGAH);
     }
     progressQueue.append(ProgressElement(op, description, max, min, min));
 }
@@ -343,6 +327,7 @@ void MainWindow::onEndProgress(MainObject::Operations op)
     for (auto i = pBegin, iEnd = progressQueue.end(); i != iEnd; ++i) {
         if (i->m_operation == op) {
             if (i == pBegin) {
+                ui->uploadedLabel->hide();
                 i = progressQueue.erase(i);
                 if (i != progressQueue.end()) {
                     ui->progressBar->setRange(i->m_min, i->m_max);
@@ -355,6 +340,7 @@ void MainWindow::onEndProgress(MainObject::Operations op)
             if (i == progressQueue.end()) {
                 ui->progressBar->hide();
                 ui->progressLabel->hide();
+                enableAll(true);
             }
             return;
         }
@@ -368,4 +354,22 @@ void MainWindow::toggleLoginLogoutButtons()
         button->setVisible(!button->isVisible());
         button->setEnabled(true);
     }
+    checkUploadButtonEnabled();
+}
+
+void MainWindow::checkUploadButtonEnabled()
+{
+    const bool enabled = !ui->loginButton->isVisible() && m_object->oneSetSelected();
+    ui->uploadButton->setEnabled(enabled);
+    ui->clearRatingsButton->setEnabled(enabled);
+}
+
+void MainWindow::enableAll(bool enable)
+{
+    QWidget *widToChange[] = {ui->MTGAHelperGroup, ui->customRatingsGroup, ui->setsGroup,
+                              ui->uploadButton,    ui->clearRatingsButton, ui->downloadButton};
+    for (QWidget *wid : widToChange)
+        wid->setEnabled(enable);
+    if (enable)
+        checkUploadButtonEnabled();
 }

@@ -42,8 +42,6 @@ QVariant RatingsModel::headerData(int section, Qt::Orientation orientation, int 
         return tr("Name");
     case rmcArenaId:
         return tr("Id Arena");
-    case rmcLastUpdate:
-        return tr("Last Update");
     case rmcRating:
         return tr("Rating");
     case rmcNote:

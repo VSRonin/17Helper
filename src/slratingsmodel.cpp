@@ -11,7 +11,7 @@
    limitations under the License.
 \****************************************************************************/
 #include "slratingsmodel.h"
-#include "worker.h"
+
 SLRatingsModel::SLRatingsModel(QObject *parent)
     : OfflineSqlTable(parent)
 { }
@@ -28,6 +28,13 @@ void SLRatingsModel::setSLcodes(const QStringList &newSLcodes)
     emit headerDataChanged(Qt::Horizontal, 2, Worker::SLCount + 2);
 }
 
+QVariant SLRatingsModel::data(const QModelIndex &index, int role) const
+{
+    if (role == Qt::TextAlignmentRole && index.isValid() && index.column() > slmSet && index.column() < slmLastUpdate)
+        return int(Qt::AlignRight | Qt::AlignVCenter);
+    return OfflineSqlTable::data(index, role);
+}
+
 int SLRatingsModel::columnCount(const QModelIndex &parent) const
 {
     if (parent.isValid())
@@ -42,11 +49,11 @@ QVariant SLRatingsModel::headerData(int section, Qt::Orientation orientation, in
     if (orientation == Qt::Vertical)
         return section + 1;
     switch (section) {
-    case 0:
+    case slmName:
         return tr("Name", "Card Name");
-    case 1:
+    case slmSet:
         return tr("Set");
-    case Worker::SLCount + 2:
+    case slmLastUpdate:
         return tr("Last Update Date");
     default:
         if (section < 0 || section >= SLcodes.size() + 2)

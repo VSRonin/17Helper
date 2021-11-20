@@ -62,6 +62,7 @@ public:
     QAbstractItemModel *seventeenLandsRatingsModel() const;
     void filterRatings(QString name, QStringList sets);
     void showOnlyDraftableSets(bool showOnly);
+    bool oneSetSelected() const;
 public slots:
     void tryLogin(const QString &userName, const QString &password, bool rememberMe = false);
     void logOut();
@@ -103,6 +104,7 @@ signals:
     void SLDownloadFailed();
     void ratingsCalculationFailed();
     void failedUploadRating();
+    void ratingUploaded(const QString &card);
 
 private:
     // double ratingValue(const SeventeenCard &card, SLMetrics method) const;

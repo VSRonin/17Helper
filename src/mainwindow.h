@@ -64,7 +64,6 @@ private:
     MainObject *m_object;
     Ui::MainWindow *ui;
     QList<ProgressElement> progressQueue;
-    void setSetsSectionEnabled(bool enabled);
     void setAllSetsSelection(Qt::CheckState check);
 private slots:
     void onStartProgress(MainObject::Operations op, const QString &description, int max, int min);
@@ -76,9 +75,6 @@ private slots:
     void doLogout();
     void do17Ldownload();
     void doMtgahUpload(bool clear);
-    void onDownloadedAll17LRatings();
-    void enableSetsSection() { setSetsSectionEnabled(true); }
-    void disableSetsSection() { setSetsSectionEnabled(false); }
     void onLogin();
     void onLoginError(const QString &error);
     void onLogout();
@@ -91,7 +87,9 @@ private slots:
     void retryTemplateDownload();
     void onCustomRatingsTemplateDownloaded();
     void updateRatingsFiler();
-    void onAllRatingsUploaded();
+    void updatedUploadedLabel(const QString &card);
+    void checkUploadButtonEnabled();
+    void enableAll(bool enable);
 };
 Q_DECLARE_OPERATORS_FOR_FLAGS(MainWindow::CurrentErrors);
 #endif

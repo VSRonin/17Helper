@@ -145,6 +145,15 @@ void MainObject::showOnlyDraftableSets(bool showOnly)
     m_setsFilter->setFilterEnabled(showOnly);
 }
 
+bool MainObject::oneSetSelected() const
+{
+    for (int i = 0, iEnd = m_setsProxy->rowCount(); i < iEnd; ++i) {
+        if (m_setsProxy->index(i, 0).data(Qt::CheckStateRole).value<Qt::CheckState>() == Qt::Checked)
+            return true;
+    }
+    return false;
+}
+
 void MainObject::tryLogin(const QString &userName, const QString &password, bool rememberMe)
 {
     emit startProgress(opLogIn, tr("Logging in"), 1, 0);
@@ -430,6 +439,7 @@ void MainObject::onRatingUploaded(const QString &card)
 {
     Q_UNUSED(card)
     emit increaseProgress(opUploadMTGAH, 1);
+    emit ratingUploaded(card);
 }
 
 void MainObject::onFailedUploadRating()

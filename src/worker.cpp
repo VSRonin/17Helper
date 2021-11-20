@@ -12,7 +12,6 @@
 \****************************************************************************/
 #include "worker.h"
 #include "globals.h"
-#include <QCoreApplication>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -75,7 +74,7 @@ void Worker::actualInit()
     }
     QSqlQuery createRatingsQuery(workerdb);
     createRatingsQuery.prepare(QStringLiteral("CREATE TABLE IF NOT EXISTS [Ratings] ([set] TEXT NOT NULL, [name] TEXT NOT NULL, [id_arena] INTEGER "
-                                              "PRIMARY KEY, [lastUpdate] TEXT, [rating] INTEGER, [note] TEXT)"));
+                                              "PRIMARY KEY, [rating] INTEGER, [note] TEXT)"));
     if (!createRatingsQuery.exec()) {
         emit initialisationFailed();
         return;
@@ -300,11 +299,9 @@ void Worker::onCustomRatingTemplateFinished(QNetworkReply *reply)
             needUpdate = true;
         }
         QSqlQuery updateRatingQuery(workerdb);
-        updateRatingQuery.prepare(
-                QStringLiteral("INSERT OR REPLACE INTO [Ratings] ([id_arena], [name], [set], [rating], [note], [lastUpdate]) VALUES (:id_arena, "
-                               ":name, :set, :rating, :note, (select [lastUpdate] from [Ratings] where [id_arena]=:id_arena_search))"));
+        updateRatingQuery.prepare(QStringLiteral(
+                "INSERT OR REPLACE INTO [Ratings] ([id_arena], [name], [set], [rating], [note]) VALUES (:id_arena, :name, :set, :rating, :note)"));
         updateRatingQuery.bindValue(QStringLiteral(":id_arena"), idArenaVal);
-        updateRatingQuery.bindValue(QStringLiteral("id_arena_search"), idArenaVal);
         updateRatingQuery.bindValue(QStringLiteral(":name"), nameStr);
         updateRatingQuery.bindValue(QStringLiteral(":set"), setStr);
         updateRatingQuery.bindValue(QStringLiteral(":rating"), ratingNum);
@@ -651,21 +648,6 @@ void Worker::actualUploadRatings(QStringList sets, SLMetrics ratingMethod, QVect
         return;
     }
     emit ratingsCalculated();
-    QObject *contextObject = new QObject(this);
-    connect(this, &Worker::failedUploadRating, contextObject, &QObject::deleteLater);
-    connect(this, &Worker::allRatingsUploaded, contextObject, &QObject::deleteLater);
-    connect(this, &Worker::allRatingsUploaded, contextObject, [sets, this]() {
-        QSqlDatabase workerdb = openWorkerDb();
-        Q_ASSUME(workerdb.transaction());
-        QSqlQuery ratingsUpdateDateQuery(workerdb);
-        const QString ratingsUpdateDateQueryString = QLatin1String("UPDATE [Ratings] SET [lastUpdate]='")
-                + QDateTime::currentDateTime().toString(Qt::ISODate) + QLatin1String("' WHERE [set] in (") + sets.join(QLatin1Char(','))
-                + QLatin1Char(')');
-        ratingsUpdateDateQuery.prepare(ratingsUpdateDateQueryString);
-        Q_ASSUME(ratingsUpdateDateQuery.exec());
-        if (!workerdb.commit())
-            Q_ASSUME(workerdb.rollback());
-    });
     if (!m_requestTimer->isActive())
         m_requestTimer->start();
 }

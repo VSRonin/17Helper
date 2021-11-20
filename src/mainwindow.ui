@@ -404,7 +404,7 @@
     </widget>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_8">
+    <layout class="QHBoxLayout" name="horizontalLayout_7">
      <item>
       <widget class="QLabel" name="progressLabel">
        <property name="text">
@@ -416,6 +416,13 @@
       <widget class="QProgressBar" name="progressBar">
        <property name="value">
         <number>0</number>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="uploadedLabel">
+       <property name="text">
+        <string notr="true">Uploaded: %1</string>
        </property>
       </widget>
      </item>
@@ -448,6 +455,9 @@
      </item>
      <item>
       <widget class="QPushButton" name="clearRatingsButton">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
        <property name="text">
         <string>Clear Ratings</string>
        </property>
@@ -456,7 +466,7 @@
      <item>
       <widget class="QPushButton" name="uploadButton">
        <property name="enabled">
-        <bool>true</bool>
+        <bool>false</bool>
        </property>
        <property name="text">
         <string>Upload Ratings to MTGA Helper</string>

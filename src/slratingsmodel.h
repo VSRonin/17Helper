@@ -14,17 +14,20 @@
 #ifndef SLRATINGSMODEL_H
 #define SLRATINGSMODEL_H
 #include "offlinesqltable.h"
+#include "worker.h"
 class SLRatingsModel : public OfflineSqlTable
 {
     Q_OBJECT
     Q_DISABLE_COPY_MOVE(SLRatingsModel)
 public:
+    enum SLRatingsModelColumns { slmName = 0, slmSet, slmLastUpdate = Worker::SLCount + 2 };
     int columnCount(const QModelIndex &parent) const override;
     QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
     Qt::ItemFlags flags(const QModelIndex &index) const override;
     explicit SLRatingsModel(QObject *parent = nullptr);
     void setTable(const QString &databaseName, const QString &tableName = QString()) override;
     void setSLcodes(const QStringList &newSLcodes);
+    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
 
 private:
     QStringList SLcodes;

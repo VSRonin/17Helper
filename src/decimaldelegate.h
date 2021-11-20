@@ -11,28 +11,16 @@
    limitations under the License.
 \****************************************************************************/
 
-#ifndef RATINGSMODEL_H
-#define RATINGSMODEL_H
-#include "offlinesqltable.h"
-class RatingsModel : public OfflineSqlTable
+#ifndef DECIMALDELEGATE_H
+#define DECIMALDELEGATE_H
+#include <QStyledItemDelegate>
+class DecimalDelegate : public QStyledItemDelegate
 {
     Q_OBJECT
-    Q_DISABLE_COPY_MOVE(RatingsModel)
+    Q_DISABLE_COPY_MOVE(DecimalDelegate)
 public:
-    enum RatingsModelColumns {
-        rmcSet,
-        rmcName,
-        rmcArenaId,
-        rmcRating,
-        rmcNote,
-
-        rmcCount
-    };
-    int columnCount(const QModelIndex &parent) const override;
-    QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
-    Qt::ItemFlags flags(const QModelIndex &index) const override;
-    explicit RatingsModel(QObject *parent = nullptr);
-    void setTable(const QString &databaseName, const QString &tableName = QString()) override;
+    explicit DecimalDelegate(QObject *parent = nullptr);
+    QString displayText(const QVariant &value, const QLocale &locale) const override;
 };
 
 #endif

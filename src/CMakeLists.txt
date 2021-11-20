@@ -42,6 +42,10 @@ set(delegates_SRCS
     ratingsdelegate.cpp
     textdatedelegate.h
     textdatedelegate.cpp
+    percentagedelegate.h
+    percentagedelegate.cpp
+    decimaldelegate.h
+    decimaldelegate.cpp
 )
 source_group(UI FILES ${ui_SRCS})
 source_group(Backend FILES ${backend_SRCS})

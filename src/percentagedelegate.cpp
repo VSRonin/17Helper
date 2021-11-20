@@ -10,29 +10,12 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 \****************************************************************************/
+#include "percentagedelegate.h"
+PercentDelegate::PercentDelegate(QObject *parent)
+    : QStyledItemDelegate(parent)
+{ }
 
-#ifndef RATINGSMODEL_H
-#define RATINGSMODEL_H
-#include "offlinesqltable.h"
-class RatingsModel : public OfflineSqlTable
+QString PercentDelegate::displayText(const QVariant &value, const QLocale &locale) const
 {
-    Q_OBJECT
-    Q_DISABLE_COPY_MOVE(RatingsModel)
-public:
-    enum RatingsModelColumns {
-        rmcSet,
-        rmcName,
-        rmcArenaId,
-        rmcRating,
-        rmcNote,
-
-        rmcCount
-    };
-    int columnCount(const QModelIndex &parent) const override;
-    QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
-    Qt::ItemFlags flags(const QModelIndex &index) const override;
-    explicit RatingsModel(QObject *parent = nullptr);
-    void setTable(const QString &databaseName, const QString &tableName = QString()) override;
-};
-
-#endif
+    return tr("%1%2", "number and percentage sign").arg(locale.toString(100.0 * value.toDouble(), 'f', 2), locale.percent());
+}
