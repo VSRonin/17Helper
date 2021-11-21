@@ -86,6 +86,7 @@ public slots:
                        const QLocale &locale);
     void clearRatings(const QStringList &sets, SLMetrics ratingMethod, const QVector<SLMetrics> &commentStats, const QStringList &SLcodes,
                       const QLocale &locale);
+    void cancelUpload();
 private slots:
     void processSLrequestQueue();
     void processMTGAHrequestQueue();
@@ -95,6 +96,7 @@ private slots:
     void on17LDownloadFinished(QNetworkReply *reply, const QString &currSet);
     void onSetsMTGAHDownloaded(QNetworkReply *reply);
     void onLogIn(QNetworkReply *reply);
+    void onRatingUploaded(QNetworkReply *reply, const QJsonObject &reqData);
 signals:
     void initialised();
     void initialisationFailed();
@@ -143,6 +145,7 @@ private:
     const QString m_workerDbName;
     QSqlDatabase openWorkerDb();
     QTimer *m_requestTimer;
+    std::atomic_bool m_cancelUpload;
 };
 Q_DECLARE_METATYPE(Worker::SLMetrics)
 #endif

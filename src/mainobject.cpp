@@ -271,11 +271,17 @@ void MainObject::uploadMTGAH(Worker::SLMetrics ratingMethod, const QLocale &loca
     QStringList setsEscaped = sets;
     for (auto i = setsEscaped.begin(), iEnd = setsEscaped.end(); i != iEnd; ++i)
         *i = objectDb.driver()->escapeIdentifier(*i, QSqlDriver::FieldName);
+    QString setsQueryString;
+    if (clear) {
+        setsQueryString = QLatin1String("SELECT COUNT([id_arena]) FROM [Ratings] WHERE [set] in (");
+    } else {
+        setsQueryString = QLatin1String("SELECT COUNT([id_arena]) FROM [Ratings] LEFT JOIN [SLRatings] on [Ratings].[name]=[SLRatings].[name] and "
+                                        "[Ratings].[set]=[SLRatings].[set] WHERE "
+                                        "[seen_count] NOT NULL AND [Ratings].[set] in (");
+    }
+    setsQueryString += setsEscaped.join(QLatin1Char(',')) + QLatin1Char(')');
     QSqlQuery setsQuery(objectDb);
-    setsQuery.prepare(QLatin1String("SELECT COUNT([id_arena]) FROM [Ratings] LEFT JOIN [SLRatings] on [Ratings].[name]=[SLRatings].[name] and "
-                                    "[Ratings].[set]=[SLRatings].[set] WHERE "
-                                    "[seen_count] NOT NULL AND [Ratings].[set] in (")
-                      + setsEscaped.join(QLatin1Char(',')) + QLatin1Char(')'));
+    setsQuery.prepare(setsQueryString);
     Q_ASSUME(setsQuery.exec());
     int resultSize = 0;
     if (setsQuery.next())
@@ -288,6 +294,11 @@ void MainObject::uploadMTGAH(Worker::SLMetrics ratingMethod, const QLocale &loca
         m_worker->clearRatings(sets, ratingMethod, commentMetrics, SLcodes, locale);
     else
         m_worker->uploadRatings(sets, ratingMethod, commentMetrics, SLcodes, locale);
+}
+
+void MainObject::cancelUpload()
+{
+    m_worker->cancelUpload();
 }
 
 void MainObject::onWorkerInit()

@@ -426,6 +426,13 @@
        </property>
       </widget>
      </item>
+     <item>
+      <widget class="QPushButton" name="cancelUploadButton">
+       <property name="text">
+        <string>Cancel</string>
+       </property>
+      </widget>
+     </item>
     </layout>
    </item>
    <item>

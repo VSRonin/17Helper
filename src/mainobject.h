@@ -69,6 +69,7 @@ public slots:
     void retranslateModels();
     void download17Lands(const QString &format);
     void uploadMTGAH(Worker::SLMetrics ratingMethod, const QLocale &locale, bool clear);
+    void cancelUpload();
 private slots:
     void onWorkerInit();
     void onLoggedIn();

@@ -177,6 +177,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->savePwdWarningLabel->hide();
     ui->retryBasicDownloadButton->hide();
     ui->uploadedLabel->hide();
+    ui->cancelUploadButton->hide();
     ui->formatsCombo->setModel(m_object->formatsModel());
     ui->ratingsView->setModel(m_object->ratingsModel());
     ui->ratingsView->setColumnHidden(RatingsModel::rmcArenaId, true);
@@ -217,6 +218,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->noSetButton, &QPushButton::clicked, this, &MainWindow::selectNoSets);
     connect(ui->searchCardEdit, &QLineEdit::textChanged, this, &MainWindow::updateRatingsFiler);
     connect(ui->draftableSetsCheck, &QCheckBox::clicked, m_object, &MainObject::showOnlyDraftableSets);
+    connect(ui->cancelUploadButton, &QPushButton::clicked, m_object, &MainObject::cancelUpload);
     connect(m_object, &MainObject::ratingUploaded, this, &MainWindow::updatedUploadedLabel);
     connect(m_object, &MainObject::startProgress, this, &MainWindow::onStartProgress);
     connect(m_object, &MainObject::updateProgress, this, &MainWindow::onUpdateProgress);
@@ -293,6 +295,7 @@ void MainWindow::onStartProgress(MainObject::Operations op, const QString &descr
         ui->progressBar->show();
         ui->progressLabel->show();
         ui->uploadedLabel->setVisible(op == MainObject::opUploadMTGAH);
+        ui->cancelUploadButton->setVisible(op == MainObject::opUploadMTGAH);
     }
     progressQueue.append(ProgressElement(op, description, max, min, min));
 }
@@ -328,6 +331,7 @@ void MainWindow::onEndProgress(MainObject::Operations op)
         if (i->m_operation == op) {
             if (i == pBegin) {
                 ui->uploadedLabel->hide();
+                ui->cancelUploadButton->hide();
                 i = progressQueue.erase(i);
                 if (i != progressQueue.end()) {
                     ui->progressBar->setRange(i->m_min, i->m_max);
