@@ -23,9 +23,11 @@ public:
         smcSetName,
         smcSetID,
         smcType,
+        smcParentSet,
 
         smcCount
     };
+    void setQuery(const QSqlDatabase &db);
     int columnCount(const QModelIndex &parent) const override;
     QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
     explicit SetsModel(QObject *parent = nullptr);

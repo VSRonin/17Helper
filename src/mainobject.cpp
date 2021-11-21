@@ -340,14 +340,7 @@ void MainObject::fillFormats()
 void MainObject::selectSetsModel()
 {
     QSqlDatabase objectDb = openDb(m_objectDbName);
-    QSqlQuery setsQuery(objectDb);
-    setsQuery.prepare(QStringLiteral("select [name], [id], [type] from ( "
-                                     "SELECT [id], "
-                                     "CASE WHEN [name] is NULL then [id] ELSE [name] END as [name], "
-                                     "CASE WHEN [release_date] is  NULL then DATE() ELSE [release_date] END as [release_date], "
-                                     "CASE WHEN [type] is  NULL then 1 ELSE [type] END as [type] "
-                                     "FROM [Sets]) order by [release_date] desc"));
-    m_setsModel->setQuery(std::move(setsQuery));
+    m_setsModel->setQuery(objectDb);
     m_setsProxy->setData(m_setsProxy->index(0, 0), Qt::Checked, Qt::CheckStateRole);
 }
 

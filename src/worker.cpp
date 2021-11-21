@@ -68,7 +68,7 @@ void Worker::actualInit()
     Q_ASSERT(workerdb.driver()->hasFeature(QSqlDriver::Transactions));
     QSqlQuery createSetsQuery(workerdb);
     createSetsQuery.prepare(
-            QStringLiteral("CREATE TABLE IF NOT EXISTS [Sets] ([id] TEXT PRIMARY KEY, [name] TEXT, [type] INTEGER, [release_date] TEXT)"));
+            QStringLiteral("CREATE TABLE IF NOT EXISTS [Sets] ([id] TEXT PRIMARY KEY, [name] TEXT, [type] INTEGER, [release_date] TEXT, [parent_set] TEXT)"));
     if (!createSetsQuery.exec()) {
         emit initialisationFailed();
         return;
@@ -235,16 +235,26 @@ void Worker::parseSetsScryfall(QNetworkReply *reply, const QStringList &sets)
     for (auto i = setsArray.cbegin(), iEnd = setsArray.cend(); i != iEnd; ++i) {
         const QJsonObject setObj = i->toObject();
         const QString setStr = setObj[QLatin1String("code")].toString().trimmed().toUpper();
+        const QString parentSetStr = setObj[QLatin1String("parent_set_code")].toString().trimmed().toUpper();
         if (setStr.isEmpty())
             continue;
         if (sets.contains(setStr)) {
             QSqlQuery updateSetQuery(workerdb);
             updateSetQuery.prepare(
-                    QStringLiteral("UPDATE [Sets] SET [name] = :name , [type] = :type , [release_date] = :releaseDt WHERE [id] = :id"));
+                    QStringLiteral("UPDATE [Sets] SET [name] = :name , [type] = :type , [release_date] = :releaseDt, [parent_set] = :parent_set WHERE [id] = :id"));
             updateSetQuery.bindValue(QStringLiteral(":name"), setObj[QLatin1String("name")].toString().trimmed());
             updateSetQuery.bindValue(QStringLiteral(":type"), setTypeCode(setObj[QLatin1String("set_type")].toString().trimmed()));
             updateSetQuery.bindValue(QStringLiteral(":releaseDt"), setObj[QLatin1String("released_at")].toString().trimmed());
             updateSetQuery.bindValue(QStringLiteral(":id"), setStr);
+            if(parentSetStr.isEmpty()){
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+                updateSetQuery.bindValue(QStringLiteral(":parent_set"), QVariant(QMetaType(QMetaType::QString)));
+#else
+                updateSetQuery.bindValue(QStringLiteral(":parent_set"), QVariant(QVariant::String));
+#endif
+            }
+            else
+                updateSetQuery.bindValue(QStringLiteral(":parent_set"), parentSetStr);
             Q_ASSUME(updateSetQuery.exec());
         }
     }
@@ -595,13 +605,13 @@ void Worker::cancelUpload()
 void Worker::uploadRatings(const QStringList &sets, SLMetrics ratingMethod, const QVector<SLMetrics> &commentStats, const QStringList &SLcodes,
                            const QLocale &locale)
 {
-    m_cancelUpload = false;
     QMetaObject::invokeMethod(this, std::bind(&Worker::actualUploadRatings, this, sets, ratingMethod, commentStats, SLcodes, locale, false),
                               Qt::QueuedConnection);
 }
 void Worker::actualUploadRatings(QStringList sets, SLMetrics ratingMethod, QVector<SLMetrics> commentStats, const QStringList &SLcodes,
                                  const QLocale &locale, bool clear)
 {
+    m_cancelUpload = false;
     if (sets.isEmpty() || SLcodes.isEmpty()) {
         emit failedRatingCalculation();
         return;

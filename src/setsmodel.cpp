@@ -16,6 +16,13 @@ SetsModel::SetsModel(QObject *parent)
     : OfflineSqlQueryModel(parent)
 { }
 
+void SetsModel::setQuery(const QSqlDatabase &db)
+{
+    QSqlQuery setsQuery(db);
+    setsQuery.prepare(QStringLiteral("select [name], [id], [type] from ( SELECT [id], CASE WHEN [name] is NULL then [id] ELSE [name] END as [name], CASE WHEN [release_date] is  NULL then DATE() ELSE [release_date] END as [release_date], CASE WHEN [type] is  NULL then 1 ELSE [type] END as [type] FROM [Sets]) order by [release_date] desc"));
+    OfflineSqlQueryModel::setQuery(std::move(setsQuery));
+}
+
 int SetsModel::columnCount(const QModelIndex &parent) const
 {
     if (parent.isValid())
