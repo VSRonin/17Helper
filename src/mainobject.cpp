@@ -12,6 +12,7 @@
 \****************************************************************************/
 #include "mainobject.h"
 #include "globals.h"
+#include "configmanager.h"
 #include "checkableproxy.h"
 #include "ratingsmodel.h"
 #include <QThread>
@@ -53,6 +54,7 @@ MainObject::MainObject(QObject *parent)
     m_ratingTemplateProxy = new QSortFilterProxyModel(this);
     m_ratingTemplateProxy->setSourceModel(m_ratingTemplateModel);
     QMetaObject::invokeMethod(this, std::bind(&MainObject::startProgress, this, opInitWorker, tr("Initialising"), 0, 0), Qt::QueuedConnection);
+    m_configManager = new ConfigManager(this);
     m_worker = new Worker;
 #ifndef DEBUG_SINGLE_THREAD
     m_workerThread = new QThread(this);
@@ -174,20 +176,7 @@ void MainObject::tryLogin(const QString &userName, const QString &password, bool
 {
     emit startProgress(opLogIn, tr("Logging in"), 1, 0);
     m_worker->tryLogin(userName, password);
-    if (rememberMe) {
-        const QString configPath = appSettingsPath();
-        QJsonObject configObject;
-        QFile configFile(configPath + QDir::separator() + QLatin1String("17helperconfig.json"));
-        if (configFile.exists()) {
-            Q_ASSUME(configFile.open(QIODevice::ReadOnly));
-            configObject = QJsonDocument::fromJson(configFile.readAll()).object();
-            configFile.close();
-        }
-        configObject[QLatin1String("username")] = userName;
-        configObject[QLatin1String("password")] = password;
-        Q_ASSUME(configFile.open(QIODevice::WriteOnly));
-        configFile.write(QJsonDocument(configObject).toJson(QJsonDocument::Indented));
-    }
+    m_configManager->writeUserPass(rememberMe ? userName : QString(), rememberMe ? password : QString());
 }
 
 void MainObject::logOut()

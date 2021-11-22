@@ -24,6 +24,7 @@ class CheckableProxy;
 class RatingsModel;
 class QSortFilterProxyModel;
 class SetsFilterModel;
+class ConfigManager;
 class MainObject : public QObject
 {
     Q_OBJECT
@@ -114,6 +115,7 @@ private:
     void fillFormats();
     void selectSetsModel();
     Worker *m_worker;
+    ConfigManager *m_configManager;
     QThread *m_workerThread;
     const QString m_objectDbName;
     QStringList SLcodes;

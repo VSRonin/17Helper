@@ -20,6 +20,8 @@ set(backend_SRCS
     worker.cpp
     mainobject.h
     mainobject.cpp
+    configmanager.h
+    configmanager.cpp
 )
 set(models_SRCS
     ratingsmodel.h
