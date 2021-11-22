@@ -50,7 +50,8 @@ public:
         LogoutError = 0x2,
         MTGAHSetsError = 0x4,
         RatingTemplateFailed = 0x8,
-        InitialisationError = 0x10
+        InitialisationError = 0x10,
+        SLDownloadError = 0x20
     };
     Q_DECLARE_FLAGS(CurrentErrors, CurrentError)
     CurrentErrors errors() const;
@@ -74,6 +75,8 @@ private slots:
     void doLogin();
     void doLogout();
     void do17Ldownload();
+    void on17LandsDownloadFinished();
+    void on17Lerror();
     void doMtgahUpload(bool clear);
     void onLogin();
     void onLoginError(const QString &error);

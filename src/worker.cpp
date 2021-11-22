@@ -67,8 +67,8 @@ void Worker::actualInit()
     Q_ASSERT(workerdb.driver()->hasFeature(QSqlDriver::NamedPlaceholders));
     Q_ASSERT(workerdb.driver()->hasFeature(QSqlDriver::Transactions));
     QSqlQuery createSetsQuery(workerdb);
-    createSetsQuery.prepare(
-            QStringLiteral("CREATE TABLE IF NOT EXISTS [Sets] ([id] TEXT PRIMARY KEY, [name] TEXT, [type] INTEGER, [release_date] TEXT, [parent_set] TEXT)"));
+    createSetsQuery.prepare(QStringLiteral(
+            "CREATE TABLE IF NOT EXISTS [Sets] ([id] TEXT PRIMARY KEY, [name] TEXT, [type] INTEGER, [release_date] TEXT, [parent_set] TEXT)"));
     if (!createSetsQuery.exec()) {
         emit initialisationFailed();
         return;
@@ -240,20 +240,19 @@ void Worker::parseSetsScryfall(QNetworkReply *reply, const QStringList &sets)
             continue;
         if (sets.contains(setStr)) {
             QSqlQuery updateSetQuery(workerdb);
-            updateSetQuery.prepare(
-                    QStringLiteral("UPDATE [Sets] SET [name] = :name , [type] = :type , [release_date] = :releaseDt, [parent_set] = :parent_set WHERE [id] = :id"));
+            updateSetQuery.prepare(QStringLiteral(
+                    "UPDATE [Sets] SET [name] = :name , [type] = :type , [release_date] = :releaseDt, [parent_set] = :parent_set WHERE [id] = :id"));
             updateSetQuery.bindValue(QStringLiteral(":name"), setObj[QLatin1String("name")].toString().trimmed());
             updateSetQuery.bindValue(QStringLiteral(":type"), setTypeCode(setObj[QLatin1String("set_type")].toString().trimmed()));
             updateSetQuery.bindValue(QStringLiteral(":releaseDt"), setObj[QLatin1String("released_at")].toString().trimmed());
             updateSetQuery.bindValue(QStringLiteral(":id"), setStr);
-            if(parentSetStr.isEmpty()){
+            if (parentSetStr.isEmpty()) {
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
                 updateSetQuery.bindValue(QStringLiteral(":parent_set"), QVariant(QMetaType(QMetaType::QString)));
 #else
                 updateSetQuery.bindValue(QStringLiteral(":parent_set"), QVariant(QVariant::String));
 #endif
-            }
-            else
+            } else
                 updateSetQuery.bindValue(QStringLiteral(":parent_set"), parentSetStr);
             Q_ASSUME(updateSetQuery.exec());
         }
@@ -632,15 +631,19 @@ void Worker::actualUploadRatings(QStringList sets, SLMetrics ratingMethod, QVect
         *i = workerdb.driver()->escapeIdentifier(*i, QSqlDriver::FieldName);
     QMap<QString, QVector<double>> percentiles;
     QString ratingsToUploadQueryString;
-    if (!clear) {
+    if (clear) {
+        ratingsToUploadQueryString = QLatin1String("SELECT [id_arena], [set], [name] FROM [Ratings] WHERE [set] in (");
+    } else {
         QSqlQuery percentilesRatingQuery(workerdb);
-        percentilesRatingQuery.prepare(QLatin1String("SELECT [Ratings].[set], [") + ratingMethodField
-                                       + QLatin1String("] FROM [Ratings] LEFT JOIN [SLRatings] on [Ratings].[name]=[SLRatings].[name] and "
-                                                       "[Ratings].[set]=[SLRatings].[set] WHERE  [seen_count] NOT NULL AND [Ratings].[set] in (")
+        percentilesRatingQuery.prepare(QLatin1String("SELECT distinct [Ratings].[name], [SLRatings].[set], [SLRatings].[") + ratingMethodField
+                                       + QLatin1String("] FROM [Ratings] left join [Sets] on [Ratings].[set]=[Sets].[id] "
+                                                       "left join [SLRatings] on [SLRatings].[name]=[Ratings].[name] and [SLRatings].[set]=CASE WHEN "
+                                                       "[Sets].[parent_set] IS NULL THEN [Sets].[id] ELSE [Sets].[parent_set] end "
+                                                       "WHERE  [seen_count] NOT NULL AND [Ratings].[set] in (")
                                        + sets.join(QLatin1Char(',')) + QLatin1String(") order by [") + ratingMethodField + QLatin1String("] asc"));
         Q_ASSUME(percentilesRatingQuery.exec());
         while (percentilesRatingQuery.next()) {
-            percentiles[percentilesRatingQuery.value(0).toString()].append(percentilesRatingQuery.value(1).toDouble());
+            percentiles[percentilesRatingQuery.value(1).toString()].append(percentilesRatingQuery.value(2).toDouble());
         }
         if (percentiles.isEmpty()
             || std::any_of(percentiles.cbegin(), percentiles.cend(), [](const QVector<double> &vec) -> bool { return vec.isEmpty(); })) {
@@ -649,15 +652,15 @@ void Worker::actualUploadRatings(QStringList sets, SLMetrics ratingMethod, QVect
         }
         percentiles = reduceDeciles(percentiles);
         percentilesRatingQuery.clear();
-        ratingsToUploadQueryString = QLatin1String("SELECT [id_arena], [Ratings].[set], [Ratings].[name], [") + ratingMethodField + QLatin1Char(']');
+        ratingsToUploadQueryString =
+                QLatin1String("SELECT [id_arena], [SLRatings].[set], [Ratings].[name], [") + ratingMethodField + QLatin1Char(']');
         if (!commentFields.isEmpty()) {
             ratingsToUploadQueryString += QLatin1String(", [") + commentFields.join(QLatin1String("], [")) + QLatin1Char(']');
         }
-        ratingsToUploadQueryString += QLatin1String(+" FROM [Ratings] LEFT JOIN [SLRatings] on [Ratings].[name]=[SLRatings].[name] and "
-                                                     "[Ratings].[set]=[SLRatings].[set] WHERE [seen_count] "
-                                                     "NOT NULL AND [Ratings].[set] in (");
-    } else {
-        ratingsToUploadQueryString = QLatin1String("SELECT [id_arena], [set], [name] FROM [Ratings] WHERE [set] in (");
+        ratingsToUploadQueryString += QLatin1String(" FROM [Ratings] left join [Sets] on [Ratings].[set]=[Sets].[id] "
+                                                    "left join [SLRatings] on [SLRatings].[name]=[Ratings].[name] and [SLRatings].[set]=CASE WHEN "
+                                                    "[Sets].[parent_set] IS NULL THEN [Sets].[id] ELSE [Sets].[parent_set] end "
+                                                    "WHERE  [seen_count] NOT NULL AND [Ratings].[set] in (");
     }
     ratingsToUploadQueryString += sets.join(QLatin1Char(',')) + QLatin1Char(')');
     QSqlQuery ratingsToUploadQuery(workerdb);
@@ -681,7 +684,6 @@ void Worker::actualUploadRatings(QStringList sets, SLMetrics ratingMethod, QVect
             cardData[QLatin1String("note")] = commentStr;
         cardData[QLatin1String("attempt")] = 0;
         const QString cardName = ratingsToUploadQuery.value(2).toString();
-        ;
         cardData[QLatin1String("name")] = cardName;
         m_MTGAHrequestQueue.enqueue(cardData);
         emit ratingCalculated(cardName);

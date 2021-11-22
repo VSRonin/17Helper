@@ -120,24 +120,40 @@ QAbstractItemModel *MainObject::seventeenLandsRatingsModel() const
     return m_SLratingsProxy;
 }
 
-void MainObject::filterRatings(QString name, QStringList sets)
+void MainObject::filterRatings(QString name)
 {
-    if (sets.isEmpty() && name.isEmpty())
+    QStringList setsMTGAH;
+    QStringList setsSL;
+    for (int i = 0, iEnd = m_setsProxy->rowCount(); i != iEnd; ++i) {
+        if (m_setsProxy->index(i, 0).data(Qt::CheckStateRole).toInt() == Qt::Checked) {
+            setsMTGAH.append(m_setsProxy->index(i, SetsModel::smcSetID).data().toString());
+            setsSL.append(m_setsProxy->index(i, SetsModel::smcParentSet).data().toString());
+        }
+    }
+    Q_ASSERT(setsMTGAH.size() == setsSL.size());
+    if (setsMTGAH.isEmpty() && name.isEmpty())
         return m_ratingTemplateModel->setFilter(QString());
-    QString filterString;
+    QString filterStringMTGAH;
+    QString filterStringSL;
     QSqlDriver *driver = openDb(m_objectDbName).driver();
-    if (!sets.isEmpty()) {
-        for (int i = 0; i < sets.size(); ++i)
-            sets[i] = driver->escapeIdentifier(sets.at(i), QSqlDriver::FieldName);
-        filterString = QLatin1String("[set] in (") + sets.join(QLatin1Char(',')) + QLatin1Char(')');
+    if (!setsMTGAH.isEmpty()) {
+        for (int i = 0; i < setsMTGAH.size(); ++i) {
+            setsMTGAH[i] = driver->escapeIdentifier(setsMTGAH.at(i), QSqlDriver::FieldName);
+            setsSL[i] = driver->escapeIdentifier(setsSL.at(i), QSqlDriver::FieldName);
+        }
+        filterStringMTGAH = QLatin1String("[set] in (") + setsMTGAH.join(QLatin1Char(',')) + QLatin1Char(')');
+        filterStringSL = QLatin1String("[set] in (") + setsSL.join(QLatin1Char(',')) + QLatin1Char(')');
     }
     if (!name.isEmpty()) {
-        if (!filterString.isEmpty())
-            filterString += QLatin1String(" AND ");
-        filterString += QLatin1String("[name] like ") + driver->escapeIdentifier(QLatin1Char('%') + name + QLatin1Char('%'), QSqlDriver::FieldName);
+        for (QString *filterString : {&filterStringMTGAH, &filterStringSL}) {
+            if (!filterString->isEmpty())
+                *filterString += QLatin1String(" AND ");
+            *filterString +=
+                    QLatin1String("[name] like ") + driver->escapeIdentifier(QLatin1Char('%') + name + QLatin1Char('%'), QSqlDriver::FieldName);
+        }
     }
-    m_ratingTemplateModel->setFilter(filterString);
-    m_SLratingsModel->setFilter(filterString);
+    m_ratingTemplateModel->setFilter(filterStringMTGAH);
+    m_SLratingsModel->setFilter(filterStringSL);
 }
 
 void MainObject::showOnlyDraftableSets(bool showOnly)
@@ -244,10 +260,12 @@ void MainObject::download17Lands(const QString &format)
     QStringList sets;
     for (int i = 0, iEnd = m_setsProxy->rowCount(); i < iEnd; ++i) {
         if (m_setsProxy->index(i, 0).data(Qt::CheckStateRole).toInt() == Qt::Checked)
-            sets.append(m_setsProxy->index(i, 1).data().toString());
+            sets.append(m_setsProxy->index(i, SetsModel::smcParentSet).data().toString());
     }
     if (sets.isEmpty())
         return;
+    std::sort(sets.begin(), sets.end());
+    sets.erase(std::unique(sets.begin(), sets.end()), sets.end());
     emit startProgress(opDownload17Ratings, tr("Downloading 17Lands Data"), sets.size(), 0);
     m_worker->get17LRatings(sets, format);
 }
@@ -275,9 +293,10 @@ void MainObject::uploadMTGAH(Worker::SLMetrics ratingMethod, const QLocale &loca
     if (clear) {
         setsQueryString = QLatin1String("SELECT COUNT([id_arena]) FROM [Ratings] WHERE [set] in (");
     } else {
-        setsQueryString = QLatin1String("SELECT COUNT([id_arena]) FROM [Ratings] LEFT JOIN [SLRatings] on [Ratings].[name]=[SLRatings].[name] and "
-                                        "[Ratings].[set]=[SLRatings].[set] WHERE "
-                                        "[seen_count] NOT NULL AND [Ratings].[set] in (");
+        setsQueryString = QLatin1String("SELECT COUNT([id_arena]) FROM [Ratings] left join [Sets] on [Ratings].[set]=[Sets].[id] "
+                                        "left join [SLRatings] on [SLRatings].[name]=[Ratings].[name] and [SLRatings].[set]=CASE WHEN "
+                                        "[Sets].[parent_set] IS NULL THEN [Sets].[id] ELSE [Sets].[parent_set] end "
+                                        "WHERE  [seen_count] NOT NULL AND [Ratings].[set] in (");
     }
     setsQueryString += setsEscaped.join(QLatin1Char(',')) + QLatin1Char(')');
     QSqlQuery setsQuery(objectDb);

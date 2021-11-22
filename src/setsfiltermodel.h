@@ -19,7 +19,7 @@ class SetsFilterModel : public QSortFilterProxyModel
 {
     Q_OBJECT
     Q_DISABLE_COPY_MOVE(SetsFilterModel)
-    enum { DraftableSet = Worker::stcore | Worker::stexpansion | Worker::stdraft_innovation };
+    enum { DraftableSet = Worker::stcore | Worker::stexpansion | Worker::stmasters | Worker::stdraft_innovation };
 
 public:
     explicit SetsFilterModel(QObject *parent = nullptr);

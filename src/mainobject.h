@@ -60,7 +60,7 @@ public:
     QAbstractItemModel *formatsModel() const;
     QAbstractItemModel *ratingsModel() const;
     QAbstractItemModel *seventeenLandsRatingsModel() const;
-    void filterRatings(QString name, QStringList sets);
+    void filterRatings(QString name);
     void showOnlyDraftableSets(bool showOnly);
     bool oneSetSelected() const;
 public slots:

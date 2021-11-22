@@ -95,9 +95,30 @@ void MainWindow::onLogoutError(const QString &error)
     retranslateUi();
 }
 
+void MainWindow::onLogout()
+{
+    m_error &= ~LogoutError;
+    ui->usernameEdit->setEnabled(true);
+    ui->pwdEdit->setEnabled(true);
+    toggleLoginLogoutButtons();
+    retranslateUi();
+}
+
 void MainWindow::do17Ldownload()
 {
     m_object->download17Lands(ui->formatsCombo->currentData().toString());
+}
+
+void MainWindow::on17LandsDownloadFinished()
+{
+    m_error &= ~SLDownloadError;
+    retranslateUi();
+}
+
+void MainWindow::on17Lerror()
+{
+    m_error |= SLDownloadError;
+    retranslateUi();
 }
 
 void MainWindow::doMtgahUpload(bool clear)
@@ -144,22 +165,7 @@ void MainWindow::onCustomRatingsTemplateDownloaded()
 
 void MainWindow::updateRatingsFiler()
 {
-    QStringList sets;
-    for (int i = 0, iEnd = m_object->setsModel()->rowCount(); i != iEnd; ++i) {
-        if (m_object->setsModel()->index(i, 0).data(Qt::CheckStateRole).toInt() == Qt::Checked) {
-            sets.append(m_object->setsModel()->index(i, 1).data().toString());
-        }
-    }
-    m_object->filterRatings(ui->searchCardEdit->text(), sets);
-}
-
-void MainWindow::onLogout()
-{
-    m_error &= ~LogoutError;
-    ui->usernameEdit->setEnabled(true);
-    ui->pwdEdit->setEnabled(true);
-    toggleLoginLogoutButtons();
-    retranslateUi();
+    m_object->filterRatings(ui->searchCardEdit->text());
 }
 
 MainWindow::MainWindow(QWidget *parent)
@@ -228,6 +234,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_object, &MainObject::loginFalied, this, &MainWindow::onLoginError);
     connect(m_object, &MainObject::loggedOut, this, &MainWindow::onLogout);
     connect(m_object, &MainObject::logoutFailed, this, &MainWindow::onLogoutError);
+    connect(m_object, &MainObject::SLDownloadFailed, this, &MainWindow::on17Lerror);
     connect(m_object->setsModel(), &QAbstractItemModel::dataChanged, this,
             [this](const QModelIndex &, const QModelIndex &, const QVector<int> &roles) {
                 if (roles.isEmpty() || roles.contains(Qt::CheckStateRole))
@@ -270,6 +277,8 @@ void MainWindow::retranslateUi()
         errorStrings.append(tr("Error downloading sets info! Check your internet connection"));
     if (m_error & RatingTemplateFailed)
         errorStrings.append(tr("Error downloading ratings template! Check your internet connection"));
+    if (m_error & RatingTemplateFailed)
+        errorStrings.append(tr("Error downloading ratings ratings form 17Lands! Check your internet connection"));
     ui->errorLabel->setText(errorStrings.join(QChar(QLatin1Char('\n'))));
     ui->ratingsView->update();
     m_object->retranslateModels();
