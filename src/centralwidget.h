@@ -79,6 +79,7 @@ private slots:
     void on17LandsDownloadFinished();
     void on17Lerror();
     void doMtgahUpload(bool clear);
+    void onRememberPass(int state);
     void onLogin();
     void onLoginError(const QString &error);
     void onLogout();
@@ -95,6 +96,9 @@ private slots:
     void enableAll(bool enable);
     void onUploadedRatings();
     void onFailedUploadRating();
+    void onLoadUserPass(const QString &userName, const QString &password);
+    void onLoadDownloadFormat(const QString &format);
+    void onLoadUploadRating(GEnums::SLMetrics ratingBase);
 signals:
     void updatedUploadedStatus(const QString &card);
 };

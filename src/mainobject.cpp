@@ -12,6 +12,7 @@
 \****************************************************************************/
 #include "mainobject.h"
 #include "globals.h"
+#include "worker.h"
 #include "configmanager.h"
 #include "checkableproxy.h"
 #include "ratingsmodel.h"
@@ -36,7 +37,7 @@ MainObject::MainObject(QObject *parent)
     , m_objectDbName(QStringLiteral("ObjectDb"))
     , ratingsToUpload(0)
 {
-    m_SLMetricsModel = new QStandardItemModel(Worker::SLCount, 1, this);
+    m_SLMetricsModel = new QStandardItemModel(GEnums::SLCount, 1, this);
     fillMetrics();
     m_formatsModel = new QStandardItemModel(dfCount, 1, this);
     fillFormats();
@@ -172,11 +173,16 @@ bool MainObject::oneSetSelected() const
     return false;
 }
 
+QString MainObject::configPath() const
+{
+    return m_configManager->configFilePath();
+}
+
 void MainObject::tryLogin(const QString &userName, const QString &password, bool rememberMe)
 {
     emit startProgress(opLogIn, tr("Logging in"), 1, 0);
     m_worker->tryLogin(userName, password);
-    m_configManager->writeUserPass(rememberMe ? userName : QString(), rememberMe ? password : QString());
+    Q_ASSUME(m_configManager->writeUserPass(rememberMe ? userName : QString(), rememberMe ? password : QString()));
 }
 
 void MainObject::logOut()
@@ -195,47 +201,47 @@ void MainObject::retranslateModels()
     m_formatsModel->setData(m_formatsModel->index(dfTradSealed, 0), tr("Traditional Sealed"));
 
     if (SLcodes.isEmpty()) {
-        SLcodes.reserve(Worker::SLCount);
-        for (int i = 0; i < Worker::SLCount; ++i)
+        SLcodes.reserve(GEnums::SLCount);
+        for (int i = 0; i < GEnums::SLCount; ++i)
             SLcodes.append(QString());
     }
-    Q_ASSERT(SLcodes.size() == Worker::SLCount);
-    SLcodes[Worker::SLseen_count] = tr("#S");
-    SLcodes[Worker::SLavg_seen] = tr("ALSA");
-    SLcodes[Worker::SLpick_count] = tr("#P");
-    SLcodes[Worker::SLavg_pick] = tr("ATA");
-    SLcodes[Worker::SLgame_count] = tr("#GP");
-    SLcodes[Worker::SLwin_rate] = tr("GPWR");
-    SLcodes[Worker::SLopening_hand_game_count] = tr("#OH");
-    SLcodes[Worker::SLopening_hand_win_rate] = tr("OHWR");
-    SLcodes[Worker::SLdrawn_game_count] = tr("#GD");
-    SLcodes[Worker::SLdrawn_win_rate] = tr("GDWR");
-    SLcodes[Worker::SLever_drawn_game_count] = tr("#GIH");
-    SLcodes[Worker::SLever_drawn_win_rate] = tr("GIHWR");
-    SLcodes[Worker::SLnever_drawn_game_count] = tr("#GND");
-    SLcodes[Worker::SLnever_drawn_win_rate] = tr("GNDWR");
-    SLcodes[Worker::SLdrawn_improvement_win_rate] = tr("IWD");
+    Q_ASSERT(SLcodes.size() == GEnums::SLCount);
+    SLcodes[GEnums::SLseen_count] = tr("#S");
+    SLcodes[GEnums::SLavg_seen] = tr("ALSA");
+    SLcodes[GEnums::SLpick_count] = tr("#P");
+    SLcodes[GEnums::SLavg_pick] = tr("ATA");
+    SLcodes[GEnums::SLgame_count] = tr("#GP");
+    SLcodes[GEnums::SLwin_rate] = tr("GPWR");
+    SLcodes[GEnums::SLopening_hand_game_count] = tr("#OH");
+    SLcodes[GEnums::SLopening_hand_win_rate] = tr("OHWR");
+    SLcodes[GEnums::SLdrawn_game_count] = tr("#GD");
+    SLcodes[GEnums::SLdrawn_win_rate] = tr("GDWR");
+    SLcodes[GEnums::SLever_drawn_game_count] = tr("#GIH");
+    SLcodes[GEnums::SLever_drawn_win_rate] = tr("GIHWR");
+    SLcodes[GEnums::SLnever_drawn_game_count] = tr("#GND");
+    SLcodes[GEnums::SLnever_drawn_win_rate] = tr("GNDWR");
+    SLcodes[GEnums::SLdrawn_improvement_win_rate] = tr("IWD");
 
     QStringList translatedSLCodes;
-    translatedSLCodes.reserve(Worker::SLCount);
-    for (int i = 0; i < Worker::SLCount; ++i)
+    translatedSLCodes.reserve(GEnums::SLCount);
+    for (int i = 0; i < GEnums::SLCount; ++i)
         translatedSLCodes.append(QString());
-    translatedSLCodes[Worker::SLseen_count] = tr("Number Seen (%1)");
-    translatedSLCodes[Worker::SLavg_seen] = tr("Average Last Seen At (%1)");
-    translatedSLCodes[Worker::SLpick_count] = tr("Number Picked (%1)");
-    translatedSLCodes[Worker::SLavg_pick] = tr("Average Taken At (%1)");
-    translatedSLCodes[Worker::SLgame_count] = tr("Number of Games Played (%1)");
-    translatedSLCodes[Worker::SLwin_rate] = tr("Games Played Win Rate (%1)");
-    translatedSLCodes[Worker::SLopening_hand_game_count] = tr("Number of Games in Opening Hand (%1)");
-    translatedSLCodes[Worker::SLopening_hand_win_rate] = tr("Opening Hand Win Rate (%1)");
-    translatedSLCodes[Worker::SLdrawn_game_count] = tr("Number of Games Drawn (%1)");
-    translatedSLCodes[Worker::SLdrawn_win_rate] = tr("Games Drawn Win Rate (%1)");
-    translatedSLCodes[Worker::SLever_drawn_game_count] = tr("Number of Games In Hand (%1)");
-    translatedSLCodes[Worker::SLever_drawn_win_rate] = tr("Games in Hand Win Rate (%1)");
-    translatedSLCodes[Worker::SLnever_drawn_game_count] = tr("Number of Games Not Drawn (%1)");
-    translatedSLCodes[Worker::SLnever_drawn_win_rate] = tr("Games Not Drawn Win Rate (%1)");
-    translatedSLCodes[Worker::SLdrawn_improvement_win_rate] = tr("Improvement When Drawn (%1)");
-    for (int i = 0; i < Worker::SLCount; ++i)
+    translatedSLCodes[GEnums::SLseen_count] = tr("Number Seen (%1)");
+    translatedSLCodes[GEnums::SLavg_seen] = tr("Average Last Seen At (%1)");
+    translatedSLCodes[GEnums::SLpick_count] = tr("Number Picked (%1)");
+    translatedSLCodes[GEnums::SLavg_pick] = tr("Average Taken At (%1)");
+    translatedSLCodes[GEnums::SLgame_count] = tr("Number of Games Played (%1)");
+    translatedSLCodes[GEnums::SLwin_rate] = tr("Games Played Win Rate (%1)");
+    translatedSLCodes[GEnums::SLopening_hand_game_count] = tr("Number of Games in Opening Hand (%1)");
+    translatedSLCodes[GEnums::SLopening_hand_win_rate] = tr("Opening Hand Win Rate (%1)");
+    translatedSLCodes[GEnums::SLdrawn_game_count] = tr("Number of Games Drawn (%1)");
+    translatedSLCodes[GEnums::SLdrawn_win_rate] = tr("Games Drawn Win Rate (%1)");
+    translatedSLCodes[GEnums::SLever_drawn_game_count] = tr("Number of Games In Hand (%1)");
+    translatedSLCodes[GEnums::SLever_drawn_win_rate] = tr("Games in Hand Win Rate (%1)");
+    translatedSLCodes[GEnums::SLnever_drawn_game_count] = tr("Number of Games Not Drawn (%1)");
+    translatedSLCodes[GEnums::SLnever_drawn_win_rate] = tr("Games Not Drawn Win Rate (%1)");
+    translatedSLCodes[GEnums::SLdrawn_improvement_win_rate] = tr("Improvement When Drawn (%1)");
+    for (int i = 0; i < GEnums::SLCount; ++i)
         translatedSLCodes[i] = translatedSLCodes.at(i).arg(SLcodes.at(i));
     m_SLratingsModel->setSLcodes(translatedSLCodes);
     for (int i = 0, iEnd = m_SLMetricsModel->rowCount(); i < iEnd; ++i)
@@ -247,19 +253,23 @@ void MainObject::download17Lands(const QString &format)
     if (format.isEmpty())
         return;
     QStringList sets;
+    QStringList setsToSave;
     for (int i = 0, iEnd = m_setsProxy->rowCount(); i < iEnd; ++i) {
-        if (m_setsProxy->index(i, 0).data(Qt::CheckStateRole).toInt() == Qt::Checked)
+        if (m_setsProxy->index(i, 0).data(Qt::CheckStateRole).toInt() == Qt::Checked) {
             sets.append(m_setsProxy->index(i, SetsModel::smcParentSet).data().toString());
+            setsToSave.append(m_setsProxy->index(i, SetsModel::smcSetID).data().toString());
+        }
     }
     if (sets.isEmpty())
         return;
     std::sort(sets.begin(), sets.end());
     sets.erase(std::unique(sets.begin(), sets.end()), sets.end());
+    m_configManager->writeDataToDownload(format, setsToSave);
     emit startProgress(opDownload17Ratings, tr("Downloading 17Lands Data"), sets.size(), 0);
     m_worker->get17LRatings(sets, format);
 }
 
-void MainObject::uploadMTGAH(Worker::SLMetrics ratingMethod, const QLocale &locale, bool clear)
+void MainObject::uploadMTGAH(GEnums::SLMetrics ratingMethod, const QLocale &locale, bool clear)
 {
     QStringList sets;
     for (int i = 0, iEnd = m_setsProxy->rowCount(); i < iEnd; ++i) {
@@ -268,11 +278,11 @@ void MainObject::uploadMTGAH(Worker::SLMetrics ratingMethod, const QLocale &loca
     }
     if (sets.isEmpty())
         return;
-    QVector<Worker::SLMetrics> commentMetrics;
+    QVector<GEnums::SLMetrics> commentMetrics;
     for (int i = 0, iEnd = m_SLMetricsModel->rowCount(); i < iEnd; ++i) {
         const QModelIndex currIdx = m_SLMetricsModel->index(i, 0);
         if (currIdx.data(Qt::CheckStateRole).toInt() == Qt::Checked)
-            commentMetrics.append(currIdx.data(Qt::UserRole).value<Worker::SLMetrics>());
+            commentMetrics.append(currIdx.data(Qt::UserRole).value<GEnums::SLMetrics>());
     }
     QSqlDatabase objectDb = openDb(m_objectDbName);
     QStringList setsEscaped = sets;
@@ -311,26 +321,57 @@ void MainObject::cancelUpload()
 
 void MainObject::onWorkerInit()
 {
-    emit endProgress(opInitWorker);
     m_SLratingsModel->setTable(m_objectDbName);
     m_SLratingsModel->select();
     m_ratingTemplateModel->setTable(m_objectDbName);
     selectSetsModel();
+    QMetaObject::invokeMethod(this, &MainObject::init, Qt::QueuedConnection);
+    emit endProgress(opInitWorker);
     emit startProgress(opDownloadSets, tr("Loading Sets"), 0, 0);
     emit startProgress(opDownloadSetsData, tr("Downloading Set Details"), 0, 0);
     m_worker->downloadSetsMTGAH();
 }
 
+void MainObject::init()
+{
+    std::pair<QString, QString> userPass = m_configManager->readUserPass();
+    if (!userPass.first.isEmpty() && !userPass.second.isEmpty())
+        emit loadUserPass(userPass.first, userPass.second);
+    std::pair<QString, QStringList> downloadData = m_configManager->readDataToDownload();
+    if (!downloadData.first.isEmpty())
+        emit loadDownloadFormat(downloadData.first);
+    if (!downloadData.second.isEmpty()) {
+        for (int i = 0, iEnd = m_setsProxy->rowCount(); i < iEnd; ++i) {
+            if (downloadData.second.contains(m_setsProxy->index(i, SetsModel::smcParentSet).data().toString()))
+                m_setsProxy->setData(m_setsProxy->index(i, 0), Qt::Checked, Qt::CheckStateRole);
+            else
+                m_setsProxy->setData(m_setsProxy->index(i, 0), Qt::Unchecked, Qt::CheckStateRole);
+        }
+    }
+    std::pair<GEnums::SLMetrics, QList<GEnums::SLMetrics>> uploadData = m_configManager->readDataToUpload();
+    if (uploadData.first != GEnums::SLCount)
+        emit loadUploadRating(uploadData.first);
+    if (!uploadData.second.isEmpty()) {
+        for (int i = 0, iEnd = m_SLMetricsModel->rowCount(); i < iEnd; ++i) {
+            const QModelIndex currIdx = m_SLMetricsModel->index(i, 0);
+            if (uploadData.second.contains(currIdx.data(Qt::UserRole).value<GEnums::SLMetrics>()))
+                m_SLMetricsModel->setData(currIdx, Qt::Checked, Qt::CheckStateRole);
+            else
+                m_SLMetricsModel->setData(currIdx, Qt::Unchecked, Qt::CheckStateRole);
+        }
+    }
+}
+
 void MainObject::fillMetrics()
 {
-    for (int i = 0; i < Worker::SLCount; ++i) {
+    for (int i = 0; i < GEnums::SLCount; ++i) {
         QStandardItem *item = new QStandardItem;
         item->setData(i, Qt::UserRole);
-        if (i == Worker::SLdrawn_win_rate || i == Worker::SLavg_pick)
+        if (i == GEnums::SLdrawn_win_rate || i == GEnums::SLavg_pick)
             item->setData(Qt::Checked, Qt::CheckStateRole);
         else
             item->setData(Qt::Unchecked, Qt::CheckStateRole);
-        item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsUserCheckable);
+        item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
         m_SLMetricsModel->setItem(i, 0, item);
     }
 }

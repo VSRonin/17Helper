@@ -506,45 +506,45 @@ void Worker::onRatingUploaded(QNetworkReply *reply, const QJsonObject &reqData)
 int Worker::setTypeCode(const QString &setType) const
 {
     if (setType == QStringLiteral("core"))
-        return stcore;
+        return GEnums::stcore;
     if (setType == QStringLiteral("expansion"))
-        return stexpansion;
+        return GEnums::stexpansion;
     if (setType == QStringLiteral("masters"))
-        return stmasters;
+        return GEnums::stmasters;
     if (setType == QStringLiteral("masterpiece"))
-        return stmasterpiece;
+        return GEnums::stmasterpiece;
     if (setType == QStringLiteral("from_the_vault"))
-        return stfrom_the_vault;
+        return GEnums::stfrom_the_vault;
     if (setType == QStringLiteral("spellbook"))
-        return stspellbook;
+        return GEnums::stspellbook;
     if (setType == QStringLiteral("premium_deck"))
-        return stpremium_deck;
+        return GEnums::stpremium_deck;
     if (setType == QStringLiteral("duel_deck"))
-        return stduel_deck;
+        return GEnums::stduel_deck;
     if (setType == QStringLiteral("draft_innovation"))
-        return stdraft_innovation;
+        return GEnums::stdraft_innovation;
     if (setType == QStringLiteral("treasure_chest"))
-        return sttreasure_chest;
+        return GEnums::sttreasure_chest;
     if (setType == QStringLiteral("commander"))
-        return stcommander;
+        return GEnums::stcommander;
     if (setType == QStringLiteral("planechase"))
-        return stplanechase;
+        return GEnums::stplanechase;
     if (setType == QStringLiteral("archenemy"))
-        return starchenemy;
+        return GEnums::starchenemy;
     if (setType == QStringLiteral("vanguard"))
-        return stvanguard;
+        return GEnums::stvanguard;
     if (setType == QStringLiteral("funny"))
-        return stfunny;
+        return GEnums::stfunny;
     if (setType == QStringLiteral("starter"))
-        return ststarter;
+        return GEnums::ststarter;
     if (setType == QStringLiteral("box"))
-        return stbox;
+        return GEnums::stbox;
     if (setType == QStringLiteral("promo"))
-        return stpromo;
+        return GEnums::stpromo;
     if (setType == QStringLiteral("token"))
-        return sttoken;
+        return GEnums::sttoken;
     if (setType == QStringLiteral("memorabilia"))
-        return stmemorabilia;
+        return GEnums::stmemorabilia;
     return 0;
 }
 void Worker::getCustomRatingTemplate()
@@ -590,8 +590,8 @@ void Worker::processSLrequestQueue()
     connect(reply, &QNetworkReply::finished, reply, &QNetworkReply::deleteLater);
     connect(reply, &QNetworkReply::finished, this, std::bind(&Worker::on17LDownloadFinished, this, reply, currSet));
 }
-void Worker::clearRatings(const QStringList &sets, SLMetrics ratingMethod, const QVector<SLMetrics> &commentStats, const QStringList &SLcodes,
-                          const QLocale &locale)
+void Worker::clearRatings(const QStringList &sets, GEnums::SLMetrics ratingMethod, const QVector<GEnums::SLMetrics> &commentStats,
+                          const QStringList &SLcodes, const QLocale &locale)
 {
     QMetaObject::invokeMethod(this, std::bind(&Worker::actualUploadRatings, this, sets, ratingMethod, commentStats, SLcodes, locale, true),
                               Qt::QueuedConnection);
@@ -601,14 +601,14 @@ void Worker::cancelUpload()
 {
     m_cancelUpload = true;
 }
-void Worker::uploadRatings(const QStringList &sets, SLMetrics ratingMethod, const QVector<SLMetrics> &commentStats, const QStringList &SLcodes,
-                           const QLocale &locale)
+void Worker::uploadRatings(const QStringList &sets, GEnums::SLMetrics ratingMethod, const QVector<GEnums::SLMetrics> &commentStats,
+                           const QStringList &SLcodes, const QLocale &locale)
 {
     QMetaObject::invokeMethod(this, std::bind(&Worker::actualUploadRatings, this, sets, ratingMethod, commentStats, SLcodes, locale, false),
                               Qt::QueuedConnection);
 }
-void Worker::actualUploadRatings(QStringList sets, SLMetrics ratingMethod, QVector<SLMetrics> commentStats, const QStringList &SLcodes,
-                                 const QLocale &locale, bool clear)
+void Worker::actualUploadRatings(QStringList sets, GEnums::SLMetrics ratingMethod, QVector<GEnums::SLMetrics> commentStats,
+                                 const QStringList &SLcodes, const QLocale &locale, bool clear)
 {
     m_cancelUpload = false;
     if (sets.isEmpty() || SLcodes.isEmpty()) {
@@ -625,7 +625,7 @@ void Worker::actualUploadRatings(QStringList sets, SLMetrics ratingMethod, QVect
     }
     QStringList commentFields;
     commentFields.reserve(commentStats.size());
-    for (SLMetrics i : qAsConst(commentStats))
+    for (GEnums::SLMetrics i : qAsConst(commentStats))
         commentFields.append(fieldName(i));
     for (auto i = sets.begin(), iEnd = sets.end(); i != iEnd; ++i)
         *i = workerdb.driver()->escapeIdentifier(*i, QSqlDriver::FieldName);
@@ -718,97 +718,98 @@ void Worker::processMTGAHrequestQueue()
     connect(reply, &QNetworkReply::finished, this, std::bind(&Worker::onRatingUploaded, this, reply, reqData));
 }
 
-QString Worker::fieldName(SLMetrics metric) const
+QString Worker::fieldName(GEnums::SLMetrics metric) const
 {
     switch (metric) {
-    case SLseen_count:
+    case GEnums::SLseen_count:
         return QStringLiteral("seen_count");
-    case SLavg_seen:
+    case GEnums::SLavg_seen:
         return QStringLiteral("avg_seen");
-    case SLpick_count:
+    case GEnums::SLpick_count:
         return QStringLiteral("pick_count");
-    case SLavg_pick:
+    case GEnums::SLavg_pick:
         return QStringLiteral("avg_pick");
-    case SLgame_count:
+    case GEnums::SLgame_count:
         return QStringLiteral("game_count");
-    case SLwin_rate:
+    case GEnums::SLwin_rate:
         return QStringLiteral("win_rate");
-    case SLopening_hand_game_count:
+    case GEnums::SLopening_hand_game_count:
         return QStringLiteral("opening_hand_game_count");
-    case SLopening_hand_win_rate:
+    case GEnums::SLopening_hand_win_rate:
         return QStringLiteral("opening_hand_win_rate");
-    case SLdrawn_game_count:
+    case GEnums::SLdrawn_game_count:
         return QStringLiteral("drawn_game_count");
-    case SLdrawn_win_rate:
+    case GEnums::SLdrawn_win_rate:
         return QStringLiteral("drawn_win_rate");
-    case SLever_drawn_game_count:
+    case GEnums::SLever_drawn_game_count:
         return QStringLiteral("ever_drawn_game_count");
-    case SLever_drawn_win_rate:
+    case GEnums::SLever_drawn_win_rate:
         return QStringLiteral("ever_drawn_win_rate");
-    case SLnever_drawn_game_count:
+    case GEnums::SLnever_drawn_game_count:
         return QStringLiteral("never_drawn_game_count");
-    case SLnever_drawn_win_rate:
+    case GEnums::SLnever_drawn_win_rate:
         return QStringLiteral("never_drawn_win_rate");
-    case SLdrawn_improvement_win_rate:
+    case GEnums::SLdrawn_improvement_win_rate:
         return QStringLiteral("drawn_improvement_win_rate");
     default:
         return QString();
     }
 }
-QString Worker::commentvalue(SLMetrics metric, const QVariant &value, const QLocale &locale) const
+QString Worker::commentvalue(GEnums::SLMetrics metric, const QVariant &value, const QLocale &locale) const
 {
     switch (metric) {
-    case SLseen_count:
-    case SLgame_count:
-    case SLpick_count:
-    case SLopening_hand_game_count:
-    case SLdrawn_game_count:
-    case SLever_drawn_game_count:
-    case SLnever_drawn_game_count:
+    case GEnums::SLseen_count:
+    case GEnums::SLgame_count:
+    case GEnums::SLpick_count:
+    case GEnums::SLopening_hand_game_count:
+    case GEnums::SLdrawn_game_count:
+    case GEnums::SLever_drawn_game_count:
+    case GEnums::SLnever_drawn_game_count:
         return locale.toString(value.toInt());
-    case SLavg_pick:
-    case SLavg_seen:
+    case GEnums::SLavg_pick:
+    case GEnums::SLavg_seen:
         return locale.toString(value.toDouble(), 'f', 2);
-    case SLwin_rate:
-    case SLopening_hand_win_rate:
-    case SLdrawn_win_rate:
-    case SLever_drawn_win_rate:
-    case SLnever_drawn_win_rate:
-    case SLdrawn_improvement_win_rate:
+    case GEnums::SLwin_rate:
+    case GEnums::SLopening_hand_win_rate:
+    case GEnums::SLdrawn_win_rate:
+    case GEnums::SLever_drawn_win_rate:
+    case GEnums::SLnever_drawn_win_rate:
+    case GEnums::SLdrawn_improvement_win_rate:
         return locale.toString(value.toDouble() * 100.0, 'f', 2) + locale.percent();
     default:
         return QString();
     }
 }
-QString Worker::commentString(const QSqlQuery &query, const QVector<SLMetrics> &commentStats, const QStringList &SLcodes, const QLocale &locale) const
+QString Worker::commentString(const QSqlQuery &query, const QVector<GEnums::SLMetrics> &commentStats, const QStringList &SLcodes,
+                              const QLocale &locale) const
 {
     QStringList result;
     result.reserve(commentStats.size());
-    for (SLMetrics metric : commentStats)
+    for (GEnums::SLMetrics metric : commentStats)
         result.append(SLcodes.at(metric) + QLatin1Char(':') + commentvalue(metric, query.value(fieldName(metric)), locale));
     return result.join(QLatin1Char(' '));
 }
-int Worker::ratingValue(SLMetrics metric, const double &val, const QVector<double> &deciles)
+int Worker::ratingValue(GEnums::SLMetrics metric, const double &val, const QVector<double> &deciles)
 {
     if (deciles.isEmpty())
         return -1;
     switch (metric) {
-    case SLseen_count:
-    case SLavg_seen:
-    case SLgame_count:
-    case SLwin_rate:
-    case SLopening_hand_game_count:
-    case SLopening_hand_win_rate:
-    case SLdrawn_game_count:
-    case SLdrawn_win_rate:
-    case SLever_drawn_game_count:
-    case SLever_drawn_win_rate:
-    case SLnever_drawn_game_count:
-    case SLnever_drawn_win_rate:
-    case SLdrawn_improvement_win_rate:
-    case SLpick_count:
+    case GEnums::SLseen_count:
+    case GEnums::SLavg_seen:
+    case GEnums::SLgame_count:
+    case GEnums::SLwin_rate:
+    case GEnums::SLopening_hand_game_count:
+    case GEnums::SLopening_hand_win_rate:
+    case GEnums::SLdrawn_game_count:
+    case GEnums::SLdrawn_win_rate:
+    case GEnums::SLever_drawn_game_count:
+    case GEnums::SLever_drawn_win_rate:
+    case GEnums::SLnever_drawn_game_count:
+    case GEnums::SLnever_drawn_win_rate:
+    case GEnums::SLdrawn_improvement_win_rate:
+    case GEnums::SLpick_count:
         return std::distance(deciles.cbegin(), std::lower_bound(deciles.cbegin(), deciles.cend(), val)) + 1;
-    case SLavg_pick:
+    case GEnums::SLavg_pick:
         return std::distance(std::lower_bound(deciles.cbegin(), deciles.cend(), val), deciles.cend());
     default:
         return -1;

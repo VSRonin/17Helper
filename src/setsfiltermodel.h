@@ -14,12 +14,12 @@
 #ifndef SETSFILTERMODEL_H
 #define SETSFILTERMODEL_H
 #include <QSortFilterProxyModel>
-#include "worker.h"
+#include "globals.h"
 class SetsFilterModel : public QSortFilterProxyModel
 {
     Q_OBJECT
     Q_DISABLE_COPY_MOVE(SetsFilterModel)
-    enum { DraftableSet = Worker::stcore | Worker::stexpansion | Worker::stmasters | Worker::stdraft_innovation };
+    enum { DraftableSet = GEnums::stcore | GEnums::stexpansion | GEnums::stmasters | GEnums::stdraft_innovation };
 
 public:
     explicit SetsFilterModel(QObject *parent = nullptr);

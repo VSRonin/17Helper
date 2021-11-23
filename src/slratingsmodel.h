@@ -14,13 +14,13 @@
 #ifndef SLRATINGSMODEL_H
 #define SLRATINGSMODEL_H
 #include "offlinesqltable.h"
-#include "worker.h"
+#include "globals.h"
 class SLRatingsModel : public OfflineSqlTable
 {
     Q_OBJECT
     Q_DISABLE_COPY_MOVE(SLRatingsModel)
 public:
-    enum SLRatingsModelColumns { slmName = 0, slmSet, slmLastUpdate = Worker::SLCount + 2 };
+    enum SLRatingsModelColumns { slmName = 0, slmSet, slmLastUpdate = GEnums::SLCount + 2 };
     int columnCount(const QModelIndex &parent) const override;
     QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
     Qt::ItemFlags flags(const QModelIndex &index) const override;

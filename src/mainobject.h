@@ -14,7 +14,8 @@
 #ifndef MAINOBJECT_H
 #define MAINOBJECT_H
 #include <QObject>
-#include "worker.h"
+#include "globals.h"
+class Worker;
 class QThread;
 class QStandardItemModel;
 class QAbstractItemModel;
@@ -64,12 +65,13 @@ public:
     void filterRatings(QString name);
     void showOnlyDraftableSets(bool showOnly);
     bool oneSetSelected() const;
+    QString configPath() const;
 public slots:
     void tryLogin(const QString &userName, const QString &password, bool rememberMe = false);
     void logOut();
     void retranslateModels();
     void download17Lands(const QString &format);
-    void uploadMTGAH(Worker::SLMetrics ratingMethod, const QLocale &locale, bool clear);
+    void uploadMTGAH(GEnums::SLMetrics ratingMethod, const QLocale &locale, bool clear);
     void cancelUpload();
 private slots:
     void onWorkerInit();
@@ -108,10 +110,12 @@ signals:
     void failedUploadRating();
     void ratingUploaded(const QString &card);
     void ratingsUploaded();
+    void loadUserPass(const QString &userName, const QString &password);
+    void loadDownloadFormat(const QString &format);
+    void loadUploadRating(GEnums::SLMetrics ratingBase);
 
 private:
-    // double ratingValue(const SeventeenCard &card, SLMetrics method) const;
-    // QString commentString(const SeventeenCard &card, const QLocale &locale) const;
+    void init();
     void fillMetrics();
     void fillFormats();
     void selectSetsModel();

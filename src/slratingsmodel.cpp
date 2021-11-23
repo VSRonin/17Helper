@@ -25,7 +25,7 @@ void SLRatingsModel::setTable(const QString &databaseName, const QString &)
 void SLRatingsModel::setSLcodes(const QStringList &newSLcodes)
 {
     SLcodes = newSLcodes;
-    emit headerDataChanged(Qt::Horizontal, 2, Worker::SLCount + 2);
+    emit headerDataChanged(Qt::Horizontal, 2, GEnums::SLCount + 2);
 }
 
 QVariant SLRatingsModel::data(const QModelIndex &index, int role) const
@@ -39,7 +39,7 @@ int SLRatingsModel::columnCount(const QModelIndex &parent) const
 {
     if (parent.isValid())
         return OfflineSqlTable::columnCount(parent);
-    return qMax(int(Worker::SLCount) + 3, OfflineSqlTable::columnCount(parent));
+    return qMax(int(GEnums::SLCount) + 3, OfflineSqlTable::columnCount(parent));
 }
 
 QVariant SLRatingsModel::headerData(int section, Qt::Orientation orientation, int role) const

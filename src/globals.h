@@ -13,9 +13,56 @@
 
 #ifndef GLOBALS_H
 #define GLOBALS_H
+#include <QObject>
 #include <QString>
 #include <QSqlDatabase>
 QString appDataPath();
 QString appSettingsPath();
 QSqlDatabase openDb(const QString &dbName);
+namespace GEnums {
+enum SetType {
+    stcore = 0x1,
+    stexpansion = 0x2,
+    stmasters = 0x4,
+    stmasterpiece = 0x8,
+    stfrom_the_vault = 0x10,
+    stspellbook = 0x20,
+    stpremium_deck = 0x40,
+    stduel_deck = 0x80,
+    stdraft_innovation = 0x100,
+    sttreasure_chest = 0x200,
+    stcommander = 0x400,
+    stplanechase = 0x800,
+    starchenemy = 0x1000,
+    stvanguard = 0x2000,
+    stfunny = 0x4000,
+    ststarter = 0x8000,
+    stbox = 0x10000,
+    stpromo = 0x20000,
+    sttoken = 0x40000,
+    stmemorabilia = 0x80000,
+
+    stEnd = 0x100000
+};
+enum SLMetrics {
+    SLseen_count,
+    SLavg_seen,
+    SLpick_count,
+    SLavg_pick,
+    SLgame_count,
+    SLwin_rate,
+    SLopening_hand_game_count,
+    SLopening_hand_win_rate,
+    SLdrawn_game_count,
+    SLdrawn_win_rate,
+    SLever_drawn_game_count,
+    SLever_drawn_win_rate,
+    SLnever_drawn_game_count,
+    SLnever_drawn_win_rate,
+    SLdrawn_improvement_win_rate,
+
+    SLCount
+};
+}
+Q_DECLARE_METATYPE(GEnums::SLMetrics)
 #endif

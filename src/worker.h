@@ -13,6 +13,7 @@
 
 #ifndef WORKER_H
 #define WORKER_H
+#include "globals.h"
 #include <QMultiHash>
 #include <QNetworkRequest>
 #include <QObject>
@@ -30,49 +31,6 @@ class Worker : public QObject
     enum { RequestTimerTimeout = 100 };
 
 public:
-    enum SetType {
-        stcore = 0x1,
-        stexpansion = 0x2,
-        stmasters = 0x4,
-        stmasterpiece = 0x8,
-        stfrom_the_vault = 0x10,
-        stspellbook = 0x20,
-        stpremium_deck = 0x40,
-        stduel_deck = 0x80,
-        stdraft_innovation = 0x100,
-        sttreasure_chest = 0x200,
-        stcommander = 0x400,
-        stplanechase = 0x800,
-        starchenemy = 0x1000,
-        stvanguard = 0x2000,
-        stfunny = 0x4000,
-        ststarter = 0x8000,
-        stbox = 0x10000,
-        stpromo = 0x20000,
-        sttoken = 0x40000,
-        stmemorabilia = 0x80000,
-
-        stEnd = 0x100000
-    };
-    enum SLMetrics {
-        SLseen_count,
-        SLavg_seen,
-        SLpick_count,
-        SLavg_pick,
-        SLgame_count,
-        SLwin_rate,
-        SLopening_hand_game_count,
-        SLopening_hand_win_rate,
-        SLdrawn_game_count,
-        SLdrawn_win_rate,
-        SLever_drawn_game_count,
-        SLever_drawn_win_rate,
-        SLnever_drawn_game_count,
-        SLnever_drawn_win_rate,
-        SLdrawn_improvement_win_rate,
-
-        SLCount
-    };
     explicit Worker(QObject *parent = nullptr);
 
 public slots:
@@ -82,10 +40,10 @@ public slots:
     void downloadSetsMTGAH();
     void getCustomRatingTemplate();
     void get17LRatings(const QStringList &sets, const QString &format);
-    void uploadRatings(const QStringList &sets, SLMetrics ratingMethod, const QVector<SLMetrics> &commentStats, const QStringList &SLcodes,
-                       const QLocale &locale);
-    void clearRatings(const QStringList &sets, SLMetrics ratingMethod, const QVector<SLMetrics> &commentStats, const QStringList &SLcodes,
-                      const QLocale &locale);
+    void uploadRatings(const QStringList &sets, GEnums::SLMetrics ratingMethod, const QVector<GEnums::SLMetrics> &commentStats,
+                       const QStringList &SLcodes, const QLocale &locale);
+    void clearRatings(const QStringList &sets, GEnums::SLMetrics ratingMethod, const QVector<GEnums::SLMetrics> &commentStats,
+                      const QStringList &SLcodes, const QLocale &locale);
     void cancelUpload();
 private slots:
     void processSLrequestQueue();
@@ -127,13 +85,14 @@ private:
     void actualDownloadSetsMTGAH();
     void actualGetCustomRatingTemplate();
     void actualGet17LRatings(const QStringList &sets, const QString &format);
-    void actualUploadRatings(QStringList sets, SLMetrics ratingMethod, QVector<SLMetrics> commentStats, const QStringList &SLcodes,
+    void actualUploadRatings(QStringList sets, GEnums::SLMetrics ratingMethod, QVector<GEnums::SLMetrics> commentStats, const QStringList &SLcodes,
                              const QLocale &locale, bool clear);
-    static int ratingValue(SLMetrics metric, const double &val, const QVector<double> &deciles);
+    static int ratingValue(GEnums::SLMetrics metric, const double &val, const QVector<double> &deciles);
     static QMap<QString, QVector<double>> reduceDeciles(const QMap<QString, QVector<double>> &data);
-    QString commentvalue(SLMetrics metric, const QVariant &value, const QLocale &locale) const;
-    QString commentString(const QSqlQuery &query, const QVector<SLMetrics> &commentStats, const QStringList &SLcodes, const QLocale &locale) const;
-    QString fieldName(SLMetrics metric) const;
+    QString commentvalue(GEnums::SLMetrics metric, const QVariant &value, const QLocale &locale) const;
+    QString commentString(const QSqlQuery &query, const QVector<GEnums::SLMetrics> &commentStats, const QStringList &SLcodes,
+                          const QLocale &locale) const;
+    QString fieldName(GEnums::SLMetrics metric) const;
     void saveMTGAHSets(QStringList sets);
     void downloadSetsScryfall();
     int setTypeCode(const QString &setType) const;
@@ -147,5 +106,5 @@ private:
     QTimer *m_requestTimer;
     std::atomic_bool m_cancelUpload;
 };
-Q_DECLARE_METATYPE(Worker::SLMetrics)
+
 #endif

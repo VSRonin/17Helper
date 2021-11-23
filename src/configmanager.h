@@ -13,9 +13,10 @@
 
 #ifndef CONFIGMANAGER_H
 #define CONFIGMANAGER_H
-
+#include "globals.h"
 #include <QObject>
 #include <QJsonObject>
+#include <QStringList>
 class QFile;
 class ConfigManager : public QObject
 {
@@ -24,7 +25,12 @@ class ConfigManager : public QObject
 public:
     explicit ConfigManager(QObject *parent = nullptr);
     static QString configFilePath();
-    void writeUserPass(const QString &userName, const QString &password);
+    bool writeUserPass(const QString &userName, const QString &password);
+    bool writeDataToDownload(const QString &format, const QStringList &sets);
+    bool writeDataToUpload(GEnums::SLMetrics ratingBase, const QList<GEnums::SLMetrics> &commentMetrics);
+    std::pair<QString, QString> readUserPass();
+    std::pair<QString, QStringList> readDataToDownload();
+    std::pair<GEnums::SLMetrics, QList<GEnums::SLMetrics>> readDataToUpload();
 
 private:
     QJsonObject getConfigObject() const;

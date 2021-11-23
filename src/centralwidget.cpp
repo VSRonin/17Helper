@@ -136,9 +136,31 @@ void CentralWidget::onFailedUploadRating()
     retranslateUi();
 }
 
+void CentralWidget::onLoadUserPass(const QString &userName, const QString &password)
+{
+    ui->usernameEdit->setText(userName);
+    ui->pwdEdit->setText(password);
+    ui->remembePwdCheck->setChecked(true);
+}
+
+void CentralWidget::onLoadDownloadFormat(const QString &format)
+{
+    ui->formatsCombo->setCurrentIndex(ui->formatsCombo->findData(format, Qt::UserRole));
+}
+
+void CentralWidget::onLoadUploadRating(GEnums::SLMetrics ratingBase)
+{
+    ui->ratingBasedCombo->setCurrentIndex(int(ratingBase));
+}
+
 void CentralWidget::doMtgahUpload(bool clear)
 {
-    m_object->uploadMTGAH(ui->ratingBasedCombo->currentData().value<Worker::SLMetrics>(), locale(), clear);
+    m_object->uploadMTGAH(ui->ratingBasedCombo->currentData().value<GEnums::SLMetrics>(), locale(), clear);
+}
+
+void CentralWidget::onRememberPass(int state)
+{
+    ui->savePwdWarningLabel->setVisible(state == Qt::Checked);
 }
 
 void CentralWidget::onMTGAHSetsError()
@@ -202,11 +224,11 @@ CentralWidget::CentralWidget(QWidget *parent)
     ui->slRatingsView->setModel(m_object->seventeenLandsRatingsModel());
     ui->slRatingsView->setItemDelegateForColumn(SLRatingsModel::slmLastUpdate, new TextDateDelegate(this));
     PercentDelegate *percentDelegate = new PercentDelegate(this);
-    for (int metric : {Worker::SLwin_rate, Worker::SLopening_hand_win_rate, Worker::SLdrawn_win_rate, Worker::SLever_drawn_win_rate,
-                       Worker::SLnever_drawn_win_rate, Worker::SLdrawn_improvement_win_rate})
+    for (int metric : {GEnums::SLwin_rate, GEnums::SLopening_hand_win_rate, GEnums::SLdrawn_win_rate, GEnums::SLever_drawn_win_rate,
+                       GEnums::SLnever_drawn_win_rate, GEnums::SLdrawn_improvement_win_rate})
         ui->slRatingsView->setItemDelegateForColumn(metric + 2, percentDelegate);
     DecimalDelegate *decimalDelegate = new DecimalDelegate(this);
-    for (int metric : {Worker::SLavg_seen, Worker::SLavg_pick})
+    for (int metric : {GEnums::SLavg_seen, GEnums::SLavg_pick})
         ui->slRatingsView->setItemDelegateForColumn(metric + 2, decimalDelegate);
     QCompleter *searchCompleter = new QCompleter(this);
     searchCompleter->setModel(m_object->ratingsModel());
@@ -216,12 +238,12 @@ CentralWidget::CentralWidget(QWidget *parent)
     auto SLMetricsProxy = new NoCheckProxy(this);
     SLMetricsProxy->setSourceModel(m_object->SLMetricsModel());
     ui->ratingBasedCombo->setModel(SLMetricsProxy);
-    ui->ratingBasedCombo->setCurrentIndex(Worker::SLdrawn_win_rate);
+    ui->ratingBasedCombo->setCurrentIndex(GEnums::SLdrawn_win_rate);
     retranslateUi();
 
     connect(ui->ratingBasedButton, &QPushButton::clicked, this,
             []() { QDesktopServices::openUrl(QUrl::fromUserInput(QStringLiteral("https://www.17lands.com/metrics_definitions"))); });
-    connect(ui->remembePwdCheck, &QAbstractButton ::clicked, ui->savePwdWarningLabel, &QWidget::setVisible);
+    connect(ui->remembePwdCheck, &QCheckBox::stateChanged, this, &CentralWidget::onRememberPass);
     connect(ui->loginButton, &QPushButton::clicked, this, &CentralWidget::doLogin);
     connect(ui->logoutButton, &QPushButton::clicked, this, &CentralWidget::doLogout);
     connect(ui->retryBasicDownloadButton, &QPushButton::clicked, this, &CentralWidget::retrySetsDownload);
@@ -246,6 +268,9 @@ CentralWidget::CentralWidget(QWidget *parent)
     connect(m_object, &MainObject::loggedOut, this, &CentralWidget::onLogout);
     connect(m_object, &MainObject::logoutFailed, this, &CentralWidget::onLogoutError);
     connect(m_object, &MainObject::SLDownloadFailed, this, &CentralWidget::on17Lerror);
+    connect(m_object, &MainObject::loadUserPass, this, &CentralWidget::onLoadUserPass);
+    connect(m_object, &MainObject::loadDownloadFormat, this, &CentralWidget::onLoadDownloadFormat);
+    connect(m_object, &MainObject::loadUploadRating, this, &CentralWidget::onLoadUploadRating);
     connect(m_object->setsModel(), &QAbstractItemModel::dataChanged, this,
             [this](const QModelIndex &, const QModelIndex &, const QVector<int> &roles) {
                 if (roles.isEmpty() || roles.contains(Qt::CheckStateRole))
@@ -274,8 +299,7 @@ void CentralWidget::changeEvent(QEvent *event)
 void CentralWidget::retranslateUi()
 {
     ui->retranslateUi(this);
-    ui->savePwdWarningLabel->setText(
-            tr("Your password will be stored in plain text in %1").arg(appDataPath() + QDir::separator() + QLatin1String("17helperconfig.json")));
+    ui->savePwdWarningLabel->setText(tr("Your password will be stored in plain text in %1").arg(m_object->configPath()));
     ui->errorLabel->setVisible(m_error != NoError);
     ui->retryBasicDownloadButton->setVisible(m_error & MTGAHSetsError);
     ui->retryTemplateButton->setVisible(m_error & RatingTemplateFailed);
