@@ -13,86 +13,25 @@
 
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
-#include <QList>
-#include <QWidget>
-#include <QDateTime>
-#include "mainobject.h"
+
+#include <QMainWindow>
+
 namespace Ui {
 class MainWindow;
 }
-class QStandardItemModel;
-class RatingsModel;
-class SeventeenCard;
 
-struct ProgressElement
-{
-    MainObject::Operations m_operation;
-    QString m_description;
-    int m_min;
-    int m_max;
-    int m_val;
-    ProgressElement();
-    ProgressElement(MainObject::Operations operation, const QString &description, int max, int min, int val);
-    ProgressElement(const ProgressElement &other) = default;
-    ProgressElement &operator=(const ProgressElement &other) = default;
-};
-
-class MainWindow : public QWidget
+class MainWindow : public QMainWindow
 {
     Q_OBJECT
-    Q_DISABLE_COPY_MOVE(MainWindow)
+
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
-    enum CurrentError {
-        NoError = 0x0,
-        LoginError = 0x1,
-        LogoutError = 0x2,
-        MTGAHSetsError = 0x4,
-        RatingTemplateFailed = 0x8,
-        InitialisationError = 0x10,
-        SLDownloadError = 0x20
-    };
-    Q_DECLARE_FLAGS(CurrentErrors, CurrentError)
-    CurrentErrors errors() const;
-
-protected:
-    void changeEvent(QEvent *event) override;
-    void retranslateUi();
+private slots:
+    void onUpdatedUploadedStatus(const QString &card);
 
 private:
-    CurrentErrors m_error;
-    MainObject *m_object;
     Ui::MainWindow *ui;
-    QList<ProgressElement> progressQueue;
-    void setAllSetsSelection(Qt::CheckState check);
-private slots:
-    void onStartProgress(MainObject::Operations op, const QString &description, int max, int min);
-    void onUpdateProgress(MainObject::Operations op, int val);
-    void onIncreaseProgress(MainObject::Operations op, int val);
-    void onEndProgress(MainObject::Operations op);
-    void toggleLoginLogoutButtons();
-    void doLogin();
-    void doLogout();
-    void do17Ldownload();
-    void on17LandsDownloadFinished();
-    void on17Lerror();
-    void doMtgahUpload(bool clear);
-    void onLogin();
-    void onLoginError(const QString &error);
-    void onLogout();
-    void onLogoutError(const QString &error);
-    void onMTGAHSetsError();
-    void onTemplateDownloadFailed();
-    void selectAllSets() { setAllSetsSelection(Qt::Checked); }
-    void selectNoSets() { setAllSetsSelection(Qt::Unchecked); }
-    void retrySetsDownload();
-    void retryTemplateDownload();
-    void onCustomRatingsTemplateDownloaded();
-    void updateRatingsFiler();
-    void updatedUploadedLabel(const QString &card);
-    void checkUploadButtonEnabled();
-    void enableAll(bool enable);
 };
-Q_DECLARE_OPERATORS_FOR_FLAGS(MainWindow::CurrentErrors);
-#endif
+
+#endif // MAINWINDOW_H

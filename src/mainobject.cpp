@@ -443,6 +443,7 @@ void MainObject::onRatingsCalculationFailed()
 
 void MainObject::onAllRatingsUploaded()
 {
+    emit ratingsUploaded();
     emit endProgress(opUploadMTGAH);
     emit startProgress(opDownloadRatingTemplate, tr("Refreshing Ratings"), 0, 0);
 }

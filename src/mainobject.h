@@ -107,6 +107,7 @@ signals:
     void ratingsCalculationFailed();
     void failedUploadRating();
     void ratingUploaded(const QString &card);
+    void ratingsUploaded();
 
 private:
     // double ratingValue(const SeventeenCard &card, SLMetrics method) const;

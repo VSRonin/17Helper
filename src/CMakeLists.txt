@@ -12,6 +12,9 @@ set(ui_SRCS
     mainwindow.cpp
     mainwindow.h
     mainwindow.ui
+    centralwidget.cpp
+    centralwidget.h
+    centralwidget.ui
 )
 set(backend_SRCS
     globals.h
