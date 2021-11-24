@@ -105,7 +105,13 @@ void Worker::actualInit()
         emit initialisationFailed();
         return;
     }
-
+    QSqlQuery createCustomRatingsQuery(workerdb);
+    createCustomRatingsQuery.prepare(
+            QStringLiteral("CREATE TABLE IF NOT EXISTS [CustomRatings] ([id_arena] INTEGER PRIMARY KEY, [rating] INTEGER, [note] TEXT)"));
+    if (!createCustomRatingsQuery.exec()) {
+        emit initialisationFailed();
+        return;
+    }
     emit initialised();
 }
 void Worker::tryLogin(const QString &userName, const QString &password)
@@ -652,38 +658,62 @@ void Worker::actualUploadRatings(QStringList sets, GEnums::SLMetrics ratingMetho
         }
         percentiles = reduceDeciles(percentiles);
         percentilesRatingQuery.clear();
-        ratingsToUploadQueryString =
-                QLatin1String("SELECT [id_arena], [SLRatings].[set], [Ratings].[name], [") + ratingMethodField + QLatin1Char(']');
+        ratingsToUploadQueryString = QLatin1String("SELECT [Ratings].[id_arena], [SLRatings].[set], [Ratings].[name], [CustomRatings].[rating], "
+                                                   "[CustomRatings].[note], [SLRatings].[")
+                + ratingMethodField + QLatin1Char(']');
         if (!commentFields.isEmpty()) {
-            ratingsToUploadQueryString += QLatin1String(", [") + commentFields.join(QLatin1String("], [")) + QLatin1Char(']');
+            ratingsToUploadQueryString += QLatin1String(", [SLRatings].[") + commentFields.join(QLatin1String("], [SLRatings].[")) + QLatin1Char(']');
         }
-        ratingsToUploadQueryString += QLatin1String(" FROM [Ratings] left join [Sets] on [Ratings].[set]=[Sets].[id] "
-                                                    "left join [SLRatings] on [SLRatings].[name]=[Ratings].[name] and [SLRatings].[set]=CASE WHEN "
-                                                    "[Sets].[parent_set] IS NULL THEN [Sets].[id] ELSE [Sets].[parent_set] end "
-                                                    "WHERE  [seen_count] NOT NULL AND [Ratings].[set] in (");
+        ratingsToUploadQueryString += QLatin1String(" FROM [Ratings] LEFT JOIN [Sets] ON [Ratings].[set]=[Sets].[id] "
+                                                    "LEFT JOIN [CustomRatings] ON [Ratings].[id_arena]=[CustomRatings].[id_arena] "
+                                                    "LEFT JOIN [SLRatings] ON [SLRatings].[name]=[Ratings].[name] AND [SLRatings].[set]=CASE WHEN "
+                                                    "[Sets].[parent_set] IS NULL THEN [Sets].[id] ELSE [Sets].[parent_set] END "
+                                                    "WHERE [SLRatings].[seen_count] NOT NULL AND [Ratings].[set] IN (");
     }
+    enum {
+        IdArenaField = 0,
+        SetField,
+        NameField,
+        CustomRatingField,
+        CustomNoteField,
+        RatingField,
+    };
     ratingsToUploadQueryString += sets.join(QLatin1Char(',')) + QLatin1Char(')');
+    qDebug().noquote() << ratingsToUploadQueryString;
     QSqlQuery ratingsToUploadQuery(workerdb);
     ratingsToUploadQuery.prepare(ratingsToUploadQueryString);
     Q_ASSUME(ratingsToUploadQuery.exec());
     m_MTGAHrequestQueue.clear();
     while (ratingsToUploadQuery.next()) {
         QJsonObject cardData;
-        cardData[QLatin1String("idArena")] = ratingsToUploadQuery.value(0).toInt();
-        const int cardRating = clear
-                ? -1
-                : ratingValue(ratingMethod, ratingsToUploadQuery.value(3).toDouble(), percentiles.value(ratingsToUploadQuery.value(1).toString()));
+        cardData[QLatin1String("idArena")] = ratingsToUploadQuery.value(IdArenaField).toInt();
+        int cardRating = -1;
+        if (!clear) {
+            const QVariant customRatingVal = ratingsToUploadQuery.value(CustomRatingField);
+            if (customRatingVal.isNull() || customRatingVal.toInt() == -1)
+                cardRating = ratingValue(ratingMethod, ratingsToUploadQuery.value(RatingField).toDouble(),
+                                         percentiles.value(ratingsToUploadQuery.value(SetField).toString()));
+            else
+                cardRating = customRatingVal.toInt();
+        }
         if (cardRating < 0 || clear)
             cardData[QLatin1String("rating")] = QJsonValue();
         else
             cardData[QLatin1String("rating")] = cardRating;
-        const QString commentStr = clear ? QString() : commentString(ratingsToUploadQuery, commentStats, SLcodes, locale);
+        QString commentStr;
+        if (!clear) {
+            const QVariant customNoteVal = ratingsToUploadQuery.value(CustomNoteField);
+            if (customNoteVal.isNull())
+                commentStr = commentString(ratingsToUploadQuery, commentStats, SLcodes, locale);
+            else
+                commentStr = customNoteVal.toString();
+        }
         if (commentStr.isEmpty() || clear)
             cardData[QLatin1String("note")] = QJsonValue();
         else
             cardData[QLatin1String("note")] = commentStr;
         cardData[QLatin1String("attempt")] = 0;
-        const QString cardName = ratingsToUploadQuery.value(2).toString();
+        const QString cardName = ratingsToUploadQuery.value(NameField).toString();
         cardData[QLatin1String("name")] = cardName;
         m_MTGAHrequestQueue.enqueue(cardData);
         emit ratingCalculated(cardName);

@@ -41,6 +41,8 @@ set(models_SRCS
     setsmodel.cpp
     setsfiltermodel.h
     setsfiltermodel.cpp
+    customratingmodel.h
+    customratingmodel.cpp
 )
 set(delegates_SRCS
     ratingsdelegate.h

@@ -30,6 +30,7 @@
 #include "slratingsmodel.h"
 #include "setsmodel.h"
 #include "setsfiltermodel.h"
+#include "customratingmodel.h"
 //#define DEBUG_SINGLE_THREAD
 MainObject::MainObject(QObject *parent)
     : QObject(parent)
@@ -54,8 +55,10 @@ MainObject::MainObject(QObject *parent)
     m_ratingTemplateModel = new RatingsModel(this);
     m_ratingTemplateProxy = new QSortFilterProxyModel(this);
     m_ratingTemplateProxy->setSourceModel(m_ratingTemplateModel);
-    QMetaObject::invokeMethod(this, std::bind(&MainObject::startProgress, this, opInitWorker, tr("Initialising"), 0, 0), Qt::QueuedConnection);
+    m_customRatingsModel = new CustomRatingModel(this);
     m_configManager = new ConfigManager(this);
+    QMetaObject::invokeMethod(this, std::bind(&MainObject::startProgress, this, opInitWorker, tr("Initialising"), 0, 0), Qt::QueuedConnection);
+
     m_worker = new Worker;
 #ifndef DEBUG_SINGLE_THREAD
     m_workerThread = new QThread(this);
@@ -123,6 +126,11 @@ QAbstractItemModel *MainObject::seventeenLandsRatingsModel() const
     return m_SLratingsProxy;
 }
 
+QAbstractItemModel *MainObject::customRatingsModel() const
+{
+    return m_customRatingsModel;
+}
+
 void MainObject::filterRatings(QString name)
 {
     QStringList setsMTGAH;
@@ -155,6 +163,7 @@ void MainObject::filterRatings(QString name)
                     QLatin1String("[name] like ") + driver->escapeIdentifier(QLatin1Char('%') + name + QLatin1Char('%'), QSqlDriver::FieldName);
         }
     }
+    m_customRatingsModel->setFilter(filterStringMTGAH);
     m_ratingTemplateModel->setFilter(filterStringMTGAH);
     m_SLratingsModel->setFilter(filterStringSL);
 }
@@ -322,8 +331,8 @@ void MainObject::cancelUpload()
 void MainObject::onWorkerInit()
 {
     m_SLratingsModel->setTable(m_objectDbName);
-    m_SLratingsModel->select();
     m_ratingTemplateModel->setTable(m_objectDbName);
+    m_customRatingsModel->setQuery(m_objectDbName);
     selectSetsModel();
     QMetaObject::invokeMethod(this, &MainObject::init, Qt::QueuedConnection);
     emit endProgress(opInitWorker);

@@ -35,6 +35,8 @@ public:
 protected:
     virtual bool setInternalData(const QModelIndex &index, const QVariant &value);
     virtual QString fieldName(int index) const;
+    QSqlQuery *query();
+    const QSqlQuery *query() const;
 
 private:
     QSqlQuery m_query;

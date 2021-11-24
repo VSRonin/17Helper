@@ -25,6 +25,7 @@ class CheckableProxy;
 class RatingsModel;
 class QSortFilterProxyModel;
 class SetsFilterModel;
+class CustomRatingModel;
 class ConfigManager;
 class MainObject : public QObject
 {
@@ -62,6 +63,7 @@ public:
     QAbstractItemModel *formatsModel() const;
     QAbstractItemModel *ratingsModel() const;
     QAbstractItemModel *seventeenLandsRatingsModel() const;
+    QAbstractItemModel *customRatingsModel() const;
     void filterRatings(QString name);
     void showOnlyDraftableSets(bool showOnly);
     bool oneSetSelected() const;
@@ -133,6 +135,7 @@ private:
     SLRatingsModel *m_SLratingsModel;
     QSortFilterProxyModel *m_ratingTemplateProxy;
     QSortFilterProxyModel *m_SLratingsProxy;
+    CustomRatingModel *m_customRatingsModel;
     int ratingsToUpload;
 };
 

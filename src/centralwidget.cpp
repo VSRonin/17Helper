@@ -30,6 +30,7 @@
 #include <QCompleter>
 #include "decimaldelegate.h"
 #include "percentagedelegate.h"
+#include "customratingmodel.h"
 class NoCheckProxy : public QIdentityProxyModel
 {
     Q_DISABLE_COPY_MOVE(NoCheckProxy)
@@ -223,6 +224,11 @@ CentralWidget::CentralWidget(QWidget *parent)
     ui->ratingsView->setItemDelegateForColumn(RatingsModel::rmcRating, new RatingsDelegate(this));
     ui->slRatingsView->setModel(m_object->seventeenLandsRatingsModel());
     ui->slRatingsView->setItemDelegateForColumn(SLRatingsModel::slmLastUpdate, new TextDateDelegate(this));
+    ui->customRatingsView->setModel(m_object->customRatingsModel());
+    ui->customRatingsView->setColumnHidden(CustomRatingModel::crmIdArena, true);
+    ui->customRatingsView->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+    ui->customRatingsView->sortByColumn(CustomRatingModel::crmName, Qt::AscendingOrder);
+    ui->customRatingsView->setItemDelegateForColumn(CustomRatingModel::crmRating, new RatingsDelegate(this));
     PercentDelegate *percentDelegate = new PercentDelegate(this);
     for (int metric : {GEnums::SLwin_rate, GEnums::SLopening_hand_win_rate, GEnums::SLdrawn_win_rate, GEnums::SLever_drawn_win_rate,
                        GEnums::SLnever_drawn_win_rate, GEnums::SLdrawn_improvement_win_rate})

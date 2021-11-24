@@ -77,6 +77,16 @@ QString OfflineSqlQueryModel::fieldName(int index) const
 {
     return m_headers.value(index, QString());
 }
+
+QSqlQuery *OfflineSqlQueryModel::query()
+{
+    return &m_query;
+}
+
+const QSqlQuery *OfflineSqlQueryModel::query() const
+{
+    return &m_query;
+}
 QVariant OfflineSqlQueryModel::data(const QModelIndex &index, int role) const
 {
     if (!index.isValid())
