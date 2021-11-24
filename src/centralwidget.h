@@ -50,8 +50,8 @@ public:
         LogoutError = 0x2,
         MTGAHSetsError = 0x4,
         RatingTemplateFailed = 0x8,
-        InitialisationError = 0x10,
-        SLDownloadError = 0x20,
+        SLDownloadError = 0x10,
+        RatingCalculationError = 0x20,
         UploadError = 0x40
     };
     Q_DECLARE_FLAGS(CurrentErrors, CurrentError)
@@ -84,8 +84,6 @@ private slots:
     void onLoginError(const QString &error);
     void onLogout();
     void onLogoutError(const QString &error);
-    void onMTGAHSetsError();
-    void onTemplateDownloadFailed();
     void selectAllSets() { setAllSetsSelection(Qt::Checked); }
     void selectNoSets() { setAllSetsSelection(Qt::Unchecked); }
     void retrySetsDownload();
@@ -99,6 +97,12 @@ private slots:
     void onLoadUserPass(const QString &userName, const QString &password);
     void onLoadDownloadFormat(const QString &format);
     void onLoadUploadRating(GEnums::SLMetrics ratingBase);
+    void onInitialisationFailed();
+    void onCustomRatingTemplateFailed();
+    void onRatingsCalculationFailed();
+    void onRatingsCalculated();
+    void onDownloadSetsMTGAHFailed();
+    void onSetsMTGAHDownloaded();
 signals:
     void updatedUploadedStatus(const QString &card);
 };

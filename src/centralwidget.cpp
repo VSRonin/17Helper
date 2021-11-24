@@ -28,6 +28,7 @@
 #include <QDebug>
 #include <QDir>
 #include <QCompleter>
+#include <QMessageBox>
 #include "decimaldelegate.h"
 #include "percentagedelegate.h"
 #include "customratingmodel.h"
@@ -154,6 +155,12 @@ void CentralWidget::onLoadUploadRating(GEnums::SLMetrics ratingBase)
     ui->ratingBasedCombo->setCurrentIndex(int(ratingBase));
 }
 
+void CentralWidget::onInitialisationFailed()
+{
+    QMessageBox::critical(this, tr("Critical Error"), tr("Initialisation Failed, insufficient permissions"));
+    QCoreApplication::quit();
+}
+
 void CentralWidget::doMtgahUpload(bool clear)
 {
     m_object->uploadMTGAH(ui->ratingBasedCombo->currentData().value<GEnums::SLMetrics>(), locale(), clear);
@@ -164,30 +171,47 @@ void CentralWidget::onRememberPass(int state)
     ui->savePwdWarningLabel->setVisible(state == Qt::Checked);
 }
 
-void CentralWidget::onMTGAHSetsError()
+void CentralWidget::onDownloadSetsMTGAHFailed()
 {
     m_error |= MTGAHSetsError;
     ui->retryBasicDownloadButton->setEnabled(true);
     retranslateUi();
 }
 
-void CentralWidget::onTemplateDownloadFailed()
+void CentralWidget::onSetsMTGAHDownloaded()
+{
+    m_error &= ~MTGAHSetsError;
+    retranslateUi();
+}
+
+void CentralWidget::onCustomRatingTemplateFailed()
 {
     m_error |= RatingTemplateFailed;
     ui->retryTemplateButton->setEnabled(true);
     retranslateUi();
 }
 
+void CentralWidget::onRatingsCalculationFailed()
+{
+    m_error |= RatingCalculationError;
+    retranslateUi();
+}
+void CentralWidget::onRatingsCalculated()
+{
+    m_error &= ~RatingCalculationError;
+    retranslateUi();
+}
+
 void CentralWidget::retrySetsDownload()
 {
     ui->retryBasicDownloadButton->setEnabled(false);
-    // m_worker->downloadSetsMTGAH();
+    m_object->downloadSetsMTGAH();
 }
 
 void CentralWidget::retryTemplateDownload()
 {
     ui->retryTemplateButton->setEnabled(false);
-    // m_worker->getCustomRatingTemplate();
+    m_object->getCustomRatingTemplate();
 }
 
 void CentralWidget::onCustomRatingsTemplateDownloaded()
@@ -262,7 +286,12 @@ CentralWidget::CentralWidget(QWidget *parent)
     connect(ui->searchCardEdit, &QLineEdit::textChanged, this, &CentralWidget::updateRatingsFiler);
     connect(ui->draftableSetsCheck, &QCheckBox::clicked, m_object, &MainObject::showOnlyDraftableSets);
     connect(ui->cancelUploadButton, &QPushButton::clicked, m_object, &MainObject::cancelUpload);
-    connect(m_object, &MainObject::ratingUploaded, this, &CentralWidget::updatedUploadedStatus);
+    connect(m_object, &MainObject::initialisationFailed, this, &CentralWidget::onInitialisationFailed);
+    connect(m_object, &MainObject::customRatingTemplateFailed, this, &CentralWidget::onCustomRatingTemplateFailed);
+    connect(m_object, &MainObject::ratingsCalculationFailed, this, &CentralWidget::onRatingsCalculationFailed);
+    connect(m_object, &MainObject::ratingsCalculated, this, &CentralWidget::onRatingsCalculated);
+    connect(m_object, &MainObject::downloadSetsMTGAHFailed, this, &CentralWidget::onDownloadSetsMTGAHFailed);
+    connect(m_object, &MainObject::setsMTGAHDownloaded, this, &CentralWidget::onSetsMTGAHDownloaded);
     connect(m_object, &MainObject::failedUploadRating, this, &CentralWidget::onFailedUploadRating);
     connect(m_object, &MainObject::ratingsUploaded, this, &CentralWidget::onUploadedRatings);
     connect(m_object, &MainObject::startProgress, this, &CentralWidget::onStartProgress);
@@ -277,6 +306,7 @@ CentralWidget::CentralWidget(QWidget *parent)
     connect(m_object, &MainObject::loadUserPass, this, &CentralWidget::onLoadUserPass);
     connect(m_object, &MainObject::loadDownloadFormat, this, &CentralWidget::onLoadDownloadFormat);
     connect(m_object, &MainObject::loadUploadRating, this, &CentralWidget::onLoadUploadRating);
+    connect(m_object, &MainObject::ratingUploaded, this, &CentralWidget::updatedUploadedStatus);
     connect(m_object->setsModel(), &QAbstractItemModel::dataChanged, this,
             [this](const QModelIndex &, const QModelIndex &, const QVector<int> &roles) {
                 if (roles.isEmpty() || roles.contains(Qt::CheckStateRole))
@@ -320,10 +350,11 @@ void CentralWidget::retranslateUi()
         errorStrings.append(tr("Error downloading ratings template! Check your internet connection"));
     if (m_error & SLDownloadError)
         errorStrings.append(tr("Error downloading ratings ratings form 17Lands! Check your internet connection"));
+    if (m_error & RatingCalculationError)
+        errorStrings.append(tr("Error computing ratings to upload, retry"));
     if (m_error & UploadError)
         errorStrings.append(tr("Error uploading ratings to MTGA Helper! Check your internet connection"));
     ui->errorLabel->setText(errorStrings.join(QChar(QLatin1Char('\n'))));
-    ui->ratingsView->update();
     m_object->retranslateModels();
 }
 

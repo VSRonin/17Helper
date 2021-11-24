@@ -68,13 +68,15 @@ MainObject::MainObject(QObject *parent)
     connect(m_workerThread, &QThread::started, m_worker, &Worker::init);
 #endif
     connect(m_worker, &Worker::initialised, this, &MainObject::onWorkerInit);
-    connect(m_worker, &Worker::initialisationFailed, this, &MainObject::initialisationFailed);
+    connect(m_worker, &Worker::initialisationFailed, this, &MainObject::onInitialisationFailed);
     connect(m_worker, &Worker::loggedIn, this, &MainObject::onLoggedIn);
     connect(m_worker, &Worker::loginFalied, this, &MainObject::onLoginFalied);
     connect(m_worker, &Worker::loggedOut, this, &MainObject::onLoggedOut);
     connect(m_worker, &Worker::logoutFailed, this, &MainObject::onLoginFalied);
     connect(m_worker, &Worker::setsScryfall, this, &MainObject::onSetsScryfall);
+    connect(m_worker, &Worker::downloadSetsScryfallFailed, this, &MainObject::onDownloadSetsScryfallFailed);
     connect(m_worker, &Worker::setsMTGAH, this, &MainObject::onSetsMTGAH);
+    connect(m_worker, &Worker::downloadSetsMTGAHFailed, this, &MainObject::onDownloadSetsMTGAHFailed);
     connect(m_worker, &Worker::customRatingTemplate, this, &MainObject::onRatingsTemplate);
     connect(m_worker, &Worker::customRatingTemplateFailed, this, &MainObject::onCustomRatingTemplateFailed);
     connect(m_worker, &Worker::downloadedAll17LRatings, this, &MainObject::on17LandsDownloadFinished);
@@ -336,9 +338,19 @@ void MainObject::onWorkerInit()
     selectSetsModel();
     QMetaObject::invokeMethod(this, &MainObject::init, Qt::QueuedConnection);
     emit endProgress(opInitWorker);
+    downloadSetsMTGAH();
+}
+void MainObject::downloadSetsMTGAH()
+{
     emit startProgress(opDownloadSets, tr("Loading Sets"), 0, 0);
     emit startProgress(opDownloadSetsData, tr("Downloading Set Details"), 0, 0);
     m_worker->downloadSetsMTGAH();
+}
+
+void MainObject::onInitialisationFailed()
+{
+    emit endProgress(opInitWorker);
+    emit initialisationFailed();
 }
 
 void MainObject::init()
@@ -406,6 +418,11 @@ void MainObject::onLoggedIn()
 {
     emit endProgress(opLogIn);
     emit loggedIn();
+    getCustomRatingTemplate();
+}
+
+void MainObject::getCustomRatingTemplate()
+{
     emit startProgress(opDownloadRatingTemplate, tr("Downloading custom ratings from MTGA Helper"), 0, 0);
     m_worker->getCustomRatingTemplate();
 }
@@ -435,9 +452,22 @@ void MainObject::onSetsScryfall(bool needsUpdate)
         selectSetsModel();
 }
 
+void MainObject::onDownloadSetsScryfallFailed()
+{
+    emit endProgress(opDownloadSetsData);
+    emit downloadSetsMTGAHFailed();
+}
+
+void MainObject::onDownloadSetsMTGAHFailed()
+{
+    emit endProgress(opDownloadSets);
+    emit downloadSetsScryfallFailed();
+}
+
 void MainObject::onSetsMTGAH(bool needsUpdate)
 {
     emit endProgress(opDownloadSets);
+    emit setsMTGAHDownloaded();
     if (needsUpdate)
         selectSetsModel();
 }
@@ -476,6 +506,7 @@ void MainObject::on17LandsDownloadError()
 void MainObject::onRatingsCalculated()
 {
     emit endProgress(opCalculateRatings);
+    emit ratingsCalculated();
     emit startProgress(opUploadMTGAH, tr("Uploading Data to MTGA Helper"), ratingsToUpload, 0);
 }
 

@@ -75,8 +75,11 @@ public slots:
     void download17Lands(const QString &format);
     void uploadMTGAH(GEnums::SLMetrics ratingMethod, const QLocale &locale, bool clear);
     void cancelUpload();
+    void downloadSetsMTGAH();
+    void getCustomRatingTemplate();
 private slots:
     void onWorkerInit();
+    void onInitialisationFailed();
     void onLoggedIn();
     void onLoginFalied(const QString &error);
     void onLoggedOut();
@@ -94,6 +97,8 @@ private slots:
     void onRatingUploaded(const QString &card);
     void onFailedUploadRating();
     void onCustomRatingTemplateFailed();
+    void onDownloadSetsScryfallFailed();
+    void onDownloadSetsMTGAHFailed();
 signals:
     void loggedIn();
     void loginFalied(const QString &error);
@@ -108,6 +113,7 @@ signals:
     void endProgress(Operations op);
     void SLDownloadFinished();
     void SLDownloadFailed();
+    void ratingsCalculated();
     void ratingsCalculationFailed();
     void failedUploadRating();
     void ratingUploaded(const QString &card);
@@ -115,6 +121,9 @@ signals:
     void loadUserPass(const QString &userName, const QString &password);
     void loadDownloadFormat(const QString &format);
     void loadUploadRating(GEnums::SLMetrics ratingBase);
+    void setsMTGAHDownloaded();
+    void downloadSetsMTGAHFailed();
+    void downloadSetsScryfallFailed();
 
 private:
     void init();
