@@ -47,3 +47,13 @@ QSqlDatabase openDb(const QString &dbName)
     Q_ASSERT(DbOpen);
     return db;
 }
+
+#ifdef QT_DEBUG
+std::atomic_bool dtFailInit = false;
+std::atomic_bool dtFailLogin = false;
+std::atomic_bool dtFailLogout = false;
+std::atomic_bool dtFailCustomRatingTemplate = false;
+std::atomic_bool dtFail17LRatings = false;
+std::atomic_bool dtFailUploadRating = false;
+std::atomic_bool dtFailRatingCalculation = false;
+#endif

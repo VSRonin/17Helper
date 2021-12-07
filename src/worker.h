@@ -29,6 +29,7 @@ class Worker : public QObject
     Q_OBJECT
     Q_DISABLE_COPY_MOVE(Worker)
     enum { RequestTimerTimeout = 100 };
+    enum { MaximumUploadAttemps = 3 };
 
 public:
     explicit Worker(QObject *parent = nullptr);
@@ -54,6 +55,7 @@ private slots:
     void on17LDownloadFinished(QNetworkReply *reply, const QString &currSet);
     void onSetsMTGAHDownloaded(QNetworkReply *reply);
     void onLogIn(QNetworkReply *reply);
+    void onLogOut(QNetworkReply *reply);
     void onRatingUploaded(QNetworkReply *reply, const QJsonObject &reqData);
 signals:
     void initialised();

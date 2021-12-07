@@ -27,10 +27,14 @@
 #include <QStandardPaths>
 #ifdef QT_DEBUG
 #    include <QDebug>
+#    include "forceerrornetworkmanager.h"
+using NetworkAccessManager = ForceErrorNetworkManager;
+#else
+using NetworkAccessManager = QNetworkAccessManager;
 #endif
 Worker::Worker(QObject *parent)
     : QObject(parent)
-    , m_nam(new QNetworkAccessManager(this))
+    , m_nam(new NetworkAccessManager(this))
     , m_SLrequestOutstanding(0)
     , m_MTGAHrequestOutstanding(0)
     , m_workerDbName(QStringLiteral("WorkerDb"))
@@ -61,6 +65,12 @@ void Worker::init()
 
 void Worker::actualInit()
 {
+#ifdef QT_DEBUG
+    if (dtFailInit) {
+        emit initialisationFailed();
+        return;
+    }
+#endif
     QSqlDatabase workerdb = openWorkerDb();
     Q_ASSERT(workerdb.driver()->hasFeature(QSqlDriver::PreparedQueries));
     Q_ASSERT(workerdb.driver()->hasFeature(QSqlDriver::PositionalPlaceholders));
@@ -139,13 +149,9 @@ void Worker::actualLogOut()
     const QUrl setsUrl = QUrl::fromUserInput(QStringLiteral("https://mtgahelper.com/api/Account/Signout"));
     QNetworkReply *reply = m_nam->post(QNetworkRequest(setsUrl), QByteArray());
     connect(reply, &QNetworkReply::finished, reply, &QNetworkReply::deleteLater);
-    connect(reply, &QNetworkReply::errorOccurred, this, [reply, this]() { emit logoutFailed(tr("Error: %1").arg(reply->errorString())); });
-    connect(reply, &QNetworkReply::finished, this, [reply, this]() -> void {
-        if (reply->error() != QNetworkReply::NoError)
-            return;
-        emit loggedOut();
-    });
+    connect(reply, &QNetworkReply::finished, this, std::bind(&Worker::onLogOut, this, reply));
 }
+
 void Worker::downloadSetsMTGAH()
 {
     QMetaObject::invokeMethod(this, &Worker::actualDownloadSetsMTGAH, Qt::QueuedConnection);
@@ -211,16 +217,13 @@ void Worker::downloadSetsScryfall()
     }
     const QUrl setsUrl = QUrl::fromUserInput(QStringLiteral("https://api.scryfall.com/sets"));
     QNetworkReply *reply = m_nam->get(QNetworkRequest(setsUrl));
-    connect(reply, &QNetworkReply::errorOccurred, this, &Worker::downloadSetsScryfallFailed);
     connect(reply, &QNetworkReply::finished, reply, &QNetworkReply::deleteLater);
     connect(reply, &QNetworkReply::finished, this, std::bind(&Worker::parseSetsScryfall, this, reply, sets));
 }
 
 void Worker::parseSetsScryfall(QNetworkReply *reply, const QStringList &sets)
 {
-    if (reply->error() != QNetworkReply::NoError)
-        return;
-    if (reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() != 200) {
+    if (reply->error() != QNetworkReply::NoError || reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() != 200) {
         emit downloadSetsScryfallFailed();
         return;
     }
@@ -269,7 +272,6 @@ void Worker::parseSetsScryfall(QNetworkReply *reply, const QStringList &sets)
 void Worker::onCustomRatingTemplateFinished(QNetworkReply *reply)
 {
     if (reply->error() != QNetworkReply::NoError || reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() != 200) {
-        qDebug() << "CustomRatingTemplate Failed: " << reply->readAll();
         emit customRatingTemplateFailed();
         return;
     }
@@ -352,9 +354,8 @@ void Worker::onCustomRatingTemplateFinished(QNetworkReply *reply)
 void Worker::on17LDownloadFinished(QNetworkReply *reply, const QString &currSet)
 {
     --m_SLrequestOutstanding;
-    if (reply->error() != QNetworkReply::NoError)
-        return;
-    if (reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() != 200) {
+    if (reply->error() != QNetworkReply::NoError || reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() != 200) {
+        // #TODO abort on fail
         emit failed17LRatings();
         return;
     }
@@ -487,6 +488,14 @@ void Worker::onLogIn(QNetworkReply *reply)
     }
     emit loggedIn();
 }
+void Worker::onLogOut(QNetworkReply *reply)
+{
+    if (reply->error() != QNetworkReply::NoError) {
+        emit logoutFailed(tr("Error: %1").arg(reply->errorString()));
+        return;
+    }
+    emit loggedOut();
+}
 
 void Worker::onRatingUploaded(QNetworkReply *reply, const QJsonObject &reqData)
 {
@@ -494,10 +503,15 @@ void Worker::onRatingUploaded(QNetworkReply *reply, const QJsonObject &reqData)
     if (reply->error() != QNetworkReply::NoError || reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() != 200) {
         qDebug().noquote() << QStringLiteral("Failed: ") << reqData.value(QLatin1String("idArena")).toInt()
                            << reqData.value(QLatin1String("name")).toString() << QStringLiteral(" Body: ") << reply->readAll();
-        reqData[QLatin1String("attempt")] = reqData.value(QLatin1String("attempt")).toInt() + 1;
-        m_MTGAHrequestQueue.enqueue(reqData);
-        if (!m_requestTimer->isActive())
-            m_requestTimer->start();
+        const int attemptNumber = reqData.value(QLatin1String("attempt")).toInt() + 1;
+        if (attemptNumber >= MaximumUploadAttemps) {
+            // #TODO emit error and abort
+        } else {
+            reqData[QLatin1String("attempt")] = attemptNumber;
+            m_MTGAHrequestQueue.enqueue(reqData);
+            if (!m_requestTimer->isActive())
+                m_requestTimer->start();
+        }
         return;
     }
     if (m_cancelUpload)
@@ -617,7 +631,11 @@ void Worker::actualUploadRatings(QStringList sets, GEnums::SLMetrics ratingMetho
                                  const QStringList &SLcodes, const QLocale &locale, bool clear)
 {
     m_cancelUpload = false;
-    if (sets.isEmpty() || SLcodes.isEmpty()) {
+    if (sets.isEmpty() || SLcodes.isEmpty()
+#ifdef QT_DEBUG
+        || dtFailRatingCalculation
+#endif
+    ) {
         emit failedRatingCalculation();
         return;
     }

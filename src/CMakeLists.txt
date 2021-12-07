@@ -54,21 +54,30 @@ set(delegates_SRCS
     decimaldelegate.h
     decimaldelegate.cpp
 )
+set(debugtools_SRCS
+    debug_tools/forceerrorwidget.h
+    debug_tools/forceerrorwidget.cpp
+    debug_tools/forceerrornetworkmanager.h
+    debug_tools/forceerrornetworkmanager.cpp
+)
 source_group(UI FILES ${ui_SRCS})
 source_group(Backend FILES ${backend_SRCS})
 source_group(Models FILES ${models_SRCS})
 source_group(Delegates FILES ${delegates_SRCS})
+source_group(DebugTools FILES ${debugtools_SRCS})
 set(17Helper_SRCS
     ${ui_SRCS}
     ${backend_SRCS}
     ${models_SRCS}
     ${delegates_SRCS}
+    ${debugtools_SRCS}
 )
 qt_create_translation(17Helper_QM_FILES ${17Helper_SRCS} 17Helper_en.ts)
 add_library(17HelperLib STATIC ${17Helper_SRCS} ${17Helper_QM_FILES})
 add_library(17HelperLib::17HelperLib ALIAS 17HelperLib)
 target_compile_definitions(17HelperLib PUBLIC QT_NO_CAST_FROM_ASCII QT_NO_CAST_TO_ASCII)
 target_include_directories(17HelperLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
+target_include_directories(17HelperLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/debug_tools>)
 target_link_libraries(17HelperLib PUBLIC 
     Qt::Core
     Qt::Gui

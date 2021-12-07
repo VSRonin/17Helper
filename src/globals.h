@@ -65,4 +65,13 @@ enum SLMetrics {
 };
 }
 Q_DECLARE_METATYPE(GEnums::SLMetrics)
+#ifdef QT_DEBUG
+extern std::atomic_bool dtFailInit;
+extern std::atomic_bool dtFailLogin;
+extern std::atomic_bool dtFailLogout;
+extern std::atomic_bool dtFailCustomRatingTemplate;
+extern std::atomic_bool dtFail17LRatings;
+extern std::atomic_bool dtFailUploadRating;
+extern std::atomic_bool dtFailRatingCalculation;
+#endif
 #endif

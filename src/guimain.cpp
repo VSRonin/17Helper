@@ -13,14 +13,27 @@
 #include <QApplication>
 #include <QTranslator>
 #include <mainwindow.h>
-#include <QDebug>
+#ifdef QT_DEBUG
+#    include <forceerrorwidget.h>
+#endif
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
     QTranslator translator;
     if (translator.load(QLocale(), QLatin1String("17Helper"), QLatin1String("_"), QLatin1String(":/i18n")))
         app.installTranslator(&translator);
+
+#ifdef QT_DEBUG
+    std::unique_ptr<MainWindow> w(nullptr);
+    ForceErrorWidget feW;
+    feW.show();
+    QObject::connect(&feW, &ForceErrorWidget::start, [&w] {
+        w = std::make_unique<MainWindow>();
+        w->show();
+    });
+#else
     MainWindow w;
     w.show();
+#endif
     return app.exec();
 }
