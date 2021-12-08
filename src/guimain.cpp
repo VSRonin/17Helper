@@ -14,7 +14,7 @@
 #include <QTranslator>
 #include <mainwindow.h>
 #ifdef QT_DEBUG
-#    include <forceerrorwidget.h>
+#    include <debug_tools/forceerrorwidget.h>
 #endif
 int main(int argc, char *argv[])
 {

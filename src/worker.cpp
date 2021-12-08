@@ -27,7 +27,7 @@
 #include <QStandardPaths>
 #ifdef QT_DEBUG
 #    include <QDebug>
-#    include "forceerrornetworkmanager.h"
+#    include "debug_tools/forceerrornetworkmanager.h"
 using NetworkAccessManager = ForceErrorNetworkManager;
 #else
 using NetworkAccessManager = QNetworkAccessManager;
