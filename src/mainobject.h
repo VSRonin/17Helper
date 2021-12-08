@@ -105,6 +105,7 @@ signals:
     void loggedOut();
     void logoutFailed(const QString &error);
     void initialisationFailed();
+    void customRatingTemplate();
     void customRatingTemplateFailed();
     void setsReady();
     void startProgress(Operations op, const QString &description, int max, int min);

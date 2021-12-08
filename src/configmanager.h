@@ -27,10 +27,10 @@ public:
     static QString configFilePath();
     bool writeUserPass(const QString &userName, const QString &password);
     bool writeDataToDownload(const QString &format, const QStringList &sets);
-    bool writeDataToUpload(GEnums::SLMetrics ratingBase, const QList<GEnums::SLMetrics> &commentMetrics);
+    bool writeDataToUpload(GEnums::SLMetrics ratingBase, const QVector<GEnums::SLMetrics> &commentMetrics);
     std::pair<QString, QString> readUserPass();
     std::pair<QString, QStringList> readDataToDownload();
-    std::pair<GEnums::SLMetrics, QList<GEnums::SLMetrics>> readDataToUpload();
+    std::pair<GEnums::SLMetrics, QVector<GEnums::SLMetrics>> readDataToUpload();
 
 private:
     QJsonObject getConfigObject() const;

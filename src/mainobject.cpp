@@ -72,7 +72,7 @@ MainObject::MainObject(QObject *parent)
     connect(m_worker, &Worker::loggedIn, this, &MainObject::onLoggedIn);
     connect(m_worker, &Worker::loginFalied, this, &MainObject::onLoginFalied);
     connect(m_worker, &Worker::loggedOut, this, &MainObject::onLoggedOut);
-    connect(m_worker, &Worker::logoutFailed, this, &MainObject::onLoginFalied);
+    connect(m_worker, &Worker::logoutFailed, this, &MainObject::onLogoutFalied);
     connect(m_worker, &Worker::setsScryfall, this, &MainObject::onSetsScryfall);
     connect(m_worker, &Worker::downloadSetsScryfallFailed, this, &MainObject::onDownloadSetsScryfallFailed);
     connect(m_worker, &Worker::setsMTGAH, this, &MainObject::onSetsMTGAH);
@@ -321,8 +321,10 @@ void MainObject::uploadMTGAH(GEnums::SLMetrics ratingMethod, const QLocale &loca
     emit startProgress(opCalculateRatings, tr("Formatting Ratings"), ratingsToUpload, 0);
     if (clear)
         m_worker->clearRatings(sets, ratingMethod, commentMetrics, SLcodes, locale);
-    else
+    else {
+        m_configManager->writeDataToUpload(ratingMethod, commentMetrics);
         m_worker->uploadRatings(sets, ratingMethod, commentMetrics, SLcodes, locale);
+    }
 }
 
 void MainObject::cancelUpload()
@@ -388,7 +390,7 @@ void MainObject::fillMetrics()
     for (int i = 0; i < GEnums::SLCount; ++i) {
         QStandardItem *item = new QStandardItem;
         item->setData(i, Qt::UserRole);
-        if (i == GEnums::SLdrawn_win_rate || i == GEnums::SLavg_pick)
+        if (i == GEnums::SLever_drawn_win_rate || i == GEnums::SLavg_pick)
             item->setData(Qt::Checked, Qt::CheckStateRole);
         else
             item->setData(Qt::Unchecked, Qt::CheckStateRole);
@@ -455,13 +457,14 @@ void MainObject::onSetsScryfall(bool needsUpdate)
 void MainObject::onDownloadSetsScryfallFailed()
 {
     emit endProgress(opDownloadSetsData);
-    emit downloadSetsMTGAHFailed();
+    emit downloadSetsScryfallFailed();
 }
 
 void MainObject::onDownloadSetsMTGAHFailed()
 {
     emit endProgress(opDownloadSets);
-    emit downloadSetsScryfallFailed();
+    emit endProgress(opDownloadSetsData);
+    emit downloadSetsMTGAHFailed();
 }
 
 void MainObject::onSetsMTGAH(bool needsUpdate)
@@ -475,6 +478,7 @@ void MainObject::onSetsMTGAH(bool needsUpdate)
 void MainObject::onRatingsTemplate(bool needsUpdate)
 {
     emit endProgress(opDownloadRatingTemplate);
+    emit customRatingTemplate();
     if (needsUpdate)
         m_ratingTemplateModel->select();
 }

@@ -58,7 +58,7 @@ bool ConfigManager::writeDataToDownload(const QString &format, const QStringList
     return writeConfigObject(configObject);
 }
 
-bool ConfigManager::writeDataToUpload(GEnums::SLMetrics ratingBase, const QList<GEnums::SLMetrics> &commentMetrics)
+bool ConfigManager::writeDataToUpload(GEnums::SLMetrics ratingBase, const QVector<GEnums::SLMetrics> &commentMetrics)
 {
     QJsonObject configObject = getConfigObject();
     if (ratingBase == GEnums::SLCount)
@@ -92,14 +92,18 @@ std::pair<QString, QStringList> ConfigManager::readDataToDownload()
     return std::make_pair(configObject.value(QLatin1String("SLformat")).toString(), sets);
 }
 
-std::pair<GEnums::SLMetrics, QList<GEnums::SLMetrics>> ConfigManager::readDataToUpload()
+std::pair<GEnums::SLMetrics, QVector<GEnums::SLMetrics>> ConfigManager::readDataToUpload()
 {
     QJsonObject configObject = getConfigObject();
+    const auto ratingBaseValue = configObject.constFind(QLatin1String("RatingBase"));
+    if (ratingBaseValue == configObject.constEnd())
+        return std::make_pair(GEnums::SLCount, QVector<GEnums::SLMetrics>());
     const QJsonArray setsArray = configObject.value(QLatin1String("CommentMetrics")).toArray();
-    QList<GEnums::SLMetrics> comments;
+    QVector<GEnums::SLMetrics> comments;
+    comments.reserve(setsArray.size());
     for (const QJsonValue &i : setsArray)
         comments.append(static_cast<GEnums::SLMetrics>(i.toInt()));
-    return std::make_pair(static_cast<GEnums::SLMetrics>(configObject.value(QLatin1String("RatingBase")).toInt()), comments);
+    return std::make_pair(static_cast<GEnums::SLMetrics>(ratingBaseValue->toInt()), comments);
 }
 
 QJsonObject ConfigManager::getConfigObject() const

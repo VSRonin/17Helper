@@ -268,7 +268,7 @@ CentralWidget::CentralWidget(QWidget *parent)
     auto SLMetricsProxy = new NoCheckProxy(this);
     SLMetricsProxy->setSourceModel(m_object->SLMetricsModel());
     ui->ratingBasedCombo->setModel(SLMetricsProxy);
-    ui->ratingBasedCombo->setCurrentIndex(GEnums::SLdrawn_win_rate);
+    ui->ratingBasedCombo->setCurrentIndex(GEnums::SLever_drawn_win_rate);
     retranslateUi();
 
     connect(ui->ratingBasedButton, &QPushButton::clicked, this,
@@ -287,6 +287,7 @@ CentralWidget::CentralWidget(QWidget *parent)
     connect(ui->draftableSetsCheck, &QCheckBox::clicked, m_object, &MainObject::showOnlyDraftableSets);
     connect(ui->cancelUploadButton, &QPushButton::clicked, m_object, &MainObject::cancelUpload);
     connect(m_object, &MainObject::initialisationFailed, this, &CentralWidget::onInitialisationFailed);
+    connect(m_object, &MainObject::customRatingTemplate, this, &CentralWidget::onCustomRatingsTemplateDownloaded);
     connect(m_object, &MainObject::customRatingTemplateFailed, this, &CentralWidget::onCustomRatingTemplateFailed);
     connect(m_object, &MainObject::ratingsCalculationFailed, this, &CentralWidget::onRatingsCalculationFailed);
     connect(m_object, &MainObject::ratingsCalculated, this, &CentralWidget::onRatingsCalculated);
@@ -429,6 +430,9 @@ void CentralWidget::onEndProgress(MainObject::Operations op)
             return;
         }
     }
+#ifdef QT_DEBUG
+    qDebug() << op;
+#endif
     Q_UNREACHABLE();
 }
 

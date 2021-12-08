@@ -73,5 +73,7 @@ extern std::atomic_bool dtFailCustomRatingTemplate;
 extern std::atomic_bool dtFail17LRatings;
 extern std::atomic_bool dtFailUploadRating;
 extern std::atomic_bool dtFailRatingCalculation;
+extern std::atomic_bool dtFailSetsMTGAH;
+extern std::atomic_bool dtFailSetsScryfall;
 #endif
 #endif

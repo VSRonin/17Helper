@@ -56,4 +56,6 @@ std::atomic_bool dtFailCustomRatingTemplate = false;
 std::atomic_bool dtFail17LRatings = false;
 std::atomic_bool dtFailUploadRating = false;
 std::atomic_bool dtFailRatingCalculation = false;
+std::atomic_bool dtFailSetsMTGAH = false;
+std::atomic_bool dtFailSetsScryfall = false;
 #endif

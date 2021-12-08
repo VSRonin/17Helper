@@ -27,6 +27,7 @@ int main(int argc, char *argv[])
     std::unique_ptr<MainWindow> w(nullptr);
     ForceErrorWidget feW;
     feW.show();
+    feW.setGeometry(0, 20, feW.width(), feW.height());
     QObject::connect(&feW, &ForceErrorWidget::start, [&w] {
         w = std::make_unique<MainWindow>();
         w->show();
