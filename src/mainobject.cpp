@@ -47,11 +47,11 @@ MainObject::MainObject(QObject *parent)
     m_SLratingsProxy = new QSortFilterProxyModel(this);
     m_SLratingsProxy->setSourceModel(m_SLratingsModel);
     m_setsModel = new SetsModel(this);
-    m_setsFilter = new SetsFilterModel(this);
-    m_setsFilter->setSourceModel(m_setsModel);
-    m_setsFilter->setFilterEnabled(true);
     m_setsProxy = new CheckableProxy(this);
-    m_setsProxy->setSourceModel(m_setsFilter);
+    m_setsProxy->setSourceModel(m_setsModel);
+    m_setsFilter = new SetsFilterModel(this);
+    m_setsFilter->setSourceModel(m_setsProxy);
+    m_setsFilter->setFilterEnabled(true);
     m_ratingTemplateModel = new RatingsModel(this);
     m_ratingTemplateProxy = new QSortFilterProxyModel(this);
     m_ratingTemplateProxy->setSourceModel(m_ratingTemplateModel);
@@ -110,7 +110,7 @@ QAbstractItemModel *MainObject::SLMetricsModel() const
 
 QAbstractItemModel *MainObject::setsModel() const
 {
-    return m_setsProxy;
+    return m_setsFilter;
 }
 
 QAbstractItemModel *MainObject::formatsModel() const
