@@ -20,12 +20,12 @@ on:
       - 'LICENSE'
 jobs:
     build:
-        name: Build and Test ${{ runner.os }} Qt${{ matrix.qt_ver }}
+        name: Build and Test ${{ matrix.os }} Qt ${{ matrix.qt_ver }}
         runs-on: ${{ matrix.os }}
         strategy:
           fail-fast: false
           matrix:
-              qt_ver: [5.15.2, 6.2.2]
+              qt_ver: [5.15.2, 6.2.4]
               os: [windows-latest, ubuntu-latest, macos-latest]
         steps:
           - name: Install Qt

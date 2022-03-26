@@ -32,6 +32,7 @@
 #include "decimaldelegate.h"
 #include "percentagedelegate.h"
 #include "customratingmodel.h"
+#include "faileduploadsdialog.h"
 class NoCheckProxy : public QIdentityProxyModel
 {
     Q_DISABLE_COPY_MOVE(NoCheckProxy)
@@ -126,15 +127,14 @@ void CentralWidget::on17Lerror()
 void CentralWidget::onUploadedRatings()
 {
     emit updatedUploadedStatus(QString());
+    const QStringList failedCardsist = m_object->failedUploadCards();
+    if (!failedCardsist.isEmpty()) {
+        FailedUploadsDialog *failedDialog = new FailedUploadsDialog(this);
+        failedDialog->setAttribute(Qt::WA_DeleteOnClose);
+        failedDialog->setCardList(failedCardsist);
+        failedDialog->show();
+    }
     ui->cancelUploadButton->hide();
-    m_error &= ~UploadError;
-    retranslateUi();
-}
-void CentralWidget::onFailedUploadRating()
-{
-    emit updatedUploadedStatus(QString());
-    ui->cancelUploadButton->hide();
-    m_error |= UploadError;
     retranslateUi();
 }
 
@@ -175,13 +175,20 @@ void CentralWidget::onDownloadSetsMTGAHFailed()
 {
     m_error |= MTGAHSetsError;
     ui->retryBasicDownloadButton->setEnabled(true);
+    checkDownloadButtonEnabled();
     retranslateUi();
 }
 
 void CentralWidget::onSetsMTGAHDownloaded()
 {
     m_error &= ~MTGAHSetsError;
+    checkDownloadButtonEnabled();
     retranslateUi();
+}
+
+void CentralWidget::checkDownloadButtonEnabled()
+{
+    ui->downloadButton->setEnabled(!(m_error & MTGAHSetsError) && m_object->oneSetSelected());
 }
 
 void CentralWidget::onCustomRatingTemplateFailed()
@@ -293,7 +300,6 @@ CentralWidget::CentralWidget(QWidget *parent)
     connect(m_object, &MainObject::ratingsCalculated, this, &CentralWidget::onRatingsCalculated);
     connect(m_object, &MainObject::downloadSetsMTGAHFailed, this, &CentralWidget::onDownloadSetsMTGAHFailed);
     connect(m_object, &MainObject::setsMTGAHDownloaded, this, &CentralWidget::onSetsMTGAHDownloaded);
-    connect(m_object, &MainObject::failedUploadRating, this, &CentralWidget::onFailedUploadRating);
     connect(m_object, &MainObject::ratingsUploaded, this, &CentralWidget::onUploadedRatings);
     connect(m_object, &MainObject::startProgress, this, &CentralWidget::onStartProgress);
     connect(m_object, &MainObject::updateProgress, this, &CentralWidget::onUpdateProgress);
@@ -303,6 +309,7 @@ CentralWidget::CentralWidget(QWidget *parent)
     connect(m_object, &MainObject::loginFalied, this, &CentralWidget::onLoginError);
     connect(m_object, &MainObject::loggedOut, this, &CentralWidget::onLogout);
     connect(m_object, &MainObject::logoutFailed, this, &CentralWidget::onLogoutError);
+    connect(m_object, &MainObject::SLDownloadFinished, this, &CentralWidget::on17LandsDownloadFinished);
     connect(m_object, &MainObject::SLDownloadFailed, this, &CentralWidget::on17Lerror);
     connect(m_object, &MainObject::loadUserPass, this, &CentralWidget::onLoadUserPass);
     connect(m_object, &MainObject::loadDownloadFormat, this, &CentralWidget::onLoadDownloadFormat);
@@ -313,6 +320,7 @@ CentralWidget::CentralWidget(QWidget *parent)
                 if (roles.isEmpty() || roles.contains(Qt::CheckStateRole))
                     updateRatingsFiler();
             });
+    connect(m_object->setsModel(), &QAbstractItemModel::dataChanged, this, &CentralWidget::checkDownloadButtonEnabled);
 }
 
 CentralWidget::~CentralWidget()
@@ -353,8 +361,6 @@ void CentralWidget::retranslateUi()
         errorStrings.append(tr("Error downloading ratings ratings form 17Lands! Check your internet connection"));
     if (m_error & RatingCalculationError)
         errorStrings.append(tr("Error computing ratings to upload, retry"));
-    if (m_error & UploadError)
-        errorStrings.append(tr("Error uploading ratings to MTGA Helper! Check your internet connection"));
     ui->errorLabel->setText(errorStrings.join(QChar(QLatin1Char('\n'))));
     m_object->retranslateModels();
 }
@@ -447,7 +453,7 @@ void CentralWidget::toggleLoginLogoutButtons()
 
 void CentralWidget::checkUploadButtonEnabled()
 {
-    const bool enabled = !ui->loginButton->isVisible() && m_object->oneSetSelected();
+    const bool enabled = !ui->loginButton->isVisible() && m_object->oneSetSelected() && (m_error & RatingTemplateFailed) == 0;
     ui->uploadButton->setEnabled(enabled);
     ui->clearRatingsButton->setEnabled(enabled);
 }

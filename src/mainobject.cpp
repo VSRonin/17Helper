@@ -87,7 +87,7 @@ MainObject::MainObject(QObject *parent)
     connect(m_worker, &Worker::failedRatingCalculation, this, &MainObject::onRatingsCalculationFailed);
     connect(m_worker, &Worker::allRatingsUploaded, this, &MainObject::onAllRatingsUploaded);
     connect(m_worker, &Worker::ratingUploaded, this, &MainObject::onRatingUploaded);
-    connect(m_worker, &Worker::failedUploadRating, this, &MainObject::onFailedUploadRating);
+    connect(m_worker, &Worker::ratingUploadFailed, this, &MainObject::onRatingUploadFailed);
 #ifndef DEBUG_SINGLE_THREAD
     m_workerThread->start();
 #else
@@ -189,6 +189,13 @@ QString MainObject::configPath() const
     return m_configManager->configFilePath();
 }
 
+QStringList MainObject::failedUploadCards() const
+{
+    QStringList result(m_failedUploadCards.cbegin(), m_failedUploadCards.cend());
+    std::sort(result.begin(), result.end());
+    return result;
+}
+
 void MainObject::tryLogin(const QString &userName, const QString &password, bool rememberMe)
 {
     emit startProgress(opLogIn, tr("Logging in"), 1, 0);
@@ -282,6 +289,7 @@ void MainObject::download17Lands(const QString &format)
 
 void MainObject::uploadMTGAH(GEnums::SLMetrics ratingMethod, const QLocale &locale, bool clear)
 {
+    m_failedUploadCards.clear();
     QStringList sets;
     for (int i = 0, iEnd = m_setsProxy->rowCount(); i < iEnd; ++i) {
         if (m_setsProxy->index(i, 0).data(Qt::CheckStateRole).toInt() == Qt::Checked)
@@ -540,8 +548,9 @@ void MainObject::onRatingUploaded(const QString &card)
     emit ratingUploaded(card);
 }
 
-void MainObject::onFailedUploadRating()
+void MainObject::onRatingUploadFailed(const QString &card)
 {
-    emit endProgress(opUploadMTGAH);
-    emit failedUploadRating();
+    m_failedUploadCards << card;
+    emit increaseProgress(opUploadMTGAH, 1);
+    emit ratingUploadFailed(card);
 }

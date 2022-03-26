@@ -40,6 +40,7 @@ Worker::Worker(QObject *parent)
     , m_workerDbName(QStringLiteral("WorkerDb"))
     , m_cancelUpload(false)
 {
+    connect(this, &Worker::failed17LRatings, this, &Worker::onFailed17LRatings);
     m_requestTimer = new QTimer(this);
     m_requestTimer->setInterval(RequestTimerTimeout);
     connect(m_requestTimer, &QTimer::timeout, this, &Worker::processMTGAHrequestQueue);
@@ -353,9 +354,9 @@ void Worker::onCustomRatingTemplateFinished(QNetworkReply *reply)
 
 void Worker::on17LDownloadFinished(QNetworkReply *reply, const QString &currSet)
 {
-    --m_SLrequestOutstanding;
+    if (m_SLrequestOutstanding-- == 0)
+        return;
     if (reply->error() != QNetworkReply::NoError || reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() != 200) {
-        // #TODO abort on fail
         emit failed17LRatings();
         return;
     }
@@ -428,6 +429,12 @@ void Worker::on17LDownloadFinished(QNetworkReply *reply, const QString &currSet)
         emit downloadedAll17LRatings();
 }
 
+void Worker::onFailed17LRatings()
+{
+    m_SLrequestQueue.clear();
+    m_SLrequestOutstanding = 0;
+}
+
 void Worker::onSetsMTGAHDownloaded(QNetworkReply *reply)
 {
     if (reply->error() != QNetworkReply::NoError) {
@@ -497,26 +504,29 @@ void Worker::onLogOut(QNetworkReply *reply)
     emit loggedOut();
 }
 
-void Worker::onRatingUploaded(QNetworkReply *reply, const QJsonObject &reqData)
+void Worker::onRatingUploaded(QNetworkReply *reply, QJsonObject reqData)
 {
     --m_MTGAHrequestOutstanding;
     if (reply->error() != QNetworkReply::NoError || reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() != 200) {
-        qDebug().noquote() << QStringLiteral("Failed: ") << reqData.value(QLatin1String("idArena")).toInt()
-                           << reqData.value(QLatin1String("name")).toString() << QStringLiteral(" Body: ") << reply->readAll();
+#ifdef QT_DEBUG
+        qDebug().noquote() << QStringLiteral("Failed: Atmpt ") << reqData.value(QLatin1String("attempt")).toInt()
+                           << reqData.value(QLatin1String("idArena")).toInt() << reqData.value(QLatin1String("name")).toString()
+                           << QStringLiteral(" Body: ") << reply->readAll();
+#endif
         const int attemptNumber = reqData.value(QLatin1String("attempt")).toInt() + 1;
-        if (attemptNumber >= MaximumUploadAttemps) {
-            // #TODO emit error and abort
+        if (attemptNumber > MaximumUploadAttemps) {
+            emit ratingUploadFailed(reqData.value(QLatin1String("name")).toString());
         } else {
             reqData[QLatin1String("attempt")] = attemptNumber;
             m_MTGAHrequestQueue.enqueue(reqData);
             if (!m_requestTimer->isActive())
                 m_requestTimer->start();
         }
-        return;
+    } else {
+        emit ratingUploaded(reqData.value(QLatin1String("name")).toString());
     }
     if (m_cancelUpload)
         m_MTGAHrequestQueue.clear();
-    emit ratingUploaded(reqData.value(QLatin1String("name")).toString());
     if (m_MTGAHrequestQueue.size() + m_MTGAHrequestOutstanding == 0) {
         emit allRatingsUploaded();
         getCustomRatingTemplate();
@@ -606,7 +616,6 @@ void Worker::processSLrequestQueue()
     const QString currSet = currReq.first;
     ++m_SLrequestOutstanding;
     QNetworkReply *reply = m_nam->get(currReq.second);
-    connect(reply, &QNetworkReply::errorOccurred, this, &Worker::failed17LRatings);
     connect(reply, &QNetworkReply::finished, reply, &QNetworkReply::deleteLater);
     connect(reply, &QNetworkReply::finished, this, std::bind(&Worker::on17LDownloadFinished, this, reply, currSet));
 }
@@ -751,12 +760,7 @@ void Worker::processMTGAHrequestQueue()
         return;
     if (m_MTGAHrequestOutstanding > 0)
         return;
-    QJsonObject reqData = m_MTGAHrequestQueue.takeFirst();
-    if (reqData.value(QLatin1String("attempt")).toInt() >= 3) {
-        m_MTGAHrequestQueue.clear();
-        emit failedUploadRating();
-        return;
-    }
+    QJsonObject reqData = m_MTGAHrequestQueue.dequeue();
     const QUrl ratingUrl = QUrl::fromUserInput(QStringLiteral("https://mtgahelper.com/api/User/CustomDraftRating"));
     QNetworkRequest ratingReq(ratingUrl);
     ratingReq.setHeader(QNetworkRequest::ContentTypeHeader, QStringLiteral("application/json"));

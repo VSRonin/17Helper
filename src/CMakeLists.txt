@@ -15,6 +15,9 @@ set(ui_SRCS
     centralwidget.cpp
     centralwidget.h
     centralwidget.ui
+    faileduploadsdialog.cpp
+    faileduploadsdialog.h
+    faileduploadsdialog.ui
 )
 set(backend_SRCS
     globals.h

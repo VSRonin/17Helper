@@ -53,10 +53,11 @@ private slots:
     void parseSetsScryfall(QNetworkReply *reply, const QStringList &sets);
     void onCustomRatingTemplateFinished(QNetworkReply *reply);
     void on17LDownloadFinished(QNetworkReply *reply, const QString &currSet);
+    void onFailed17LRatings();
     void onSetsMTGAHDownloaded(QNetworkReply *reply);
     void onLogIn(QNetworkReply *reply);
     void onLogOut(QNetworkReply *reply);
-    void onRatingUploaded(QNetworkReply *reply, const QJsonObject &reqData);
+    void onRatingUploaded(QNetworkReply *reply, QJsonObject reqData);
 signals:
     void initialised();
     void initialisationFailed();
@@ -74,7 +75,7 @@ signals:
     void downloaded17LRatings(const QString &set);
     void allRatingsUploaded();
     void ratingUploaded(const QString &card);
-    void failedUploadRating();
+    void ratingUploadFailed(const QString &card);
     void customRatingTemplate(bool needsUpdate);
     void ratingsCalculated();
     void ratingCalculated(const QString &card);

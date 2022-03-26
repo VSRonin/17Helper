@@ -14,6 +14,7 @@
 #ifndef MAINOBJECT_H
 #define MAINOBJECT_H
 #include <QObject>
+#include <QSet>
 #include "globals.h"
 class Worker;
 class QThread;
@@ -68,6 +69,8 @@ public:
     void showOnlyDraftableSets(bool showOnly);
     bool oneSetSelected() const;
     QString configPath() const;
+    QStringList failedUploadCards() const;
+    ;
 public slots:
     void tryLogin(const QString &userName, const QString &password, bool rememberMe = false);
     void logOut();
@@ -95,7 +98,7 @@ private slots:
     void onRatingsCalculationFailed();
     void onAllRatingsUploaded();
     void onRatingUploaded(const QString &card);
-    void onFailedUploadRating();
+    void onRatingUploadFailed(const QString &card);
     void onCustomRatingTemplateFailed();
     void onDownloadSetsScryfallFailed();
     void onDownloadSetsMTGAHFailed();
@@ -116,8 +119,8 @@ signals:
     void SLDownloadFailed();
     void ratingsCalculated();
     void ratingsCalculationFailed();
-    void failedUploadRating();
     void ratingUploaded(const QString &card);
+    void ratingUploadFailed(const QString &card);
     void ratingsUploaded();
     void loadUserPass(const QString &userName, const QString &password);
     void loadDownloadFormat(const QString &format);
@@ -147,6 +150,7 @@ private:
     QSortFilterProxyModel *m_SLratingsProxy;
     CustomRatingModel *m_customRatingsModel;
     int ratingsToUpload;
+    QSet<QString> m_failedUploadCards;
 };
 
 #endif

@@ -52,7 +52,6 @@ public:
         RatingTemplateFailed = 0x8,
         SLDownloadError = 0x10,
         RatingCalculationError = 0x20,
-        UploadError = 0x40
     };
     Q_DECLARE_FLAGS(CurrentErrors, CurrentError)
     CurrentErrors errors() const;
@@ -93,7 +92,6 @@ private slots:
     void checkUploadButtonEnabled();
     void enableAll(bool enable);
     void onUploadedRatings();
-    void onFailedUploadRating();
     void onLoadUserPass(const QString &userName, const QString &password);
     void onLoadDownloadFormat(const QString &format);
     void onLoadUploadRating(GEnums::SLMetrics ratingBase);
@@ -103,6 +101,7 @@ private slots:
     void onRatingsCalculated();
     void onDownloadSetsMTGAHFailed();
     void onSetsMTGAHDownloaded();
+    void checkDownloadButtonEnabled();
 signals:
     void updatedUploadedStatus(const QString &card);
 };

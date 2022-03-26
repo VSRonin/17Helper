@@ -64,7 +64,6 @@
        <property name="font">
         <font>
          <pointsize>10</pointsize>
-         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -185,7 +184,6 @@
         <property name="font">
          <font>
           <pointsize>8</pointsize>
-          <weight>75</weight>
           <bold>true</bold>
          </font>
         </property>
@@ -466,7 +464,7 @@
      <item>
       <widget class="QPushButton" name="downloadButton">
        <property name="enabled">
-        <bool>true</bool>
+        <bool>false</bool>
        </property>
        <property name="text">
         <string>Download Ratings from 17 Lands</string>
