@@ -54,23 +54,23 @@ set(delegates_SRCS
     decimaldelegate.h
     decimaldelegate.cpp
 )
-set(debugtools_SRCS
-    ${CMAKE_CURRENT_SOURCE_DIR}/debug_tools/forceerrorwidget.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/debug_tools/forceerrorwidget.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/debug_tools/forceerrornetworkmanager.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/debug_tools/forceerrornetworkmanager.cpp
+set(loggingtools_SRCS
+    loggingtools/forceerrorwidget.h
+    loggingtools/forceerrorwidget.cpp
+    loggingtools/forceerrornetworkmanager.h
+    loggingtools/forceerrornetworkmanager.cpp
 )
 source_group(UI FILES ${ui_SRCS})
 source_group(Backend FILES ${backend_SRCS})
 source_group(Models FILES ${models_SRCS})
 source_group(Delegates FILES ${delegates_SRCS})
-source_group(DebugTools FILES ${debugtools_SRCS})
+source_group(LoggingTools FILES ${loggingtools_SRCS})
 set(17Helper_SRCS
     ${ui_SRCS}
     ${backend_SRCS}
     ${models_SRCS}
     ${delegates_SRCS}
-    ${debugtools_SRCS}
+    ${loggingtools_SRCS}
 )
 qt_create_translation(17Helper_QM_FILES ${17Helper_SRCS} 17Helper_en.ts)
 add_library(17HelperLib STATIC ${17Helper_SRCS} ${17Helper_QM_FILES})
@@ -114,8 +114,3 @@ install(DIRECTORY "${OPENSSL_ROOT_DIR}/bin/"
 include(InstallRequiredSystemLibraries)
 include(windeployqt)
 WinDeployQt(17Helper en "17Helper")
-include(InstallRequiredSystemLibraries)
-install(
-    PROGRAMS ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS}
-    DESTINATION "17Helper"
-)

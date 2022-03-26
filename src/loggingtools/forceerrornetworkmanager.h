@@ -10,31 +10,21 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 \****************************************************************************/
-#include <QApplication>
-#include <QTranslator>
-#include <mainwindow.h>
-#ifdef QT_DEBUG
-#    include <loggingtools/forceerrorwidget.h>
-#endif
-int main(int argc, char *argv[])
-{
-    QApplication app(argc, argv);
-    QTranslator translator;
-    if (translator.load(QLocale(), QLatin1String("17Helper"), QLatin1String("_"), QLatin1String(":/i18n")))
-        app.installTranslator(&translator);
 
+#ifndef FORCEERRORNETWORKMANAGER_H
+#define FORCEERRORNETWORKMANAGER_H
+#include <QNetworkAccessManager>
 #ifdef QT_DEBUG
-    std::unique_ptr<MainWindow> w(nullptr);
-    ForceErrorWidget feW;
-    feW.show();
-    feW.setGeometry(0, 20, feW.width(), feW.height());
-    QObject::connect(&feW, &ForceErrorWidget::start, [&w] {
-        w = std::make_unique<MainWindow>();
-        w->show();
-    });
-#else
-    MainWindow w;
-    w.show();
+class ForceErrorNetworkManager : public QNetworkAccessManager
+{
+    Q_OBJECT
+    Q_DISABLE_COPY_MOVE(ForceErrorNetworkManager)
+public:
+    explicit ForceErrorNetworkManager(QObject *parent = nullptr);
+
+protected:
+    QNetworkReply *createRequest(QNetworkAccessManager::Operation op, const QNetworkRequest &originalReq, QIODevice *outgoingData = nullptr) override;
+};
+
 #endif
-    return app.exec();
-}
+#endif
