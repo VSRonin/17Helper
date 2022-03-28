@@ -164,37 +164,37 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="centralwidget.cpp" line="347"/>
+        <location filename="centralwidget.cpp" line="353"/>
         <source>Your password will be stored in plain text in %1</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="centralwidget.cpp" line="353"/>
+        <location filename="centralwidget.cpp" line="359"/>
         <source>Login Failed! Check your username, password or internet connection</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="centralwidget.cpp" line="355"/>
+        <location filename="centralwidget.cpp" line="361"/>
         <source>Logout Failed! Check your internet connection</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="centralwidget.cpp" line="357"/>
+        <location filename="centralwidget.cpp" line="363"/>
         <source>Error downloading sets info! Check your internet connection</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="centralwidget.cpp" line="359"/>
+        <location filename="centralwidget.cpp" line="365"/>
         <source>Error downloading ratings template! Check your internet connection</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="centralwidget.cpp" line="361"/>
+        <location filename="centralwidget.cpp" line="367"/>
         <source>Error downloading ratings ratings form 17Lands! Check your internet connection</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="centralwidget.cpp" line="363"/>
+        <location filename="centralwidget.cpp" line="369"/>
         <source>Error computing ratings to upload, retry</source>
         <translation type="unfinished"></translation>
     </message>
@@ -253,227 +253,227 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="200"/>
+        <location filename="mainobject.cpp" line="213"/>
         <source>Logging in</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="207"/>
+        <location filename="mainobject.cpp" line="220"/>
         <source>Logging out</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="213"/>
+        <location filename="mainobject.cpp" line="226"/>
         <source>Premier Draft</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="214"/>
+        <location filename="mainobject.cpp" line="227"/>
         <source>Quick Draft</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="215"/>
+        <location filename="mainobject.cpp" line="228"/>
         <source>Traditional Draft</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="216"/>
+        <location filename="mainobject.cpp" line="229"/>
         <source>Draft Challenge</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="217"/>
+        <location filename="mainobject.cpp" line="230"/>
         <source>Sealed</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="218"/>
+        <location filename="mainobject.cpp" line="231"/>
         <source>Traditional Sealed</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="226"/>
+        <location filename="mainobject.cpp" line="239"/>
         <source>#S</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="227"/>
+        <location filename="mainobject.cpp" line="240"/>
         <source>ALSA</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="228"/>
+        <location filename="mainobject.cpp" line="241"/>
         <source>#P</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="229"/>
+        <location filename="mainobject.cpp" line="242"/>
         <source>ATA</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="230"/>
+        <location filename="mainobject.cpp" line="243"/>
         <source>#GP</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="231"/>
+        <location filename="mainobject.cpp" line="244"/>
         <source>GPWR</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="232"/>
+        <location filename="mainobject.cpp" line="245"/>
         <source>#OH</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="233"/>
+        <location filename="mainobject.cpp" line="246"/>
         <source>OHWR</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="234"/>
+        <location filename="mainobject.cpp" line="247"/>
         <source>#GD</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="235"/>
+        <location filename="mainobject.cpp" line="248"/>
         <source>GDWR</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="236"/>
+        <location filename="mainobject.cpp" line="249"/>
         <source>#GIH</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="237"/>
+        <location filename="mainobject.cpp" line="250"/>
         <source>GIHWR</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="238"/>
+        <location filename="mainobject.cpp" line="251"/>
         <source>#GND</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="239"/>
+        <location filename="mainobject.cpp" line="252"/>
         <source>GNDWR</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="240"/>
+        <location filename="mainobject.cpp" line="253"/>
         <source>IWD</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="246"/>
+        <location filename="mainobject.cpp" line="259"/>
         <source>Number Seen (%1)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="247"/>
+        <location filename="mainobject.cpp" line="260"/>
         <source>Average Last Seen At (%1)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="248"/>
+        <location filename="mainobject.cpp" line="261"/>
         <source>Number Picked (%1)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="249"/>
+        <location filename="mainobject.cpp" line="262"/>
         <source>Average Taken At (%1)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="250"/>
+        <location filename="mainobject.cpp" line="263"/>
         <source>Number of Games Played (%1)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="251"/>
+        <location filename="mainobject.cpp" line="264"/>
         <source>Games Played Win Rate (%1)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="252"/>
+        <location filename="mainobject.cpp" line="265"/>
         <source>Number of Games in Opening Hand (%1)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="253"/>
+        <location filename="mainobject.cpp" line="266"/>
         <source>Opening Hand Win Rate (%1)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="254"/>
+        <location filename="mainobject.cpp" line="267"/>
         <source>Number of Games Drawn (%1)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="255"/>
+        <location filename="mainobject.cpp" line="268"/>
         <source>Games Drawn Win Rate (%1)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="256"/>
+        <location filename="mainobject.cpp" line="269"/>
         <source>Number of Games In Hand (%1)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="257"/>
+        <location filename="mainobject.cpp" line="270"/>
         <source>Games in Hand Win Rate (%1)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="258"/>
+        <location filename="mainobject.cpp" line="271"/>
         <source>Number of Games Not Drawn (%1)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="259"/>
+        <location filename="mainobject.cpp" line="272"/>
         <source>Games Not Drawn Win Rate (%1)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="260"/>
+        <location filename="mainobject.cpp" line="273"/>
         <source>Improvement When Drawn (%1)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="285"/>
+        <location filename="mainobject.cpp" line="298"/>
         <source>Downloading 17Lands Data</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="328"/>
+        <location filename="mainobject.cpp" line="341"/>
         <source>Formatting Ratings</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="354"/>
+        <location filename="mainobject.cpp" line="367"/>
         <source>Loading Sets</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="355"/>
+        <location filename="mainobject.cpp" line="368"/>
         <source>Downloading Set Details</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="435"/>
+        <location filename="mainobject.cpp" line="454"/>
         <source>Downloading custom ratings from MTGA Helper</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="521"/>
+        <location filename="mainobject.cpp" line="540"/>
         <source>Uploading Data to MTGA Helper</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainobject.cpp" line="540"/>
+        <location filename="mainobject.cpp" line="559"/>
         <source>Refreshing Ratings</source>
         <translation type="unfinished"></translation>
     </message>

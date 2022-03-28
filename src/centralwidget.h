@@ -102,6 +102,7 @@ private slots:
     void onDownloadSetsMTGAHFailed();
     void onSetsMTGAHDownloaded();
     void checkDownloadButtonEnabled();
+    void onShowOnlyDraftableSetsChanged(bool showOnly);
 signals:
     void updatedUploadedStatus(const QString &card);
 };

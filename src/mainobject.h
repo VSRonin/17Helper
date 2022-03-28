@@ -68,9 +68,10 @@ public:
     void filterRatings(QString name);
     void showOnlyDraftableSets(bool showOnly);
     bool oneSetSelected() const;
+    bool oneNonDraftableSetSelected() const;
     QString configPath() const;
     QStringList failedUploadCards() const;
-    ;
+
 public slots:
     void tryLogin(const QString &userName, const QString &password, bool rememberMe = false);
     void logOut();
@@ -128,6 +129,7 @@ signals:
     void setsMTGAHDownloaded();
     void downloadSetsMTGAHFailed();
     void downloadSetsScryfallFailed();
+    void showOnlyDraftableSetsChanged(bool showOnlyDraftable);
 
 private:
     void init();

@@ -114,6 +114,5 @@ install(DIRECTORY "${OPENSSL_ROOT_DIR}/bin/"
     RUNTIME DESTINATION "17Helper"
     FILES_MATCHING PATTERN "*${CMAKE_SHARED_LIBRARY_SUFFIX}"
 )
-include(InstallRequiredSystemLibraries)
 include(windeployqt)
 WinDeployQt(17Helper en "17Helper")

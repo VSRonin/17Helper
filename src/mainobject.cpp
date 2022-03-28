@@ -172,13 +172,25 @@ void MainObject::filterRatings(QString name)
 
 void MainObject::showOnlyDraftableSets(bool showOnly)
 {
+    if (m_setsFilter->filterEnabled() == showOnly)
+        return;
     m_setsFilter->setFilterEnabled(showOnly);
+    showOnlyDraftableSetsChanged(showOnly);
 }
 
 bool MainObject::oneSetSelected() const
 {
     for (int i = 0, iEnd = m_setsProxy->rowCount(); i < iEnd; ++i) {
         if (m_setsProxy->index(i, 0).data(Qt::CheckStateRole).value<Qt::CheckState>() == Qt::Checked)
+            return true;
+    }
+    return false;
+}
+
+bool MainObject::oneNonDraftableSetSelected() const
+{
+    for (int i = 0, iEnd = m_setsProxy->rowCount(); i < iEnd; ++i) {
+        if (m_setsProxy->index(i, 0).data(Qt::CheckStateRole).value<Qt::CheckState>() == Qt::Checked && !m_setsFilter->isDaraftable(i))
             return true;
     }
     return false;
@@ -373,11 +385,12 @@ void MainObject::init()
         emit loadDownloadFormat(downloadData.first);
     if (!downloadData.second.isEmpty()) {
         for (int i = 0, iEnd = m_setsProxy->rowCount(); i < iEnd; ++i) {
-            if (downloadData.second.contains(m_setsProxy->index(i, SetsModel::smcParentSet).data().toString()))
+            if (downloadData.second.contains(m_setsProxy->index(i, SetsModel::smcSetID).data().toString()))
                 m_setsProxy->setData(m_setsProxy->index(i, 0), Qt::Checked, Qt::CheckStateRole);
             else
                 m_setsProxy->setData(m_setsProxy->index(i, 0), Qt::Unchecked, Qt::CheckStateRole);
         }
+        showOnlyDraftableSets(!oneNonDraftableSetSelected());
     }
     std::pair<GEnums::SLMetrics, QList<GEnums::SLMetrics>> uploadData = m_configManager->readDataToUpload();
     if (uploadData.first != GEnums::SLCount)
@@ -421,7 +434,12 @@ void MainObject::selectSetsModel()
 {
     QSqlDatabase objectDb = openDb(m_objectDbName);
     m_setsModel->setQuery(objectDb);
-    m_setsProxy->setData(m_setsProxy->index(0, 0), Qt::Checked, Qt::CheckStateRole);
+    for (int i = 0, iMax = m_setsProxy->rowCount(); i < iMax; ++i) {
+        if (m_setsFilter->isDaraftable(i)) {
+            m_setsProxy->setData(m_setsProxy->index(i, 0), Qt::Checked, Qt::CheckStateRole);
+            break;
+        }
+    }
 }
 
 void MainObject::onLoggedIn()

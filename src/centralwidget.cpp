@@ -191,6 +191,11 @@ void CentralWidget::checkDownloadButtonEnabled()
     ui->downloadButton->setEnabled(!(m_error & MTGAHSetsError) && m_object->oneSetSelected());
 }
 
+void CentralWidget::onShowOnlyDraftableSetsChanged(bool showOnly)
+{
+    ui->draftableSetsCheck->setChecked(showOnly);
+}
+
 void CentralWidget::onCustomRatingTemplateFailed()
 {
     m_error |= RatingTemplateFailed;
@@ -315,6 +320,7 @@ CentralWidget::CentralWidget(QWidget *parent)
     connect(m_object, &MainObject::loadDownloadFormat, this, &CentralWidget::onLoadDownloadFormat);
     connect(m_object, &MainObject::loadUploadRating, this, &CentralWidget::onLoadUploadRating);
     connect(m_object, &MainObject::ratingUploaded, this, &CentralWidget::updatedUploadedStatus);
+    connect(m_object, &MainObject::showOnlyDraftableSetsChanged, this, &CentralWidget::onShowOnlyDraftableSetsChanged);
     connect(m_object->setsModel(), &QAbstractItemModel::dataChanged, this,
             [this](const QModelIndex &, const QModelIndex &, const QVector<int> &roles) {
                 if (roles.isEmpty() || roles.contains(Qt::CheckStateRole))

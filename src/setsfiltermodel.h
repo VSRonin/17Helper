@@ -25,6 +25,7 @@ public:
     explicit SetsFilterModel(QObject *parent = nullptr);
     bool filterEnabled() const;
     void setFilterEnabled(bool newFilterEnabled);
+    bool isDaraftable(int source_row) const;
 
 protected:
     bool filterAcceptsRow(int source_row, const QModelIndex &source_parent) const override;

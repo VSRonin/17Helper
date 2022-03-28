@@ -29,11 +29,16 @@ void SetsFilterModel::setFilterEnabled(bool newFilterEnabled)
     invalidateFilter();
 }
 
+bool SetsFilterModel::isDaraftable(int source_row) const
+{
+    return sourceModel()->index(source_row, SetsModel::smcType).data().toInt() & DraftableSet;
+}
+
 bool SetsFilterModel::filterAcceptsRow(int source_row, const QModelIndex &source_parent) const
 {
     if (source_parent.isValid())
         return false;
     if (!m_filterEnabled)
         return true;
-    return sourceModel()->index(source_row, SetsModel::smcType).data().toInt() & DraftableSet;
+    return isDaraftable(source_row);
 }

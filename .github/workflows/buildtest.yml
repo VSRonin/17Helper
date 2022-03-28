@@ -44,6 +44,10 @@ jobs:
           - name: Set up MSVC environment
             if: ${{ runner.os == 'Windows' }}
             uses: ilammy/msvc-dev-cmd@v1
+          - name: Install Windows Dependencies
+            if: ${{ runner.os == 'Windows' }}
+            run: |
+                choco install openssl
           - name: Install Linux Dependencies
             if: ${{ runner.os == 'Linux' }}
             run: |
