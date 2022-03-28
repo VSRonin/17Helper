@@ -40,7 +40,7 @@ public slots:
     void logOut();
     void downloadSetsMTGAH();
     void getCustomRatingTemplate();
-    void get17LRatings(const QStringList &sets, const QString &format);
+    void get17LRatings(const QStringList &sets, const QString &format, const QDate &fromDate, const QDate &toDate);
     void uploadRatings(const QStringList &sets, GEnums::SLMetrics ratingMethod, const QVector<GEnums::SLMetrics> &commentStats,
                        const QStringList &SLcodes, const QLocale &locale);
     void clearRatings(const QStringList &sets, GEnums::SLMetrics ratingMethod, const QVector<GEnums::SLMetrics> &commentStats,
@@ -87,7 +87,7 @@ private:
     void actualLogOut();
     void actualDownloadSetsMTGAH();
     void actualGetCustomRatingTemplate();
-    void actualGet17LRatings(const QStringList &sets, const QString &format);
+    void actualGet17LRatings(const QStringList &sets, const QString &format, const QDate &fromDate, const QDate &toDate);
     void actualUploadRatings(QStringList sets, GEnums::SLMetrics ratingMethod, QVector<GEnums::SLMetrics> commentStats, const QStringList &SLcodes,
                              const QLocale &locale, bool clear);
     static int ratingValue(GEnums::SLMetrics metric, const double &val, const QVector<double> &deciles);

@@ -76,7 +76,7 @@ public slots:
     void tryLogin(const QString &userName, const QString &password, bool rememberMe = false);
     void logOut();
     void retranslateModels();
-    void download17Lands(const QString &format);
+    void download17Lands(const QString &format, const QDate &fromDate, const QDate &toDate);
     void uploadMTGAH(GEnums::SLMetrics ratingMethod, const QLocale &locale, bool clear);
     void cancelUpload();
     void downloadSetsMTGAH();
@@ -124,7 +124,7 @@ signals:
     void ratingUploadFailed(const QString &card);
     void ratingsUploaded();
     void loadUserPass(const QString &userName, const QString &password);
-    void loadDownloadFormat(const QString &format);
+    void loadDownloadFormat(const QString &format, const QDate &from, const QDate &to);
     void loadUploadRating(GEnums::SLMetrics ratingBase);
     void setsMTGAHDownloaded();
     void downloadSetsMTGAHFailed();

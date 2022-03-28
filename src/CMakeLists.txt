@@ -69,10 +69,12 @@ source_group(Models FILES ${models_SRCS})
 source_group(Delegates FILES ${delegates_SRCS})
 source_group(LoggingTools FILES ${loggingtools_SRCS})
 set(17Helper_SRCS
-    ${ui_SRCS}
     ${backend_SRCS}
     ${models_SRCS}
     ${delegates_SRCS}
+)
+set(17HelperUi_SRCS
+    ${ui_SRCS}
     ${loggingtools_SRCS}
 )
 qt_create_translation(17Helper_QM_FILES ${17Helper_SRCS} 17Helper_en.ts)
@@ -82,8 +84,6 @@ target_compile_definitions(17HelperLib PUBLIC QT_NO_CAST_FROM_ASCII QT_NO_CAST_T
 target_include_directories(17HelperLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
 target_link_libraries(17HelperLib PUBLIC 
     Qt::Core
-    Qt::Gui
-    Qt::Widgets
     Qt::Network
     Qt::Sql
     QtModelUtilities::QtModelUtilities
@@ -96,8 +96,29 @@ set_target_properties(17HelperLib PROPERTIES
     CXX_STANDARD_REQUIRED ON
     VERSION ${VERSION_SHORT}
 )
+qt_create_translation(17HelperUi_QM_FILES ${17HelperUi_SRCS} 17HelperUi_en.ts)
+add_library(17HelperUiLib STATIC ${17HelperUi_SRCS} ${17HelperUi_QM_FILES})
+add_library(17HelperUiLib::17HelperUiLib ALIAS 17HelperUiLib)
+target_compile_definitions(17HelperUiLib PUBLIC QT_NO_CAST_FROM_ASCII QT_NO_CAST_TO_ASCII)
+target_include_directories(17HelperUiLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
+target_link_libraries(17HelperUiLib PUBLIC
+    17HelperLib::17HelperLib
+    Qt::Gui
+    Qt::Widgets
+)
+set_target_properties(17HelperUiLib PROPERTIES
+    AUTOMOC ON
+    AUTOUIC ON
+    AUTORCC ON
+    CXX_STANDARD 11
+    CXX_STANDARD_REQUIRED ON
+    VERSION ${VERSION_SHORT}
+)
 add_executable(17Helper guimain.cpp)
-target_link_libraries(17Helper PUBLIC 17HelperLib::17HelperLib)
+target_link_libraries(17Helper PUBLIC
+    17HelperLib::17HelperLib
+    17HelperUiLib::17HelperUiLib
+)
 set_target_properties(17Helper PROPERTIES
     WIN32_EXECUTABLE TRUE
     MACOSX_BUNDLE TRUE

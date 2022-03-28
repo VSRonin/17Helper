@@ -40,7 +40,7 @@ bool ConfigManager::writeUserPass(const QString &userName, const QString &passwo
     return writeConfigObject(configObject);
 }
 
-bool ConfigManager::writeDataToDownload(const QString &format, const QStringList &sets)
+bool ConfigManager::writeDataToDownload(const QString &format, const QStringList &sets, const QDate &fromDate, const QDate &toDate)
 {
     QJsonObject configObject = getConfigObject();
     if (format.isEmpty())
@@ -55,6 +55,14 @@ bool ConfigManager::writeDataToDownload(const QString &format, const QStringList
             setsArray.append(set);
         configObject[QLatin1String("SLsets")] = setsArray;
     }
+    if (fromDate.isNull())
+        configObject.remove(QLatin1String("SLfromDate"));
+    else
+        configObject[QLatin1String("SLfromDate")] = fromDate.toString(Qt::ISODate);
+    if (toDate.isNull())
+        configObject.remove(QLatin1String("SLtoDate"));
+    else
+        configObject[QLatin1String("SLtoDate")] = toDate.toString(Qt::ISODate);
     return writeConfigObject(configObject);
 }
 
@@ -82,14 +90,16 @@ std::pair<QString, QString> ConfigManager::readUserPass()
     return std::make_pair(configObject.value(QLatin1String("username")).toString(), configObject.value(QLatin1String("password")).toString());
 }
 
-std::pair<QString, QStringList> ConfigManager::readDataToDownload()
+std::tuple<QString, QStringList, QDate, QDate> ConfigManager::readDataToDownload()
 {
     QJsonObject configObject = getConfigObject();
     const QJsonArray setsArray = configObject.value(QLatin1String("SLsets")).toArray();
     QStringList sets;
     for (const QJsonValue &i : setsArray)
         sets.append(i.toString());
-    return std::make_pair(configObject.value(QLatin1String("SLformat")).toString(), sets);
+    return std::make_tuple(configObject.value(QLatin1String("SLformat")).toString(), sets,
+                           QDate::fromString(configObject.value(QLatin1String("SLfromDate")).toString(), Qt::ISODate),
+                           QDate::fromString(configObject.value(QLatin1String("SLtoDate")).toString(), Qt::ISODate));
 }
 
 std::pair<GEnums::SLMetrics, QVector<GEnums::SLMetrics>> ConfigManager::readDataToUpload()

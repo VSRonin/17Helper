@@ -109,7 +109,13 @@ void CentralWidget::onLogout()
 
 void CentralWidget::do17Ldownload()
 {
-    m_object->download17Lands(ui->formatsCombo->currentData().toString());
+    QDate fromDt, toDt;
+    if (ui->ratingTimeGroup->isChecked()) {
+        fromDt = ui->ratingFromEdit->date();
+        if (!ui->toTodayCheck->isChecked())
+            toDt = ui->ratingToEdit->date();
+    }
+    m_object->download17Lands(ui->formatsCombo->currentData().toString(), fromDt, toDt);
 }
 
 void CentralWidget::on17LandsDownloadFinished()
@@ -145,9 +151,21 @@ void CentralWidget::onLoadUserPass(const QString &userName, const QString &passw
     ui->remembePwdCheck->setChecked(true);
 }
 
-void CentralWidget::onLoadDownloadFormat(const QString &format)
+void CentralWidget::onLoadDownloadFormat(const QString &format, const QDate &fromDt, const QDate &toDt)
 {
     ui->formatsCombo->setCurrentIndex(ui->formatsCombo->findData(format, Qt::UserRole));
+    ui->ratingTimeGroup->setChecked(!fromDt.isNull());
+    ui->toTodayCheck->setChecked(toDt.isNull());
+    if (toDt.isNull())
+        ui->ratingFromEdit->setDate(QDate::currentDate());
+    else
+        ui->ratingFromEdit->setDate(toDt);
+    if (!fromDt.isNull()) {
+        ui->ratingToEdit->setEnabled(toDt.isNull());
+        ui->ratingFromEdit->setDate(fromDt);
+    } else {
+        ui->ratingFromEdit->setDate(QDate(2000, 1, 1));
+    }
 }
 
 void CentralWidget::onLoadUploadRating(GEnums::SLMetrics ratingBase)
@@ -194,6 +212,18 @@ void CentralWidget::checkDownloadButtonEnabled()
 void CentralWidget::onShowOnlyDraftableSetsChanged(bool showOnly)
 {
     ui->draftableSetsCheck->setChecked(showOnly);
+}
+
+void CentralWidget::onRatingTimeGroupChecked(bool checked)
+{
+    if (!checked)
+        return;
+    onToTodayCheckChecked(ui->toTodayCheck->isChecked());
+}
+
+void CentralWidget::onToTodayCheckChecked(bool checked)
+{
+    ui->ratingToEdit->setEnabled(!checked);
 }
 
 void CentralWidget::onCustomRatingTemplateFailed()
@@ -281,6 +311,7 @@ CentralWidget::CentralWidget(QWidget *parent)
     SLMetricsProxy->setSourceModel(m_object->SLMetricsModel());
     ui->ratingBasedCombo->setModel(SLMetricsProxy);
     ui->ratingBasedCombo->setCurrentIndex(GEnums::SLever_drawn_win_rate);
+    ui->ratingToEdit->setDate(QDate::currentDate());
     retranslateUi();
 
     connect(ui->ratingBasedButton, &QPushButton::clicked, this,
@@ -298,6 +329,8 @@ CentralWidget::CentralWidget(QWidget *parent)
     connect(ui->searchCardEdit, &QLineEdit::textChanged, this, &CentralWidget::updateRatingsFiler);
     connect(ui->draftableSetsCheck, &QCheckBox::clicked, m_object, &MainObject::showOnlyDraftableSets);
     connect(ui->cancelUploadButton, &QPushButton::clicked, m_object, &MainObject::cancelUpload);
+    connect(ui->ratingTimeGroup, &QGroupBox::toggled, this, &CentralWidget::onRatingTimeGroupChecked);
+    connect(ui->toTodayCheck, &QCheckBox::clicked, this, &CentralWidget::onToTodayCheckChecked);
     connect(m_object, &MainObject::initialisationFailed, this, &CentralWidget::onInitialisationFailed);
     connect(m_object, &MainObject::customRatingTemplate, this, &CentralWidget::onCustomRatingsTemplateDownloaded);
     connect(m_object, &MainObject::customRatingTemplateFailed, this, &CentralWidget::onCustomRatingTemplateFailed);

@@ -588,20 +588,23 @@ void Worker::actualGetCustomRatingTemplate()
     connect(reply, &QNetworkReply::finished, reply, &QNetworkReply::deleteLater);
     connect(reply, &QNetworkReply::finished, this, std::bind(&Worker::onCustomRatingTemplateFinished, this, reply));
 }
-void Worker::get17LRatings(const QStringList &sets, const QString &format)
+void Worker::get17LRatings(const QStringList &sets, const QString &format, const QDate &fromDate, const QDate &toDate)
 {
-    QMetaObject::invokeMethod(this, std::bind(&Worker::actualGet17LRatings, this, sets, format), Qt::QueuedConnection);
+    QMetaObject::invokeMethod(this, std::bind(&Worker::actualGet17LRatings, this, sets, format, fromDate, toDate), Qt::QueuedConnection);
 }
-void Worker::actualGet17LRatings(const QStringList &sets, const QString &format)
+void Worker::actualGet17LRatings(const QStringList &sets, const QString &format, const QDate &fromDate, const QDate &toDate)
 {
     if (sets.isEmpty() || format.isEmpty()) {
         emit failed17LRatings();
         return;
     }
+    const QString formatStartEndDateStr = QLatin1String("&format=") + format + QLatin1String("&start_date=")
+            + (fromDate.isNull() ? QDate(2000, 1, 1) : fromDate).toString(Qt::ISODate) + QLatin1String("&end_date=")
+            + (toDate.isNull() ? QDate::currentDate() : toDate).toString(Qt::ISODate);
     m_SLrequestQueue.clear();
     for (const QString &set : sets) {
-        const QUrl ratingsUrl = QUrl::fromUserInput(QStringLiteral("https://www.17lands.com/card_ratings/data?expansion=") + set
-                                                    + QLatin1String("&format=") + format);
+        const QUrl ratingsUrl =
+                QUrl::fromUserInput(QStringLiteral("https://www.17lands.com/card_ratings/data?expansion=") + set + formatStartEndDateStr);
         m_SLrequestQueue.enqueue(std::make_pair(set, QNetworkRequest(ratingsUrl)));
     }
     if (!m_requestTimer->isActive())

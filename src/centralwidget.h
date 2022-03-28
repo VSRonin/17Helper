@@ -93,7 +93,7 @@ private slots:
     void enableAll(bool enable);
     void onUploadedRatings();
     void onLoadUserPass(const QString &userName, const QString &password);
-    void onLoadDownloadFormat(const QString &format);
+    void onLoadDownloadFormat(const QString &format, const QDate &fromDt, const QDate &toDt);
     void onLoadUploadRating(GEnums::SLMetrics ratingBase);
     void onInitialisationFailed();
     void onCustomRatingTemplateFailed();
@@ -103,6 +103,8 @@ private slots:
     void onSetsMTGAHDownloaded();
     void checkDownloadButtonEnabled();
     void onShowOnlyDraftableSetsChanged(bool showOnly);
+    void onRatingTimeGroupChecked(bool checked);
+    void onToTodayCheckChecked(bool checked);
 signals:
     void updatedUploadedStatus(const QString &card);
 };

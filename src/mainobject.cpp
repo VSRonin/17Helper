@@ -278,7 +278,7 @@ void MainObject::retranslateModels()
         m_SLMetricsModel->item(i)->setData(translatedSLCodes.at(i), Qt::DisplayRole);
 }
 
-void MainObject::download17Lands(const QString &format)
+void MainObject::download17Lands(const QString &format, const QDate &fromDate, const QDate &toDate)
 {
     if (format.isEmpty())
         return;
@@ -294,9 +294,9 @@ void MainObject::download17Lands(const QString &format)
         return;
     std::sort(sets.begin(), sets.end());
     sets.erase(std::unique(sets.begin(), sets.end()), sets.end());
-    m_configManager->writeDataToDownload(format, setsToSave);
+    m_configManager->writeDataToDownload(format, setsToSave, fromDate, toDate);
     emit startProgress(opDownload17Ratings, tr("Downloading 17Lands Data"), sets.size(), 0);
-    m_worker->get17LRatings(sets, format);
+    m_worker->get17LRatings(sets, format, fromDate, toDate);
 }
 
 void MainObject::uploadMTGAH(GEnums::SLMetrics ratingMethod, const QLocale &locale, bool clear)
@@ -380,12 +380,13 @@ void MainObject::init()
     std::pair<QString, QString> userPass = m_configManager->readUserPass();
     if (!userPass.first.isEmpty() && !userPass.second.isEmpty())
         emit loadUserPass(userPass.first, userPass.second);
-    std::pair<QString, QStringList> downloadData = m_configManager->readDataToDownload();
-    if (!downloadData.first.isEmpty())
-        emit loadDownloadFormat(downloadData.first);
-    if (!downloadData.second.isEmpty()) {
+    std::tuple<QString, QStringList, QDate, QDate> downloadData = m_configManager->readDataToDownload();
+    if (!std::get<0>(downloadData).isEmpty())
+        emit loadDownloadFormat(std::get<0>(downloadData), std::get<2>(downloadData), std::get<3>(downloadData));
+    if (!std::get<1>(downloadData).isEmpty()) {
+        const QStringList &setsList = std::get<1>(downloadData);
         for (int i = 0, iEnd = m_setsProxy->rowCount(); i < iEnd; ++i) {
-            if (downloadData.second.contains(m_setsProxy->index(i, SetsModel::smcSetID).data().toString()))
+            if (setsList.contains(m_setsProxy->index(i, SetsModel::smcSetID).data().toString()))
                 m_setsProxy->setData(m_setsProxy->index(i, 0), Qt::Checked, Qt::CheckStateRole);
             else
                 m_setsProxy->setData(m_setsProxy->index(i, 0), Qt::Unchecked, Qt::CheckStateRole);
