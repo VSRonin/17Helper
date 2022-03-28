@@ -392,7 +392,7 @@ void MainObject::init()
         }
         showOnlyDraftableSets(!oneNonDraftableSetSelected());
     }
-    std::pair<GEnums::SLMetrics, QList<GEnums::SLMetrics>> uploadData = m_configManager->readDataToUpload();
+    std::pair<GEnums::SLMetrics, QVector<GEnums::SLMetrics>> uploadData = m_configManager->readDataToUpload();
     if (uploadData.first != GEnums::SLCount)
         emit loadUploadRating(uploadData.first);
     if (!uploadData.second.isEmpty()) {
