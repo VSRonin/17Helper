@@ -28,16 +28,8 @@ FailedUploadsDialog::FailedUploadsDialog(QWidget *parent)
     QStyle *style = ui->iconLabel->style();
     int iconSize = style->pixelMetric(QStyle::PM_MessageBoxIconSize, 0, ui->iconLabel);
     QIcon tmpIcon = style->standardIcon(QStyle::SP_MessageBoxWarning, 0, ui->iconLabel);
-    if (!tmpIcon.isNull()) {
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    if (!tmpIcon.isNull())
         ui->iconLabel->setPixmap(tmpIcon.pixmap(QSize(iconSize, iconSize), ui->iconLabel->devicePixelRatio()));
-#else
-        QWindow *window = nullptr;
-        if (auto nativeParent = ui->iconLabel->nativeParentWidget())
-            window = nativeParent->windowHandle();
-        ui->iconLabel->setPixmap(tmpIcon.pixmap(window, QSize(iconSize, iconSize)));
-#endif
-    }
 }
 
 FailedUploadsDialog::~FailedUploadsDialog()

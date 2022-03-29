@@ -11,18 +11,16 @@
    limitations under the License.
 \****************************************************************************/
 #include <QApplication>
-#include <QTranslator>
 #include <mainwindow.h>
+#include <QVector>
+#include <memory>
 #ifdef QT_DEBUG
+#    include <QLocale>
 #    include <loggingtools/forceerrorwidget.h>
 #endif
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
-    QTranslator translator;
-    if (translator.load(QLocale(), QLatin1String("17Helper"), QLatin1String("_"), QLatin1String(":/i18n")))
-        app.installTranslator(&translator);
-
 #ifdef QT_DEBUG
     std::unique_ptr<MainWindow> w(nullptr);
     ForceErrorWidget feW;

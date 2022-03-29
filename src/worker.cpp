@@ -256,13 +256,9 @@ void Worker::parseSetsScryfall(QNetworkReply *reply, const QStringList &sets)
             updateSetQuery.bindValue(QStringLiteral(":type"), setTypeCode(setObj[QLatin1String("set_type")].toString().trimmed()));
             updateSetQuery.bindValue(QStringLiteral(":releaseDt"), setObj[QLatin1String("released_at")].toString().trimmed());
             updateSetQuery.bindValue(QStringLiteral(":id"), setStr);
-            if (parentSetStr.isEmpty()) {
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+            if (parentSetStr.isEmpty())
                 updateSetQuery.bindValue(QStringLiteral(":parent_set"), QVariant(QMetaType(QMetaType::QString)));
-#else
-                updateSetQuery.bindValue(QStringLiteral(":parent_set"), QVariant(QVariant::String));
-#endif
-            } else
+            else
                 updateSetQuery.bindValue(QStringLiteral(":parent_set"), parentSetStr);
             Q_ASSUME(updateSetQuery.exec());
         }
@@ -324,15 +320,10 @@ void Worker::onCustomRatingTemplateFinished(QNetworkReply *reply)
         updateRatingQuery.bindValue(QStringLiteral(":name"), nameStr);
         updateRatingQuery.bindValue(QStringLiteral(":set"), setStr);
         updateRatingQuery.bindValue(QStringLiteral(":rating"), ratingNum);
-        if (noteStr.isEmpty()) {
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+        if (noteStr.isEmpty())
             updateRatingQuery.bindValue(QStringLiteral(":note"), QVariant(QMetaType(QMetaType::QString)));
-#else
-            updateRatingQuery.bindValue(QStringLiteral(":note"), QVariant(QVariant::String));
-#endif
-        } else {
+        else
             updateRatingQuery.bindValue(QStringLiteral(":note"), noteStr);
-        }
         if (!updateRatingQuery.exec()) {
             Q_ASSUME(workerdb.rollback());
             emit customRatingTemplateFailed();

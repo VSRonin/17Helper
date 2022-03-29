@@ -22,9 +22,7 @@ public:
     explicit CheckableProxy(QObject *parent = nullptr);
     Qt::ItemFlags flags(const QModelIndex &index) const override;
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     void multiData(const QModelIndex &index, QModelRoleDataSpan roleDataSpan) const override;
-#endif
 };
 
 #endif

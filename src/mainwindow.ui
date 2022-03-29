@@ -20,7 +20,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>25</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuHelp">
@@ -28,11 +28,14 @@
      <string>Help</string>
     </property>
     <addaction name="actionAbout"/>
+    <addaction name="actionAbout_Qt"/>
    </widget>
    <widget class="QMenu" name="menuLanguage">
     <property name="title">
      <string>Language</string>
     </property>
+    <addaction name="actionEnglish"/>
+    <addaction name="actionItalian"/>
    </widget>
    <addaction name="menuHelp"/>
    <addaction name="menuLanguage"/>
@@ -41,6 +44,29 @@
   <action name="actionAbout">
    <property name="text">
     <string>About</string>
+   </property>
+  </action>
+  <action name="actionEnglish">
+   <property name="icon">
+    <iconset resource="rosources.qrc">
+     <normaloff>:/icons/en_flag.svg</normaloff>:/icons/en_flag.svg</iconset>
+   </property>
+   <property name="text">
+    <string>English</string>
+   </property>
+  </action>
+  <action name="actionItalian">
+   <property name="icon">
+    <iconset resource="rosources.qrc">
+     <normaloff>:/icons/it_flag.svg</normaloff>:/icons/it_flag.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Italian</string>
+   </property>
+  </action>
+  <action name="actionAbout_Qt">
+   <property name="text">
+    <string>About Qt</string>
    </property>
   </action>
  </widget>
@@ -52,6 +78,8 @@
    <container>1</container>
   </customwidget>
  </customwidgets>
- <resources/>
+ <resources>
+  <include location="rosources.qrc"/>
+ </resources>
  <connections/>
 </ui>

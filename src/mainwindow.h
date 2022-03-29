@@ -15,11 +15,11 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-
+#include <QVector>
 namespace Ui {
 class MainWindow;
 }
-
+class QTranslator;
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -29,9 +29,13 @@ public:
     ~MainWindow();
 private slots:
     void onUpdatedUploadedStatus(const QString &card);
+    void changeLanguage(const QLocale &loc);
+    void onAboutQt();
+    void onChangeLanguageAction(const QLocale &loc);
 
 private:
     Ui::MainWindow *ui;
+    QVector<std::shared_ptr<QTranslator>> translators;
 };
 
 #endif // MAINWINDOW_H

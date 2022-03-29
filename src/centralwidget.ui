@@ -369,7 +369,11 @@
              <string>Definitions</string>
             </property>
             <property name="text">
-             <string>?</string>
+             <string notr="true"/>
+            </property>
+            <property name="icon">
+             <iconset resource="rosources.qrc">
+              <normaloff>:/icons/help.svg</normaloff>:/icons/help.svg</iconset>
             </property>
            </widget>
           </item>
@@ -532,7 +536,7 @@
      <item>
       <widget class="QLabel" name="progressLabel">
        <property name="text">
-        <string>Action</string>
+        <string notr="true">Action</string>
        </property>
       </widget>
      </item>
@@ -601,6 +605,8 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="rosources.qrc"/>
+ </resources>
  <connections/>
 </ui>

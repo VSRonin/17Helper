@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/icons">
+        <file alias="en_flag.svg">resources/en_flag.svg</file>
+        <file alias="it_flag.svg">resources/it_flag.svg</file>
+        <file alias="help.svg">resources/system-help.svg</file>
+    </qresource>
+</RCC>

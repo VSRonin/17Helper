@@ -44,24 +44,15 @@ bool CustomRatingModel::setData(const QModelIndex &index, const QVariant &value,
     } else {
         Q_ASSUME(updateQuery.prepare(
                 QStringLiteral("INSERT OR REPLACE INTO [CustomRatings] ([id_arena], [rating], [note]) VALUES (:id_arena, :rating, :note)")));
-        if (ratingVal.isNull() || ratingVal.toInt() == -1) {
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+        if (ratingVal.isNull() || ratingVal.toInt() == -1)
             updateQuery.bindValue(QStringLiteral(":rating"), QVariant(QMetaType(QMetaType::Int)));
-#else
-            updateQuery.bindValue(QStringLiteral(":rating"), QVariant(QVariant::Int));
-#endif
-        } else {
+        else
             updateQuery.bindValue(QStringLiteral(":rating"), ratingVal);
-        }
-        if (commentVal.isNull()) {
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+
+        if (commentVal.isNull())
             updateQuery.bindValue(QStringLiteral(":note"), QVariant(QMetaType(QMetaType::QString)));
-#else
-            updateQuery.bindValue(QStringLiteral(":note"), QVariant(QVariant::String));
-#endif
-        } else {
+        else
             updateQuery.bindValue(QStringLiteral(":note"), commentVal);
-        }
     }
     updateQuery.bindValue(QStringLiteral(":id_arena"), idArena);
     if (updateQuery.exec()) {

@@ -16,7 +16,7 @@
 #include <QList>
 #include <QWidget>
 #include <QDateTime>
-#include "mainobject.h"
+#include <mainobject.h>
 namespace Ui {
 class CentralWidget;
 }

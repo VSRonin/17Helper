@@ -14,10 +14,10 @@
 #include "centralwidget.h"
 #include "ratingsdelegate.h"
 #include "textdatedelegate.h"
-#include "ratingsmodel.h"
-#include "slratingsmodel.h"
+#include <ratingsmodel.h>
+#include <slratingsmodel.h>
 #include "ui_centralwidget.h"
-#include "globals.h"
+#include <globals.h>
 #include <QCoreApplication>
 #include <QDesktopServices>
 #include <QHeaderView>
@@ -30,7 +30,7 @@
 #include <QMessageBox>
 #include "decimaldelegate.h"
 #include "percentagedelegate.h"
-#include "customratingmodel.h"
+#include <customratingmodel.h>
 #include "faileduploadsdialog.h"
 class NoCheckProxy : public QIdentityProxyModel
 {
@@ -193,7 +193,7 @@ void CentralWidget::onLoadDownloadFormat(const QString &format, const QDate &fro
 
 void CentralWidget::onLoadUploadRating(GEnums::SLMetrics ratingBase)
 {
-    ui->ratingBasedCombo->setCurrentIndex(int(ratingBase));
+    ui->ratingBasedCombo->setCurrentIndex(ui->ratingBasedCombo->findData(ratingBase));
 }
 
 void CentralWidget::onInitialisationFailed()
@@ -352,7 +352,7 @@ CentralWidget::CentralWidget(QWidget *parent)
     auto SLMetricsProxy = new NoCheckProxy(this);
     SLMetricsProxy->setSourceModel(m_object->SLMetricsModel());
     ui->ratingBasedCombo->setModel(SLMetricsProxy);
-    ui->ratingBasedCombo->setCurrentIndex(GEnums::SLever_drawn_win_rate);
+    ui->ratingBasedCombo->setCurrentIndex(ui->ratingBasedCombo->findData(GEnums::SLever_drawn_win_rate));
     ui->ratingToEdit->setDate(QDate::currentDate());
     retranslateUi();
 

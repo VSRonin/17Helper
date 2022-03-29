@@ -84,6 +84,16 @@ bool ConfigManager::writeDataToUpload(GEnums::SLMetrics ratingBase, const QVecto
     return writeConfigObject(configObject);
 }
 
+bool ConfigManager::writeLanguage(const QLocale &loc)
+{
+    QJsonObject configObject = getConfigObject();
+    if (loc == QLocale())
+        configObject.remove(QLatin1String("Locale"));
+    else
+        configObject[QLatin1String("Locale")] = loc.name();
+    return writeConfigObject(configObject);
+}
+
 std::pair<QString, QString> ConfigManager::readUserPass()
 {
     QJsonObject configObject = getConfigObject();
@@ -114,6 +124,13 @@ std::pair<GEnums::SLMetrics, QVector<GEnums::SLMetrics>> ConfigManager::readData
     for (const QJsonValue &i : setsArray)
         comments.append(static_cast<GEnums::SLMetrics>(i.toInt()));
     return std::make_pair(static_cast<GEnums::SLMetrics>(ratingBaseValue->toInt()), comments);
+}
+
+QLocale ConfigManager::readLanguage()
+{
+    QJsonObject configObject = getConfigObject();
+    const QString locString = configObject.value(QLatin1String("Locale")).toString();
+    return locString.isEmpty() ? QLocale() : QLocale(locString);
 }
 
 QJsonObject ConfigManager::getConfigObject() const

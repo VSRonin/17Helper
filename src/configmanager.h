@@ -28,9 +28,11 @@ public:
     bool writeUserPass(const QString &userName, const QString &password);
     bool writeDataToDownload(const QString &format, const QStringList &sets, const QDate &fromDate, const QDate &toDate);
     bool writeDataToUpload(GEnums::SLMetrics ratingBase, const QVector<GEnums::SLMetrics> &commentMetrics);
+    bool writeLanguage(const QLocale &loc);
     std::pair<QString, QString> readUserPass();
     std::tuple<QString, QStringList, QDate, QDate> readDataToDownload();
     std::pair<GEnums::SLMetrics, QVector<GEnums::SLMetrics>> readDataToUpload();
+    QLocale readLanguage();
 
 private:
     QJsonObject getConfigObject() const;
