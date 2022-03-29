@@ -8,6 +8,7 @@ on:
       - '**.markdown'
       - '**.md'
       - 'LICENSE'
+      - '**.html'
       - '**CMakeLists.txt'
       - 'cmake/**'
   pull_request:
@@ -17,6 +18,7 @@ on:
     paths-ignore:
       - '**.markdown'
       - '**.md'
+      - '**.html'
       - 'LICENSE'
       - '**CMakeLists.txt'
       - 'cmake/**'

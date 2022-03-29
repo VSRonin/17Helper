@@ -8,6 +8,7 @@ on:
       - 'docs/**'
       - '**.markdown'
       - '**.md'
+      - '**.html'
       - 'LICENSE'
   pull_request:
     branches:
@@ -17,6 +18,7 @@ on:
       - 'docs/**'
       - '**.markdown'
       - '**.md'
+      - '**.html'
       - 'LICENSE'
 jobs:
     build:
