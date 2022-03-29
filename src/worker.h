@@ -70,6 +70,7 @@ signals:
     void downloadSetsScryfallFailed();
     void customRatingTemplateFailed();
     void setsScryfall(bool needsUpdate);
+    void no17LRating(const QStringList &sets);
     void failed17LRatings();
     void downloadedAll17LRatings();
     void downloaded17LRatings(const QString &set);
@@ -108,6 +109,7 @@ private:
     QSqlDatabase openWorkerDb();
     QTimer *m_requestTimer;
     std::atomic_bool m_cancelUpload;
+    QStringList m_noRatingsDownloadedList;
 };
 
 #endif

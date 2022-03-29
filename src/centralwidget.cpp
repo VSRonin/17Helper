@@ -25,7 +25,6 @@
 #include <QSortFilterProxyModel>
 #include <QStandardItemModel>
 #include <QUrl>
-#include <QDebug>
 #include <QDir>
 #include <QCompleter>
 #include <QMessageBox>
@@ -76,7 +75,9 @@ void CentralWidget::onLogin()
 
 void CentralWidget::onLoginError(const QString &error)
 {
+#ifdef QT_DEBUG
     qDebug() << error;
+#endif
     m_error |= LoginError;
     QWidget *widToEnable[] = {ui->loginButton, ui->remembePwdCheck, ui->usernameEdit, ui->pwdEdit};
     for (QWidget *wid : widToEnable)
@@ -92,10 +93,32 @@ void CentralWidget::doLogout()
 
 void CentralWidget::onLogoutError(const QString &error)
 {
+#ifdef QT_DEBUG
     qDebug() << error;
+#endif
     m_error |= LogoutError;
     ui->logoutButton->setEnabled(true);
     retranslateUi();
+}
+
+void CentralWidget::selectAllSets()
+{
+    m_object->setAllSetsSelection(Qt::Checked);
+}
+
+void CentralWidget::selectNoSets()
+{
+    m_object->setAllSetsSelection(Qt::Unchecked);
+}
+
+void CentralWidget::selectAllMetrics()
+{
+    m_object->setAllSLMetricsSelection(Qt::Checked);
+}
+
+void CentralWidget::selectNoMetrics()
+{
+    m_object->setAllSLMetricsSelection(Qt::Unchecked);
 }
 
 void CentralWidget::onLogout()
@@ -214,6 +237,11 @@ void CentralWidget::onShowOnlyDraftableSetsChanged(bool showOnly)
     ui->draftableSetsCheck->setChecked(showOnly);
 }
 
+void CentralWidget::onShowOnlySLRatiosChanged(bool showOnly)
+{
+    ui->onlyRatiosCheck->setChecked(showOnly);
+}
+
 void CentralWidget::onRatingTimeGroupChecked(bool checked)
 {
     if (!checked)
@@ -224,6 +252,20 @@ void CentralWidget::onRatingTimeGroupChecked(bool checked)
 void CentralWidget::onToTodayCheckChecked(bool checked)
 {
     ui->ratingToEdit->setEnabled(!checked);
+}
+
+void CentralWidget::onNo17LRating(const QStringList &sets)
+{
+    QStringList setNames;
+    setNames.reserve(sets.size());
+    for (const QString &setId : sets)
+        setNames << m_object->setFullName(setId);
+    QMessageBox *noRatingBox = new QMessageBox(
+            QMessageBox::Warning, tr("No Ratings Found"),
+            tr("No ratings found for the specified format and date range for the following sets:\n%1").arg(setNames.join(QChar::LineFeed)),
+            QMessageBox::Ok, this);
+    noRatingBox->setAttribute(Qt::WA_DeleteOnClose);
+    noRatingBox->show();
 }
 
 void CentralWidget::onCustomRatingTemplateFailed()
@@ -326,7 +368,10 @@ CentralWidget::CentralWidget(QWidget *parent)
     connect(ui->clearRatingsButton, &QPushButton::clicked, this, std::bind(&CentralWidget::doMtgahUpload, this, true));
     connect(ui->allSetsButton, &QPushButton::clicked, this, &CentralWidget::selectAllSets);
     connect(ui->noSetButton, &QPushButton::clicked, this, &CentralWidget::selectNoSets);
+    connect(ui->allMetricsButton, &QPushButton::clicked, this, &CentralWidget::selectAllMetrics);
+    connect(ui->noMetricsButton, &QPushButton::clicked, this, &CentralWidget::selectNoMetrics);
     connect(ui->searchCardEdit, &QLineEdit::textChanged, this, &CentralWidget::updateRatingsFiler);
+    connect(ui->onlyRatiosCheck, &QCheckBox::clicked, m_object, &MainObject::showOnlySLRatios);
     connect(ui->draftableSetsCheck, &QCheckBox::clicked, m_object, &MainObject::showOnlyDraftableSets);
     connect(ui->cancelUploadButton, &QPushButton::clicked, m_object, &MainObject::cancelUpload);
     connect(ui->ratingTimeGroup, &QGroupBox::toggled, this, &CentralWidget::onRatingTimeGroupChecked);
@@ -354,6 +399,8 @@ CentralWidget::CentralWidget(QWidget *parent)
     connect(m_object, &MainObject::loadUploadRating, this, &CentralWidget::onLoadUploadRating);
     connect(m_object, &MainObject::ratingUploaded, this, &CentralWidget::updatedUploadedStatus);
     connect(m_object, &MainObject::showOnlyDraftableSetsChanged, this, &CentralWidget::onShowOnlyDraftableSetsChanged);
+    connect(m_object, &MainObject::showOnlySLRatiosChanged, this, &CentralWidget::onShowOnlySLRatiosChanged);
+    connect(m_object, &MainObject::no17LRating, this, &CentralWidget::onNo17LRating);
     connect(m_object->setsModel(), &QAbstractItemModel::dataChanged, this,
             [this](const QModelIndex &, const QModelIndex &, const QVector<int> &roles) {
                 if (roles.isEmpty() || roles.contains(Qt::CheckStateRole))
@@ -400,14 +447,8 @@ void CentralWidget::retranslateUi()
         errorStrings.append(tr("Error downloading ratings ratings form 17Lands! Check your internet connection"));
     if (m_error & RatingCalculationError)
         errorStrings.append(tr("Error computing ratings to upload, retry"));
-    ui->errorLabel->setText(errorStrings.join(QChar(QLatin1Char('\n'))));
+    ui->errorLabel->setText(errorStrings.join(QChar::LineFeed));
     m_object->retranslateModels();
-}
-
-void CentralWidget::setAllSetsSelection(Qt::CheckState check)
-{
-    for (int i = 0, iEnd = m_object->setsModel()->rowCount(); i < iEnd; ++i)
-        m_object->setsModel()->setData(m_object->setsModel()->index(i, 0), check, Qt::CheckStateRole);
 }
 
 void CentralWidget::onStartProgress(MainObject::Operations op, const QString &description, int max, int min)

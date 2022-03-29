@@ -31,6 +31,7 @@
 #include "setsmodel.h"
 #include "setsfiltermodel.h"
 #include "customratingmodel.h"
+#include "slmetricsfiltermodel.h"
 //#define DEBUG_SINGLE_THREAD
 MainObject::MainObject(QObject *parent)
     : QObject(parent)
@@ -40,6 +41,9 @@ MainObject::MainObject(QObject *parent)
 {
     m_SLMetricsModel = new QStandardItemModel(GEnums::SLCount, 1, this);
     fillMetrics();
+    m_SLMetricsProxy = new SLMetricsFilterModel(this);
+    m_SLMetricsProxy->setSourceModel(m_SLMetricsModel);
+    m_SLMetricsProxy->setFilterEnabled(true);
     m_formatsModel = new QStandardItemModel(dfCount, 1, this);
     fillFormats();
     QSqlDatabase objectDb = openDb(m_objectDbName);
@@ -88,6 +92,7 @@ MainObject::MainObject(QObject *parent)
     connect(m_worker, &Worker::allRatingsUploaded, this, &MainObject::onAllRatingsUploaded);
     connect(m_worker, &Worker::ratingUploaded, this, &MainObject::onRatingUploaded);
     connect(m_worker, &Worker::ratingUploadFailed, this, &MainObject::onRatingUploadFailed);
+    connect(m_worker, &Worker::no17LRating, this, &MainObject::no17LRating);
 #ifndef DEBUG_SINGLE_THREAD
     m_workerThread->start();
 #else
@@ -105,7 +110,7 @@ MainObject::~MainObject()
 
 QAbstractItemModel *MainObject::SLMetricsModel() const
 {
-    return m_SLMetricsModel;
+    return m_SLMetricsProxy;
 }
 
 QAbstractItemModel *MainObject::setsModel() const
@@ -178,6 +183,14 @@ void MainObject::showOnlyDraftableSets(bool showOnly)
     showOnlyDraftableSetsChanged(showOnly);
 }
 
+void MainObject::showOnlySLRatios(bool showOnly)
+{
+    if (m_SLMetricsProxy->filterEnabled() == showOnly)
+        return;
+    m_SLMetricsProxy->setFilterEnabled(showOnly);
+    showOnlySLRatiosChanged(showOnly);
+}
+
 bool MainObject::oneSetSelected() const
 {
     for (int i = 0, iEnd = m_setsProxy->rowCount(); i < iEnd; ++i) {
@@ -206,6 +219,19 @@ QStringList MainObject::failedUploadCards() const
     QStringList result(m_failedUploadCards.cbegin(), m_failedUploadCards.cend());
     std::sort(result.begin(), result.end());
     return result;
+}
+
+QString MainObject::setFullName(const QString &setCode) const
+{
+    for (int i = 0, iEnd = m_setsModel->rowCount(); i < iEnd; ++i) {
+        if (m_setsProxy->index(i, SetsModel::smcSetID).data().toString() == setCode) {
+            const QVariant nameVariant = m_setsProxy->index(i, SetsModel::smcSetName).data();
+            if (nameVariant.isNull())
+                return setCode;
+            return nameVariant.toString();
+        }
+    }
+    return setCode;
 }
 
 void MainObject::tryLogin(const QString &userName, const QString &password, bool rememberMe)
@@ -310,8 +336,8 @@ void MainObject::uploadMTGAH(GEnums::SLMetrics ratingMethod, const QLocale &loca
     if (sets.isEmpty())
         return;
     QVector<GEnums::SLMetrics> commentMetrics;
-    for (int i = 0, iEnd = m_SLMetricsModel->rowCount(); i < iEnd; ++i) {
-        const QModelIndex currIdx = m_SLMetricsModel->index(i, 0);
+    for (int i = 0, iEnd = m_SLMetricsProxy->rowCount(); i < iEnd; ++i) {
+        const QModelIndex currIdx = m_SLMetricsProxy->index(i, 0);
         if (currIdx.data(Qt::CheckStateRole).toInt() == Qt::Checked)
             commentMetrics.append(currIdx.data(Qt::UserRole).value<GEnums::SLMetrics>());
     }
@@ -454,6 +480,28 @@ void MainObject::getCustomRatingTemplate()
 {
     emit startProgress(opDownloadRatingTemplate, tr("Downloading custom ratings from MTGA Helper"), 0, 0);
     m_worker->getCustomRatingTemplate();
+}
+
+void MainObject::setAllSLMetricsSelection(Qt::CheckState check)
+{
+    const Qt::CheckState defaultVal = m_SLMetricsProxy->filterEnabled() ? Qt::Unchecked : check;
+    for (int i = 0, iEnd = m_SLMetricsModel->rowCount(); i < iEnd; ++i)
+        m_SLMetricsModel->setData(m_SLMetricsModel->index(i, 0), defaultVal, Qt::CheckStateRole);
+    if (check == Qt::Checked && m_SLMetricsProxy->filterEnabled()) {
+        for (int i = 0, iEnd = m_SLMetricsProxy->rowCount(); i < iEnd; ++i)
+            m_SLMetricsProxy->setData(m_SLMetricsProxy->index(i, 0), Qt::Checked, Qt::CheckStateRole);
+    }
+}
+
+void MainObject::setAllSetsSelection(Qt::CheckState check)
+{
+    const Qt::CheckState defaultVal = m_setsFilter->filterEnabled() ? Qt::Unchecked : check;
+    for (int i = 0, iEnd = m_setsProxy->rowCount(); i < iEnd; ++i)
+        m_setsProxy->setData(m_setsProxy->index(i, 0), defaultVal, Qt::CheckStateRole);
+    if (check == Qt::Checked && m_setsFilter->filterEnabled()) {
+        for (int i = 0, iEnd = m_setsFilter->rowCount(); i < iEnd; ++i)
+            m_setsFilter->setData(m_setsFilter->index(i, 0), Qt::Checked, Qt::CheckStateRole);
+    }
 }
 
 void MainObject::onLoggedOut()

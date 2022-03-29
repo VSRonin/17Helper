@@ -13,8 +13,9 @@
 #include "globals.h"
 #include <QStandardPaths>
 #include <QDir>
-#include <QDebug>
-
+#ifdef QT_DEBUG
+#    include <QDebug>
+#endif
 QString makeStandardLocation(QStandardPaths::StandardLocation loc)
 {
     const QString stdLocation = QStandardPaths::writableLocation(loc);

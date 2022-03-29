@@ -65,7 +65,6 @@ private:
     MainObject *m_object;
     Ui::CentralWidget *ui;
     QList<ProgressElement> progressQueue;
-    void setAllSetsSelection(Qt::CheckState check);
 private slots:
     void onStartProgress(MainObject::Operations op, const QString &description, int max, int min);
     void onUpdateProgress(MainObject::Operations op, int val);
@@ -83,8 +82,10 @@ private slots:
     void onLoginError(const QString &error);
     void onLogout();
     void onLogoutError(const QString &error);
-    void selectAllSets() { setAllSetsSelection(Qt::Checked); }
-    void selectNoSets() { setAllSetsSelection(Qt::Unchecked); }
+    void selectAllSets();
+    void selectNoSets();
+    void selectAllMetrics();
+    void selectNoMetrics();
     void retrySetsDownload();
     void retryTemplateDownload();
     void onCustomRatingsTemplateDownloaded();
@@ -103,8 +104,10 @@ private slots:
     void onSetsMTGAHDownloaded();
     void checkDownloadButtonEnabled();
     void onShowOnlyDraftableSetsChanged(bool showOnly);
+    void onShowOnlySLRatiosChanged(bool showOnly);
     void onRatingTimeGroupChecked(bool checked);
     void onToTodayCheckChecked(bool checked);
+    void onNo17LRating(const QStringList &sets);
 signals:
     void updatedUploadedStatus(const QString &card);
 };

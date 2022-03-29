@@ -378,6 +378,51 @@ void Worker::on17LDownloadFinished(QNetworkReply *reply, const QString &currSet)
         const QString nameStr = ratingObject[QLatin1String("name")].toString();
         if (nameStr.isEmpty())
             continue;
+        enum IntStats {
+            seen_countVal,
+            pick_countVal,
+            game_countVal,
+            opening_hand_game_countVal,
+            drawn_game_countVal,
+            ever_drawn_game_countVal,
+            never_drawn_game_countVal
+
+            ,
+            IntStatsCount
+        };
+        enum DoubleStats {
+            avg_seenVal,
+            avg_pickVal,
+            win_rateVal,
+            opening_hand_win_rateVal,
+            drawn_win_rateVal,
+            ever_drawn_win_rateVal,
+            never_drawn_win_rateVal,
+            drawn_improvement_win_rateVal
+
+            ,
+            DoubleStatsCount
+        };
+        std::array<int, IntStatsCount> intVals;
+        std::array<int, DoubleStatsCount> doubleVals;
+        intVals[seen_countVal] = ratingObject[QLatin1String("seen_count")].toInt();
+        doubleVals[avg_seenVal] = ratingObject[QLatin1String("avg_seen")].toDouble();
+        intVals[pick_countVal] = ratingObject[QLatin1String("pick_count")].toInt();
+        doubleVals[avg_pickVal] = ratingObject[QLatin1String("avg_pick")].toDouble();
+        intVals[game_countVal] = ratingObject[QLatin1String("game_count")].toInt();
+        doubleVals[win_rateVal] = ratingObject[QLatin1String("win_rate")].toDouble();
+        intVals[opening_hand_game_countVal] = ratingObject[QLatin1String("opening_hand_game_count")].toInt();
+        doubleVals[opening_hand_win_rateVal] = ratingObject[QLatin1String("opening_hand_win_rate")].toDouble();
+        intVals[drawn_game_countVal] = ratingObject[QLatin1String("drawn_game_count")].toInt();
+        doubleVals[drawn_win_rateVal] = ratingObject[QLatin1String("drawn_win_rate")].toDouble();
+        intVals[ever_drawn_game_countVal] = ratingObject[QLatin1String("ever_drawn_game_count")].toInt();
+        doubleVals[ever_drawn_win_rateVal] = ratingObject[QLatin1String("ever_drawn_win_rate")].toDouble();
+        intVals[never_drawn_game_countVal] = ratingObject[QLatin1String("never_drawn_game_count")].toInt();
+        doubleVals[never_drawn_win_rateVal] = ratingObject[QLatin1String("never_drawn_win_rate")].toDouble();
+        doubleVals[drawn_improvement_win_rateVal] = ratingObject[QLatin1String("drawn_improvement_win_rate")].toDouble();
+        if (std::all_of(std::begin(intVals), std::end(intVals), [](int val) -> bool { return val == 0; })
+            && std::all_of(std::begin(doubleVals), std::end(doubleVals), [](double val) -> bool { return qFuzzyIsNull(val); }))
+            continue;
         QSqlQuery updateRatingQuery(workerdb);
         updateRatingQuery.prepare(
                 QStringLiteral("INSERT OR REPLACE INTO [SLRatings] ([set], [name], [seen_count], [avg_seen], [pick_count], [avg_pick], [game_count], "
@@ -391,22 +436,21 @@ void Worker::on17LDownloadFinished(QNetworkReply *reply, const QString &currSet)
         updateRatingQuery.bindValue(QStringLiteral(":set"), currSet);
         updateRatingQuery.bindValue(QStringLiteral(":lastUpdate"), currDateTime);
         updateRatingQuery.bindValue(QStringLiteral(":name"), nameStr);
-        updateRatingQuery.bindValue(QStringLiteral(":seen_count"), ratingObject[QLatin1String("seen_count")].toInt());
-        updateRatingQuery.bindValue(QStringLiteral(":avg_seen"), ratingObject[QLatin1String("avg_seen")].toDouble());
-        updateRatingQuery.bindValue(QStringLiteral(":pick_count"), ratingObject[QLatin1String("pick_count")].toInt());
-        updateRatingQuery.bindValue(QStringLiteral(":avg_pick"), ratingObject[QLatin1String("avg_pick")].toDouble());
-        updateRatingQuery.bindValue(QStringLiteral(":game_count"), ratingObject[QLatin1String("game_count")].toInt());
-        updateRatingQuery.bindValue(QStringLiteral(":win_rate"), ratingObject[QLatin1String("win_rate")].toDouble());
-        updateRatingQuery.bindValue(QStringLiteral(":opening_hand_game_count"), ratingObject[QLatin1String("opening_hand_game_count")].toInt());
-        updateRatingQuery.bindValue(QStringLiteral(":opening_hand_win_rate"), ratingObject[QLatin1String("opening_hand_win_rate")].toDouble());
-        updateRatingQuery.bindValue(QStringLiteral(":drawn_game_count"), ratingObject[QLatin1String("drawn_game_count")].toInt());
-        updateRatingQuery.bindValue(QStringLiteral(":drawn_win_rate"), ratingObject[QLatin1String("drawn_win_rate")].toDouble());
-        updateRatingQuery.bindValue(QStringLiteral(":ever_drawn_game_count"), ratingObject[QLatin1String("ever_drawn_game_count")].toInt());
-        updateRatingQuery.bindValue(QStringLiteral(":ever_drawn_win_rate"), ratingObject[QLatin1String("ever_drawn_win_rate")].toDouble());
-        updateRatingQuery.bindValue(QStringLiteral(":never_drawn_game_count"), ratingObject[QLatin1String("never_drawn_game_count")].toInt());
-        updateRatingQuery.bindValue(QStringLiteral(":never_drawn_win_rate"), ratingObject[QLatin1String("never_drawn_win_rate")].toDouble());
-        updateRatingQuery.bindValue(QStringLiteral(":drawn_improvement_win_rate"),
-                                    ratingObject[QLatin1String("drawn_improvement_win_rate")].toDouble());
+        updateRatingQuery.bindValue(QStringLiteral(":seen_count"), intVals[seen_countVal]);
+        updateRatingQuery.bindValue(QStringLiteral(":avg_seen"), doubleVals[avg_seenVal]);
+        updateRatingQuery.bindValue(QStringLiteral(":pick_count"), intVals[pick_countVal]);
+        updateRatingQuery.bindValue(QStringLiteral(":avg_pick"), doubleVals[avg_pickVal]);
+        updateRatingQuery.bindValue(QStringLiteral(":game_count"), intVals[game_countVal]);
+        updateRatingQuery.bindValue(QStringLiteral(":win_rate"), doubleVals[win_rateVal]);
+        updateRatingQuery.bindValue(QStringLiteral(":opening_hand_game_count"), intVals[opening_hand_game_countVal]);
+        updateRatingQuery.bindValue(QStringLiteral(":opening_hand_win_rate"), doubleVals[opening_hand_win_rateVal]);
+        updateRatingQuery.bindValue(QStringLiteral(":drawn_game_count"), intVals[drawn_game_countVal]);
+        updateRatingQuery.bindValue(QStringLiteral(":drawn_win_rate"), doubleVals[drawn_win_rateVal]);
+        updateRatingQuery.bindValue(QStringLiteral(":ever_drawn_game_count"), intVals[ever_drawn_game_countVal]);
+        updateRatingQuery.bindValue(QStringLiteral(":ever_drawn_win_rate"), doubleVals[ever_drawn_win_rateVal]);
+        updateRatingQuery.bindValue(QStringLiteral(":never_drawn_game_count"), intVals[never_drawn_game_countVal]);
+        updateRatingQuery.bindValue(QStringLiteral(":never_drawn_win_rate"), doubleVals[never_drawn_win_rateVal]);
+        updateRatingQuery.bindValue(QStringLiteral(":drawn_improvement_win_rate"), doubleVals[drawn_improvement_win_rateVal]);
         if (!updateRatingQuery.exec()) {
             emit failed17LRatings();
             Q_ASSUME(workerdb.rollback());
@@ -415,18 +459,19 @@ void Worker::on17LDownloadFinished(QNetworkReply *reply, const QString &currSet)
         oneFound = true;
     }
     if (!oneFound) {
-        emit failed17LRatings();
+        m_noRatingsDownloadedList << currSet;
         Q_ASSUME(workerdb.rollback());
-        return;
-    }
-    if (!workerdb.commit()) {
+    } else if (!workerdb.commit()) {
         emit failed17LRatings();
         Q_ASSUME(workerdb.rollback());
         return;
     }
     emit downloaded17LRatings(currSet);
-    if (m_SLrequestQueue.size() + m_SLrequestOutstanding == 0)
+    if (m_SLrequestQueue.size() + m_SLrequestOutstanding == 0) {
         emit downloadedAll17LRatings();
+        if (!m_noRatingsDownloadedList.isEmpty())
+            emit no17LRating(m_noRatingsDownloadedList);
+    }
 }
 
 void Worker::onFailed17LRatings()
@@ -594,6 +639,7 @@ void Worker::get17LRatings(const QStringList &sets, const QString &format, const
 }
 void Worker::actualGet17LRatings(const QStringList &sets, const QString &format, const QDate &fromDate, const QDate &toDate)
 {
+    m_noRatingsDownloadedList.clear();
     if (sets.isEmpty() || format.isEmpty()) {
         emit failed17LRatings();
         return;
@@ -709,7 +755,9 @@ void Worker::actualUploadRatings(QStringList sets, GEnums::SLMetrics ratingMetho
         RatingField,
     };
     ratingsToUploadQueryString += sets.join(QLatin1Char(',')) + QLatin1Char(')');
+#ifdef QT_DEBUG
     qDebug().noquote() << ratingsToUploadQueryString;
+#endif
     QSqlQuery ratingsToUploadQuery(workerdb);
     ratingsToUploadQuery.prepare(ratingsToUploadQueryString);
     Q_ASSUME(ratingsToUploadQuery.exec());

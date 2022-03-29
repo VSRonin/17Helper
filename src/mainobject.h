@@ -28,6 +28,7 @@ class QSortFilterProxyModel;
 class SetsFilterModel;
 class CustomRatingModel;
 class ConfigManager;
+class SLMetricsFilterModel;
 class MainObject : public QObject
 {
     Q_OBJECT
@@ -67,11 +68,12 @@ public:
     QAbstractItemModel *customRatingsModel() const;
     void filterRatings(QString name);
     void showOnlyDraftableSets(bool showOnly);
+    void showOnlySLRatios(bool showOnly);
     bool oneSetSelected() const;
     bool oneNonDraftableSetSelected() const;
     QString configPath() const;
     QStringList failedUploadCards() const;
-
+    QString setFullName(const QString &setCode) const;
 public slots:
     void tryLogin(const QString &userName, const QString &password, bool rememberMe = false);
     void logOut();
@@ -81,6 +83,8 @@ public slots:
     void cancelUpload();
     void downloadSetsMTGAH();
     void getCustomRatingTemplate();
+    void setAllSetsSelection(Qt::CheckState check);
+    void setAllSLMetricsSelection(Qt::CheckState check);
 private slots:
     void onWorkerInit();
     void onInitialisationFailed();
@@ -130,6 +134,8 @@ signals:
     void downloadSetsMTGAHFailed();
     void downloadSetsScryfallFailed();
     void showOnlyDraftableSetsChanged(bool showOnlyDraftable);
+    void showOnlySLRatiosChanged(bool showOnlyRatios);
+    void no17LRating(const QStringList &sets);
 
 private:
     void init();
@@ -142,6 +148,7 @@ private:
     const QString m_objectDbName;
     QStringList SLcodes;
     QStandardItemModel *m_SLMetricsModel;
+    SLMetricsFilterModel *m_SLMetricsProxy;
     QStandardItemModel *m_formatsModel;
     SetsModel *m_setsModel;
     SetsFilterModel *m_setsFilter;
