@@ -17,8 +17,8 @@ set(ui_SRCS
     faileduploadsdialog.cpp
     faileduploadsdialog.h
     faileduploadsdialog.ui
+    resources.qrc
 )
-qt_add_resources(ui_SRCS rosources.qrc)
 set(backend_SRCS
     globals.h
     globals.cpp
@@ -110,6 +110,7 @@ target_link_libraries(17HelperUiLib PUBLIC
 set_target_properties(17HelperUiLib PROPERTIES
     AUTOMOC ON
     AUTOUIC ON
+    AUTORCC ON
     CXX_STANDARD 11
     CXX_STANDARD_REQUIRED ON
     VERSION ${VERSION_SHORT}

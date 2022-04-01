@@ -21,6 +21,7 @@
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
+    Q_INIT_RESOURCE(resources);
 #ifdef QT_DEBUG
     std::unique_ptr<MainWindow> w(nullptr);
     ForceErrorWidget feW;
