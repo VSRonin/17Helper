@@ -23,7 +23,7 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    connect(ui->centralwidget, &CentralWidget::updatedUploadedStatus, this, &MainWindow::onUpdatedUploadedStatus);
+    //connect(ui->centralwidget, &CentralWidget::updatedUploadedStatus, this, &MainWindow::onUpdatedUploadedStatus);
     connect(ui->actionEnglish, &QAction::triggered, this, std::bind(&MainWindow::onChangeLanguageAction, this, QLocale(QLocale::English)));
     connect(ui->actionItalian, &QAction::triggered, this, std::bind(&MainWindow::onChangeLanguageAction, this, QLocale(QLocale::Italian)));
     connect(ui->actionAbout_Qt, &QAction::triggered, this, &MainWindow::onAboutQt);

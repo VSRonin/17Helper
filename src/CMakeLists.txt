@@ -18,6 +18,22 @@ set(ui_SRCS
     faileduploadsdialog.h
     faileduploadsdialog.ui
     resources.qrc
+    translatablewidgetinterface.h
+    translatablewidgetinterface.cpp
+    hubwidget.h
+    hubwidget.cpp
+    loginpage.h
+    loginpage.cpp
+    loginpage.ui
+    initialisationpage.h
+    initialisationpage.cpp
+    initialisationpage.ui
+    downloadmtgatemplatepage.h
+    downloadmtgatemplatepage.cpp
+    downloadmtgatemplatepage.ui
+    downloadoptionspage.h
+    downloadoptionspage.cpp
+    downloadoptionspage.ui
 )
 set(backend_SRCS
     globals.h

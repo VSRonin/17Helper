@@ -3,5 +3,6 @@
         <file alias="en_flag.svg">resources/en_flag.svg</file>
         <file alias="it_flag.svg">resources/it_flag.svg</file>
         <file alias="help.svg">resources/system-help.svg</file>
+        <file alias="17H.svg">resources/17H.svg</file>
     </qresource>
 </RCC>

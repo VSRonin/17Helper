@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
+    <width>915</width>
     <height>811</height>
    </rect>
   </property>
@@ -64,7 +64,6 @@
        <property name="font">
         <font>
          <pointsize>10</pointsize>
-         <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
@@ -185,7 +184,6 @@
         <property name="font">
          <font>
           <pointsize>8</pointsize>
-          <weight>75</weight>
           <bold>true</bold>
          </font>
         </property>
@@ -372,7 +370,7 @@
              <string notr="true"/>
             </property>
             <property name="icon">
-             <iconset resource="rosources.qrc">
+             <iconset resource="resources.qrc">
               <normaloff>:/icons/help.svg</normaloff>:/icons/help.svg</iconset>
             </property>
            </widget>
@@ -606,7 +604,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="rosources.qrc"/>
+  <include location="resources.qrc"/>
  </resources>
  <connections/>
 </ui>

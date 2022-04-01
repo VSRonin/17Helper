@@ -112,6 +112,7 @@ signals:
     void loginFalied(const QString &error);
     void loggedOut();
     void logoutFailed(const QString &error);
+    void initialised();
     void initialisationFailed();
     void customRatingTemplate();
     void customRatingTemplateFailed();

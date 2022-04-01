@@ -386,6 +386,7 @@ void MainObject::onWorkerInit()
     selectSetsModel();
     QMetaObject::invokeMethod(this, &MainObject::init, Qt::QueuedConnection);
     emit endProgress(opInitWorker);
+    emit initialised();
     downloadSetsMTGAH();
 }
 void MainObject::downloadSetsMTGAH()
