@@ -63,6 +63,8 @@ enum SLMetrics {
 
     SLCount
 };
+enum RatingTimeScale { rtsInvalid = 0, rtsDays, rtsWeeks, rtsMonths, rtsYears };
+enum RatingTimeMethod { rtmInvalid = 0, rtmAnytime, rtmPastPeriod, rtmBetweenDates };
 }
 Q_DECLARE_METATYPE(GEnums::SLMetrics)
 #ifdef QT_DEBUG

@@ -1,3 +1,16 @@
+/****************************************************************************\
+   Copyright 2022 Luca Beldi
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+       http://www.apache.org/licenses/LICENSE-2.0
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+\****************************************************************************/
+
 #include "hubwidget.h"
 #include "loginpage.h"
 #include <QStackedWidget>
@@ -11,9 +24,9 @@
 #include "downloadoptionspage.h"
 #include "logoutpage.h"
 #include <QPushButton>
-HubWidget::HubWidget(QWidget *parent) :
-    TranslatableWidgetInterface(parent),
-    m_object(new MainObject(this))
+HubWidget::HubWidget(QWidget *parent)
+    : TranslatableWidgetInterface(parent)
+    , m_object(new MainObject(this))
 {
     m_stack = new QStackedWidget(this);
     m_initPage = new InitialisationPage(this);
@@ -32,37 +45,42 @@ HubWidget::HubWidget(QWidget *parent) :
     m_logOutPage->setMainObject(m_object);
     m_stack->addWidget(m_logOutPage);
 
-    QVBoxLayout* mainLay= new QVBoxLayout(this);
+    QVBoxLayout *mainLay = new QVBoxLayout(this);
     mainLay->addWidget(m_stack);
 
     connect(m_object, &MainObject::setsMTGAHDownloaded, this, &HubWidget::onSetsMTGAHDownloaded);
     connect(m_object, &MainObject::loggedIn, this, &HubWidget::onLoggedIn);
     connect(m_object, &MainObject::loggedOut, this, &HubWidget::onLoggedOut);
     connect(m_object, &MainObject::customRatingTemplate, this, &HubWidget::onCustomRatingsTemplateDown);
-    connect(m_downloadOptionsPage,&DownloadOptionsPage::logOut,this, &HubWidget::onAttemptLogOut);
-    QMetaObject::invokeMethod(this,&HubWidget::retranslateUi,Qt::QueuedConnection);
+    connect(m_downloadOptionsPage, &DownloadOptionsPage::logOut, this, &HubWidget::onAttemptLogOut);
+    QMetaObject::invokeMethod(this, &HubWidget::retranslateUi, Qt::QueuedConnection);
 }
 
-void HubWidget::onSetsMTGAHDownloaded(){
+void HubWidget::onSetsMTGAHDownloaded()
+{
     m_logInPage->reset();
     m_object->fetchLoginInfos();
     m_stack->setCurrentIndex(spLogInPage);
 }
 
-void HubWidget::onLoggedIn(){
+void HubWidget::onLoggedIn()
+{
     m_stack->setCurrentIndex(spRtgTemplatePage);
 }
-void HubWidget::onCustomRatingsTemplateDown(){
+void HubWidget::onCustomRatingsTemplateDown()
+{
     m_object->fetchDownloadData();
     m_stack->setCurrentIndex(spDownloadOptPage);
 }
-void HubWidget::onLoggedOut(){
+void HubWidget::onLoggedOut()
+{
     m_logInPage->reset();
     m_object->fetchLoginInfos();
     m_stack->setCurrentIndex(spLogInPage);
 }
 
-void HubWidget::onAttemptLogOut(){
+void HubWidget::onAttemptLogOut()
+{
     m_logOutPage->reset();
     m_stack->setCurrentIndex(spLogOutPage);
     m_object->logOut();
@@ -70,7 +88,7 @@ void HubWidget::onAttemptLogOut(){
 
 void HubWidget::retranslateUi()
 {
-   m_object->retranslateModels();
+    m_object->retranslateModels();
 }
 
-HubWidget::~HubWidget()=default;
+HubWidget::~HubWidget() = default;

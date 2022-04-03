@@ -67,6 +67,7 @@ set(models_SRCS
     customratingmodel.cpp
     slmetricsfiltermodel.h
     slmetricsfiltermodel.cpp
+    nocheckproxy.h
 )
 set(delegates_SRCS
     ratingsdelegate.h

@@ -304,10 +304,8 @@ void MainObject::retranslateModels()
         m_SLMetricsModel->item(i)->setData(translatedSLCodes.at(i), Qt::DisplayRole);
 }
 
-void MainObject::download17Lands(const QString &format, const QDate &fromDate, const QDate &toDate)
+std::pair<QStringList, QStringList> MainObject::getSetsForDownload() const
 {
-    if (format.isEmpty())
-        return;
     QStringList sets;
     QStringList setsToSave;
     for (int i = 0, iEnd = m_setsProxy->rowCount(); i < iEnd; ++i) {
@@ -317,12 +315,79 @@ void MainObject::download17Lands(const QString &format, const QDate &fromDate, c
         }
     }
     if (sets.isEmpty())
-        return;
+        return std::pair<QStringList, QStringList>();
     std::sort(sets.begin(), sets.end());
     sets.erase(std::unique(sets.begin(), sets.end()), sets.end());
-    m_configManager->writeDataToDownload(format, setsToSave, fromDate, toDate);
+    return std::make_pair(sets, setsToSave);
+}
+
+void MainObject::download17Lands(const QString &format)
+{
+    if (format.isEmpty()) {
+        emit SLDownloadFailed();
+        return;
+    }
+    std::pair<QStringList, QStringList> sets = getSetsForDownload();
+    if (sets.first.isEmpty()) {
+        emit SLDownloadFailed();
+        return;
+    }
+    m_configManager->writeDataToDownload(format, sets.second, GEnums::rtmAnytime, QDate(), QDate(), GEnums::rtsInvalid, 0);
+    actualDownload17Lands(format, sets.first, QDate(), QDate());
+}
+
+void MainObject::download17Lands(const QString &format, const QDate &fromDate, const QDate &toDate)
+{
+    if (format.isEmpty()) {
+        emit SLDownloadFailed();
+        return;
+    }
+    std::pair<QStringList, QStringList> sets = getSetsForDownload();
+    if (sets.first.isEmpty()) {
+        emit SLDownloadFailed();
+        return;
+    }
+    m_configManager->writeDataToDownload(format, sets.second, GEnums::rtmBetweenDates, fromDate, toDate, GEnums::rtsInvalid, 0);
+    actualDownload17Lands(format, sets.first, fromDate, toDate);
+}
+
+void MainObject::actualDownload17Lands(const QString &format, const QStringList &sets, const QDate &fromDate, const QDate &toDate)
+{
     emit startProgress(opDownload17Ratings, tr("Downloading 17Lands Data"), sets.size(), 0);
     m_worker->get17LRatings(sets, format, fromDate, toDate);
+}
+
+void MainObject::download17Lands(const QString &format, GEnums::RatingTimeScale scale, int period)
+{
+    if (format.isEmpty() || period <= 0 || scale == GEnums::rtsInvalid) {
+        emit SLDownloadFailed();
+        return;
+    }
+    std::pair<QStringList, QStringList> sets = getSetsForDownload();
+    if (sets.first.isEmpty()) {
+        emit SLDownloadFailed();
+        return;
+    }
+    m_configManager->writeDataToDownload(format, sets.second, GEnums::rtmPastPeriod, QDate(), QDate(), scale, period);
+    const QDate currDate = QDate::currentDate();
+    QDate fromDate;
+    switch (scale) {
+    case GEnums::rtsDays:
+        fromDate = currDate.addDays(-period);
+        break;
+    case GEnums::rtsWeeks:
+        fromDate = currDate.addDays(-period * 7);
+        break;
+    case GEnums::rtsMonths:
+        fromDate = currDate.addMonths(-period);
+        break;
+    case GEnums::rtsYears:
+        fromDate = currDate.addYears(-period);
+        break;
+    default:
+        Q_UNREACHABLE();
+    }
+    actualDownload17Lands(format, sets.first, fromDate, currDate);
 }
 
 void MainObject::uploadMTGAH(GEnums::SLMetrics ratingMethod, const QLocale &locale, bool clear)
@@ -402,15 +467,19 @@ void MainObject::onInitialisationFailed()
     emit initialisationFailed();
 }
 
-void MainObject::fetchLoginInfos(){
+void MainObject::fetchLoginInfos()
+{
     std::pair<QString, QString> userPass = m_configManager->readUserPass();
     if (!userPass.first.isEmpty() && !userPass.second.isEmpty())
         emit loadUserPass(userPass.first, userPass.second);
 }
-void MainObject::fetchDownloadData(){
-    std::tuple<QString, QStringList, QDate, QDate> downloadData = m_configManager->readDataToDownload();
+void MainObject::fetchDownloadData()
+{
+    std::tuple<QString, QStringList, int, QDate, QDate, int, int> downloadData = m_configManager->readDataToDownload();
     if (!std::get<0>(downloadData).isEmpty())
-        emit loadDownloadFormat(std::get<0>(downloadData), std::get<2>(downloadData), std::get<3>(downloadData));
+        emit loadDownloadFormat(std::get<0>(downloadData), static_cast<GEnums::RatingTimeMethod>(std::get<2>(downloadData)),
+                                std::get<3>(downloadData), std::get<4>(downloadData), static_cast<GEnums::RatingTimeScale>(std::get<5>(downloadData)),
+                                std::get<6>(downloadData));
     if (!std::get<1>(downloadData).isEmpty()) {
         const QStringList &setsList = std::get<1>(downloadData);
         for (int i = 0, iEnd = m_setsProxy->rowCount(); i < iEnd; ++i) {
@@ -422,7 +491,8 @@ void MainObject::fetchDownloadData(){
         showOnlyDraftableSets(!oneNonDraftableSetSelected());
     }
 }
-void MainObject::fetchUploadData(){
+void MainObject::fetchUploadData()
+{
     std::pair<GEnums::SLMetrics, QVector<GEnums::SLMetrics>> uploadData = m_configManager->readDataToUpload();
     if (uploadData.first != GEnums::SLCount)
         emit loadUploadRating(uploadData.first);

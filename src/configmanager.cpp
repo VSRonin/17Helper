@@ -40,14 +40,15 @@ bool ConfigManager::writeUserPass(const QString &userName, const QString &passwo
     return writeConfigObject(configObject);
 }
 
-bool ConfigManager::writeDataToDownload(const QString &format, const QStringList &sets, const QDate &fromDate, const QDate &toDate)
+bool ConfigManager::writeDataToDownload(const QString &format, const QStringList &sets, GEnums::RatingTimeMethod method, const QDate &fromDate,
+                                        const QDate &toDate, GEnums::RatingTimeScale timeScale, int timeSpan)
 {
     QJsonObject configObject = getConfigObject();
     if (format.isEmpty())
         configObject.remove(QLatin1String("SLformat"));
     else
         configObject[QLatin1String("SLformat")] = format;
-    if (format.isEmpty())
+    if (sets.isEmpty())
         configObject.remove(QLatin1String("SLsets"));
     else {
         QJsonArray setsArray;
@@ -55,6 +56,10 @@ bool ConfigManager::writeDataToDownload(const QString &format, const QStringList
             setsArray.append(set);
         configObject[QLatin1String("SLsets")] = setsArray;
     }
+    if (method == GEnums::rtmInvalid)
+        configObject.remove(QLatin1String("SLtimeMethod"));
+    else
+        configObject[QLatin1String("SLtimeMethod")] = int(method);
     if (fromDate.isNull())
         configObject.remove(QLatin1String("SLfromDate"));
     else
@@ -63,6 +68,14 @@ bool ConfigManager::writeDataToDownload(const QString &format, const QStringList
         configObject.remove(QLatin1String("SLtoDate"));
     else
         configObject[QLatin1String("SLtoDate")] = toDate.toString(Qt::ISODate);
+    if (timeScale == GEnums::rtsInvalid)
+        configObject.remove(QLatin1String("SLtimeScale"));
+    else
+        configObject[QLatin1String("SLtimeScale")] = int(timeScale);
+    if (timeSpan <= 0)
+        configObject.remove(QLatin1String("SLtimeSpan"));
+    else
+        configObject[QLatin1String("SLtimeSpan")] = timeSpan;
     return writeConfigObject(configObject);
 }
 
@@ -100,16 +113,17 @@ std::pair<QString, QString> ConfigManager::readUserPass()
     return std::make_pair(configObject.value(QLatin1String("username")).toString(), configObject.value(QLatin1String("password")).toString());
 }
 
-std::tuple<QString, QStringList, QDate, QDate> ConfigManager::readDataToDownload()
+std::tuple<QString, QStringList, int, QDate, QDate, int, int> ConfigManager::readDataToDownload()
 {
     QJsonObject configObject = getConfigObject();
     const QJsonArray setsArray = configObject.value(QLatin1String("SLsets")).toArray();
     QStringList sets;
     for (const QJsonValue &i : setsArray)
         sets.append(i.toString());
-    return std::make_tuple(configObject.value(QLatin1String("SLformat")).toString(), sets,
+    return std::make_tuple(configObject.value(QLatin1String("SLformat")).toString(), sets, configObject.value(QLatin1String("SLtimeMethod")).toInt(),
                            QDate::fromString(configObject.value(QLatin1String("SLfromDate")).toString(), Qt::ISODate),
-                           QDate::fromString(configObject.value(QLatin1String("SLtoDate")).toString(), Qt::ISODate));
+                           QDate::fromString(configObject.value(QLatin1String("SLtoDate")).toString(), Qt::ISODate),
+                           configObject.value(QLatin1String("SLtimeScale")).toInt(), configObject.value(QLatin1String("SLtimeSpan")).toInt());
 }
 
 std::pair<GEnums::SLMetrics, QVector<GEnums::SLMetrics>> ConfigManager::readDataToUpload()

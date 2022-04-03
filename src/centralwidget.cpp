@@ -32,18 +32,7 @@
 #include "percentagedelegate.h"
 #include <customratingmodel.h>
 #include "faileduploadsdialog.h"
-class NoCheckProxy : public QIdentityProxyModel
-{
-    Q_DISABLE_COPY_MOVE(NoCheckProxy)
-public:
-    using QIdentityProxyModel::QIdentityProxyModel;
-    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override
-    {
-        if (role == Qt::CheckStateRole)
-            return QVariant();
-        return QIdentityProxyModel::data(index, role);
-    }
-};
+#include <nocheckproxy.h>
 
 ProgressElement::ProgressElement()
     : ProgressElement(MainObject::opNoOperation, QString(), 0, 0, 0)
@@ -368,11 +357,11 @@ CentralWidget::CentralWidget(QWidget *parent)
     connect(ui->clearRatingsButton, &QPushButton::clicked, this, std::bind(&CentralWidget::doMtgahUpload, this, true));
     connect(ui->allSetsButton, &QPushButton::clicked, this, &CentralWidget::selectAllSets);
     connect(ui->noSetButton, &QPushButton::clicked, this, &CentralWidget::selectNoSets);
+    connect(ui->draftableSetsCheck, &QCheckBox::clicked, m_object, &MainObject::showOnlyDraftableSets);
     connect(ui->allMetricsButton, &QPushButton::clicked, this, &CentralWidget::selectAllMetrics);
     connect(ui->noMetricsButton, &QPushButton::clicked, this, &CentralWidget::selectNoMetrics);
     connect(ui->searchCardEdit, &QLineEdit::textChanged, this, &CentralWidget::updateRatingsFiler);
     connect(ui->onlyRatiosCheck, &QCheckBox::clicked, m_object, &MainObject::showOnlySLRatios);
-    connect(ui->draftableSetsCheck, &QCheckBox::clicked, m_object, &MainObject::showOnlyDraftableSets);
     connect(ui->cancelUploadButton, &QPushButton::clicked, m_object, &MainObject::cancelUpload);
     connect(ui->ratingTimeGroup, &QGroupBox::toggled, this, &CentralWidget::onRatingTimeGroupChecked);
     connect(ui->toTodayCheck, &QCheckBox::clicked, this, &CentralWidget::onToTodayCheckChecked);
@@ -395,7 +384,7 @@ CentralWidget::CentralWidget(QWidget *parent)
     connect(m_object, &MainObject::SLDownloadFinished, this, &CentralWidget::on17LandsDownloadFinished);
     connect(m_object, &MainObject::SLDownloadFailed, this, &CentralWidget::on17Lerror);
     connect(m_object, &MainObject::loadUserPass, this, &CentralWidget::onLoadUserPass);
-    connect(m_object, &MainObject::loadDownloadFormat, this, &CentralWidget::onLoadDownloadFormat);
+    // connect(m_object, &MainObject::loadDownloadFormat, this, &CentralWidget::onLoadDownloadFormat);
     connect(m_object, &MainObject::loadUploadRating, this, &CentralWidget::onLoadUploadRating);
     connect(m_object, &MainObject::ratingUploaded, this, &CentralWidget::updatedUploadedStatus);
     connect(m_object, &MainObject::showOnlyDraftableSetsChanged, this, &CentralWidget::onShowOnlyDraftableSetsChanged);

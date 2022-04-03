@@ -78,6 +78,8 @@ public slots:
     void tryLogin(const QString &userName, const QString &password, bool rememberMe = false);
     void logOut();
     void retranslateModels();
+    void download17Lands(const QString &format);
+    void download17Lands(const QString &format, GEnums::RatingTimeScale scale, int period);
     void download17Lands(const QString &format, const QDate &fromDate, const QDate &toDate);
     void uploadMTGAH(GEnums::SLMetrics ratingMethod, const QLocale &locale, bool clear);
     void cancelUpload();
@@ -120,10 +122,10 @@ signals:
     void customRatingTemplate();
     void customRatingTemplateFailed();
     void setsReady();
-    void startProgress(Operations op, const QString &description, int max, int min);
-    void updateProgress(Operations op, int val);
-    void increaseProgress(Operations op, int val);
-    void endProgress(Operations op);
+    void startProgress(MainObject::Operations op, const QString &description, int max, int min);
+    void updateProgress(MainObject::Operations op, int val);
+    void increaseProgress(MainObject::Operations op, int val);
+    void endProgress(MainObject::Operations op);
     void SLDownloadFinished();
     void SLDownloadFailed();
     void ratingsCalculated();
@@ -132,7 +134,8 @@ signals:
     void ratingUploadFailed(const QString &card);
     void ratingsUploaded();
     void loadUserPass(const QString &userName, const QString &password);
-    void loadDownloadFormat(const QString &format, const QDate &from, const QDate &to);
+    void loadDownloadFormat(const QString &format, GEnums::RatingTimeMethod timeMethod, const QDate &from, const QDate &to,
+                            GEnums::RatingTimeScale timeScale, int timeSpan);
     void loadUploadRating(GEnums::SLMetrics ratingBase);
     void setsMTGAHDownloaded();
     void downloadSetsMTGAHFailed();
@@ -142,6 +145,7 @@ signals:
     void no17LRating(const QStringList &sets);
 
 private:
+    void actualDownload17Lands(const QString &format, const QStringList &sets, const QDate &fromDate, const QDate &toDate);
     void init();
     void fillMetrics();
     void fillFormats();
@@ -164,6 +168,7 @@ private:
     CustomRatingModel *m_customRatingsModel;
     int ratingsToUpload;
     QSet<QString> m_failedUploadCards;
+    std::pair<QStringList, QStringList> getSetsForDownload() const;
 };
 
 #endif
