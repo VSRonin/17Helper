@@ -16,8 +16,13 @@ public:
     ~DownloadOptionsPage();
     MainObject *mainObject() const;
     void setMainObject(MainObject *newObject);
+signals:
+    void logOut();
 protected:
     void retranslateUi() override;
+private slots:
+    void onLoadDownloadFormat(const QString &format);
+    void onShowOnlyDraftableSetsChanged(bool showOnly);
 private:
     Ui::DownloadOptionsPage *ui;
     MainObject* m_object;

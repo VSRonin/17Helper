@@ -59,9 +59,7 @@ void InitialisationPage::onDownloadSetsMTGAHFailed(){
     ui->initLabel->hide();
 }
 void InitialisationPage::retrySetsDownload(){
-    ui->setsErrorLabel->hide();
-    ui->retrySetsButton->hide();
-    ui->initLabel->show();
+    reset();
     if(m_object)
         m_object->downloadSetsMTGAH();
 }

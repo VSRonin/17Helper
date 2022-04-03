@@ -9,6 +9,7 @@
 #include "initialisationpage.h"
 #include "downloadmtgatemplatepage.h"
 #include "downloadoptionspage.h"
+#include "logoutpage.h"
 #include <QPushButton>
 HubWidget::HubWidget(QWidget *parent) :
     TranslatableWidgetInterface(parent),
@@ -27,17 +28,24 @@ HubWidget::HubWidget(QWidget *parent) :
     m_downloadOptionsPage = new DownloadOptionsPage(this);
     m_downloadOptionsPage->setMainObject(m_object);
     m_stack->addWidget(m_downloadOptionsPage);
+    m_logOutPage = new LogOutPage(this);
+    m_logOutPage->setMainObject(m_object);
+    m_stack->addWidget(m_logOutPage);
 
     QVBoxLayout* mainLay= new QVBoxLayout(this);
     mainLay->addWidget(m_stack);
 
     connect(m_object, &MainObject::setsMTGAHDownloaded, this, &HubWidget::onSetsMTGAHDownloaded);
     connect(m_object, &MainObject::loggedIn, this, &HubWidget::onLoggedIn);
+    connect(m_object, &MainObject::loggedOut, this, &HubWidget::onLoggedOut);
     connect(m_object, &MainObject::customRatingTemplate, this, &HubWidget::onCustomRatingsTemplateDown);
+    connect(m_downloadOptionsPage,&DownloadOptionsPage::logOut,this, &HubWidget::onAttemptLogOut);
     QMetaObject::invokeMethod(this,&HubWidget::retranslateUi,Qt::QueuedConnection);
 }
 
 void HubWidget::onSetsMTGAHDownloaded(){
+    m_logInPage->reset();
+    m_object->fetchLoginInfos();
     m_stack->setCurrentIndex(spLogInPage);
 }
 
@@ -45,8 +53,21 @@ void HubWidget::onLoggedIn(){
     m_stack->setCurrentIndex(spRtgTemplatePage);
 }
 void HubWidget::onCustomRatingsTemplateDown(){
+    m_object->fetchDownloadData();
     m_stack->setCurrentIndex(spDownloadOptPage);
 }
+void HubWidget::onLoggedOut(){
+    m_logInPage->reset();
+    m_object->fetchLoginInfos();
+    m_stack->setCurrentIndex(spLogInPage);
+}
+
+void HubWidget::onAttemptLogOut(){
+    m_logOutPage->reset();
+    m_stack->setCurrentIndex(spLogOutPage);
+    m_object->logOut();
+}
+
 void HubWidget::retranslateUi()
 {
    m_object->retranslateModels();

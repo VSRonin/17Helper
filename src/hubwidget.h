@@ -9,6 +9,7 @@ class InitialisationPage;
 class DownloadMTGATemplatePage;
 class DownloadOptionsPage;
 class QPushButton;
+class LogOutPage;
 class HubWidget : public TranslatableWidgetInterface
 {
     Q_OBJECT
@@ -22,13 +23,15 @@ private slots:
     void onSetsMTGAHDownloaded();
     void onLoggedIn();
     void onCustomRatingsTemplateDown();
+    void onLoggedOut();
+    void onAttemptLogOut();
 private:
     enum StackPages{
         spInitPage
         ,spLogInPage
         ,spRtgTemplatePage
         , spDownloadOptPage
-
+        , spLogOutPage
     };
     MainObject *m_object;
     QStackedWidget* m_stack;
@@ -36,6 +39,7 @@ private:
     InitialisationPage* m_initPage;
     DownloadMTGATemplatePage* m_downloadTemplatePage;
     DownloadOptionsPage* m_downloadOptionsPage;
+    LogOutPage* m_logOutPage;
 };
 
 #endif // HUBWIDGET_H

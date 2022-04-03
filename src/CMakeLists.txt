@@ -34,6 +34,9 @@ set(ui_SRCS
     downloadoptionspage.h
     downloadoptionspage.cpp
     downloadoptionspage.ui
+    logoutpage.cpp
+    logoutpage.h
+    logoutpage.ui
 )
 set(backend_SRCS
     globals.h

@@ -11,6 +11,7 @@ DownloadOptionsPage::DownloadOptionsPage(QWidget *parent) :
     timeGroup->addButton(ui->noLimitRadio);
     timeGroup->addButton(ui->timeSpanRadio);
     timeGroup->addButton(ui->lastPeriodRadio);
+    connect(ui->logOutButton,&QPushButton::clicked,this,&DownloadOptionsPage::logOut);
 }
 
 DownloadOptionsPage::~DownloadOptionsPage()
@@ -35,11 +36,22 @@ void DownloadOptionsPage::setMainObject(MainObject *newObject)
     ui->setsView->setModel(m_object->setsModel());
     ui->formatCombo->setModel(m_object->formatsModel());
     m_objectConnections = QVector<QMetaObject::Connection>{
-
+        connect(m_object,&MainObject::loadDownloadFormat,this,&DownloadOptionsPage::onLoadDownloadFormat)
+        ,connect(m_object,&MainObject::showOnlyDraftableSetsChanged,this,&DownloadOptionsPage::onShowOnlyDraftableSetsChanged)
     };
 }
 
 void DownloadOptionsPage::retranslateUi()
 {
     ui->retranslateUi(this);
+}
+
+void DownloadOptionsPage::onLoadDownloadFormat(const QString &format)
+{
+    ui->formatCombo->setCurrentIndex(ui->formatCombo->findData(format, Qt::UserRole));
+}
+
+void DownloadOptionsPage::onShowOnlyDraftableSetsChanged(bool showOnly)
+{
+    ui->draftableSetsCheck->setChecked(showOnly);
 }

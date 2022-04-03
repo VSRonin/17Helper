@@ -85,6 +85,9 @@ public slots:
     void getCustomRatingTemplate();
     void setAllSetsSelection(Qt::CheckState check);
     void setAllSLMetricsSelection(Qt::CheckState check);
+    void fetchLoginInfos();
+    void fetchDownloadData();
+    void fetchUploadData();
 private slots:
     void onWorkerInit();
     void onInitialisationFailed();

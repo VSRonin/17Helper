@@ -180,7 +180,7 @@ void MainObject::showOnlyDraftableSets(bool showOnly)
     if (m_setsFilter->filterEnabled() == showOnly)
         return;
     m_setsFilter->setFilterEnabled(showOnly);
-    showOnlyDraftableSetsChanged(showOnly);
+    emit showOnlyDraftableSetsChanged(showOnly);
 }
 
 void MainObject::showOnlySLRatios(bool showOnly)
@@ -188,7 +188,7 @@ void MainObject::showOnlySLRatios(bool showOnly)
     if (m_SLMetricsProxy->filterEnabled() == showOnly)
         return;
     m_SLMetricsProxy->setFilterEnabled(showOnly);
-    showOnlySLRatiosChanged(showOnly);
+    emit showOnlySLRatiosChanged(showOnly);
 }
 
 bool MainObject::oneSetSelected() const
@@ -402,11 +402,12 @@ void MainObject::onInitialisationFailed()
     emit initialisationFailed();
 }
 
-void MainObject::init()
-{
+void MainObject::fetchLoginInfos(){
     std::pair<QString, QString> userPass = m_configManager->readUserPass();
     if (!userPass.first.isEmpty() && !userPass.second.isEmpty())
         emit loadUserPass(userPass.first, userPass.second);
+}
+void MainObject::fetchDownloadData(){
     std::tuple<QString, QStringList, QDate, QDate> downloadData = m_configManager->readDataToDownload();
     if (!std::get<0>(downloadData).isEmpty())
         emit loadDownloadFormat(std::get<0>(downloadData), std::get<2>(downloadData), std::get<3>(downloadData));
@@ -420,6 +421,8 @@ void MainObject::init()
         }
         showOnlyDraftableSets(!oneNonDraftableSetSelected());
     }
+}
+void MainObject::fetchUploadData(){
     std::pair<GEnums::SLMetrics, QVector<GEnums::SLMetrics>> uploadData = m_configManager->readDataToUpload();
     if (uploadData.first != GEnums::SLCount)
         emit loadUploadRating(uploadData.first);
@@ -432,6 +435,13 @@ void MainObject::init()
                 m_SLMetricsModel->setData(currIdx, Qt::Unchecked, Qt::CheckStateRole);
         }
     }
+}
+
+void MainObject::init()
+{
+    fetchLoginInfos();
+    fetchDownloadData();
+    fetchUploadData();
 }
 
 void MainObject::fillMetrics()
