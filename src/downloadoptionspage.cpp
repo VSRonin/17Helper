@@ -34,7 +34,6 @@ DownloadOptionsPage::DownloadOptionsPage(QWidget *parent)
     ui->periodCombo->addItem(QString(), GEnums::RatingTimeScale::rtsYears);
 
     connect(ui->fromEdit, &QDateEdit::dateChanged, this, &DownloadOptionsPage::onFromEditChanged);
-    connect(ui->logOutButton, &QPushButton::clicked, this, &DownloadOptionsPage::logOut);
     connect(ui->noLimitRadio, &QRadioButton::toggled, this, &DownloadOptionsPage::onTimeRadioChanged);
     connect(ui->timeSpanRadio, &QRadioButton::toggled, this, &DownloadOptionsPage::onTimeRadioChanged);
     connect(ui->lastPeriodRadio, &QRadioButton::toggled, this, &DownloadOptionsPage::onTimeRadioChanged);

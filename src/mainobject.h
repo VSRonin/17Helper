@@ -128,6 +128,7 @@ signals:
     void endProgress(MainObject::Operations op);
     void SLDownloadFinished();
     void SLDownloadFailed();
+    void no17LRating(const QStringList &sets);
     void ratingsCalculated();
     void ratingsCalculationFailed();
     void ratingUploaded(const QString &card);
@@ -142,7 +143,6 @@ signals:
     void downloadSetsScryfallFailed();
     void showOnlyDraftableSetsChanged(bool showOnlyDraftable);
     void showOnlySLRatiosChanged(bool showOnlyRatios);
-    void no17LRating(const QStringList &sets);
 
 private:
     void actualDownload17Lands(const QString &format, const QStringList &sets, const QDate &fromDate, const QDate &toDate);

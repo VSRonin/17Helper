@@ -29,8 +29,6 @@ public:
     ~DownloadOptionsPage();
     MainObject *mainObject() const;
     void setMainObject(MainObject *newObject);
-signals:
-    void logOut();
 
 protected:
     void retranslateUi() override;

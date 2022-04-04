@@ -16,13 +16,13 @@
 #include <QStackedWidget>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
-#include <mainobject.h>
 #include <QCoreApplication>
 #include <QMessageBox>
 #include "initialisationpage.h"
 #include "downloadmtgatemplatepage.h"
 #include "downloadoptionspage.h"
 #include "logoutpage.h"
+#include "downloadprogresspage.h"
 #include <QPushButton>
 HubWidget::HubWidget(QWidget *parent)
     : TranslatableWidgetInterface(parent)
@@ -44,6 +44,10 @@ HubWidget::HubWidget(QWidget *parent)
     m_logOutPage = new LogOutPage(this);
     m_logOutPage->setMainObject(m_object);
     m_stack->addWidget(m_logOutPage);
+    m_downloadProgressPage = new DownloadProgressPage(this);
+    m_downloadProgressPage->setMainObject(m_object);
+    connect(m_downloadProgressPage, &DownloadProgressPage::goBack, this, &HubWidget::backToDownloadOptions);
+    m_stack->addWidget(m_downloadProgressPage);
 
     QVBoxLayout *mainLay = new QVBoxLayout(this);
     mainLay->addWidget(m_stack);
@@ -52,7 +56,7 @@ HubWidget::HubWidget(QWidget *parent)
     connect(m_object, &MainObject::loggedIn, this, &HubWidget::onLoggedIn);
     connect(m_object, &MainObject::loggedOut, this, &HubWidget::onLoggedOut);
     connect(m_object, &MainObject::customRatingTemplate, this, &HubWidget::onCustomRatingsTemplateDown);
-    connect(m_downloadOptionsPage, &DownloadOptionsPage::logOut, this, &HubWidget::onAttemptLogOut);
+    connect(m_object, &MainObject::startProgress, this, &HubWidget::onStartProgress);
     QMetaObject::invokeMethod(this, &HubWidget::retranslateUi, Qt::QueuedConnection);
 }
 
@@ -79,11 +83,29 @@ void HubWidget::onLoggedOut()
     m_stack->setCurrentIndex(spLogInPage);
 }
 
+void HubWidget::onStartProgress(MainObject::Operations op)
+{
+    switch (op) {
+    case MainObject::opLogOut:
+        return onAttemptLogOut();
+    case MainObject::opDownload17Ratings:
+        m_downloadProgressPage->reset();
+        m_stack->setCurrentIndex(spDownloadProgressPage);
+    default:
+        return;
+    }
+}
+
 void HubWidget::onAttemptLogOut()
 {
     m_logOutPage->reset();
     m_stack->setCurrentIndex(spLogOutPage);
     m_object->logOut();
+}
+
+void HubWidget::backToDownloadOptions()
+{
+    onCustomRatingsTemplateDown();
 }
 
 void HubWidget::retranslateUi()

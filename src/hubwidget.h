@@ -15,7 +15,7 @@
 #define HUBWIDGET_H
 
 #include "translatablewidgetinterface.h"
-class MainObject;
+#include <mainobject.h>
 class QStackedWidget;
 class LogInPage;
 class InitialisationPage;
@@ -23,6 +23,7 @@ class DownloadMTGATemplatePage;
 class DownloadOptionsPage;
 class QPushButton;
 class LogOutPage;
+class DownloadProgressPage;
 class HubWidget : public TranslatableWidgetInterface
 {
     Q_OBJECT
@@ -40,9 +41,11 @@ private slots:
     void onCustomRatingsTemplateDown();
     void onLoggedOut();
     void onAttemptLogOut();
+    void backToDownloadOptions();
+    void onStartProgress(MainObject::Operations op);
 
 private:
-    enum StackPages { spInitPage, spLogInPage, spRtgTemplatePage, spDownloadOptPage, spLogOutPage };
+    enum StackPages { spInitPage, spLogInPage, spRtgTemplatePage, spDownloadOptPage, spLogOutPage, spDownloadProgressPage };
     MainObject *m_object;
     QStackedWidget *m_stack;
     LogInPage *m_logInPage;
@@ -50,6 +53,7 @@ private:
     DownloadMTGATemplatePage *m_downloadTemplatePage;
     DownloadOptionsPage *m_downloadOptionsPage;
     LogOutPage *m_logOutPage;
+    DownloadProgressPage *m_downloadProgressPage;
 };
 
 #endif // HUBWIDGET_H
