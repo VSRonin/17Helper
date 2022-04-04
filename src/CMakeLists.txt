@@ -2,6 +2,14 @@ cmake_minimum_required(VERSION 3.14)
 find_package(Qt6 6.2 COMPONENTS Widgets Gui Core Network Sql LinguistTools Svg REQUIRED)
 find_package(OpenSSL REQUIRED)
 include(FetchContent)
+cmake_policy(SET CMP0077 NEW)
+set(BUILD_SHARED_LIBS OFF)
+set(BUILD_TESTING OFF)
+set(BUILD_MODELSERIALISATION OFF)
+set(BUILD_INSERTPROXY OFF)
+set(BUILD_ROOTINDEXPROXY OFF)
+set(BUILD_GENERICMODEL OFF)
+set(MODEL_UTILITIES_INSTALL OFF)
 FetchContent_Declare(QtModelUtilitiesFC
     GIT_REPOSITORY https://github.com/VSRonin/QtModelUtilities.git
     GIT_TAG master
@@ -37,6 +45,9 @@ set(ui_SRCS
     logoutpage.cpp
     logoutpage.h
     logoutpage.ui
+    downloadprogresspage.h
+    downloadprogresspage.cpp
+    downloadprogresspage.ui
 )
 set(backend_SRCS
     globals.h
