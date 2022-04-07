@@ -24,6 +24,7 @@ class DownloadOptionsPage;
 class QPushButton;
 class LogOutPage;
 class DownloadProgressPage;
+class UploadOptionsPage;
 class HubWidget : public TranslatableWidgetInterface
 {
     Q_OBJECT
@@ -44,8 +45,10 @@ private slots:
     void backToDownloadOptions();
     void onStartProgress(MainObject::Operations op);
 
+    void nextToUploadOptions();
+
 private:
-    enum StackPages { spInitPage, spLogInPage, spRtgTemplatePage, spDownloadOptPage, spLogOutPage, spDownloadProgressPage };
+    enum StackPages { spInitPage, spLogInPage, spRtgTemplatePage, spDownloadOptPage, spLogOutPage, spDownloadProgressPage, spUploadOptPage };
     MainObject *m_object;
     QStackedWidget *m_stack;
     LogInPage *m_logInPage;
@@ -54,6 +57,7 @@ private:
     DownloadOptionsPage *m_downloadOptionsPage;
     LogOutPage *m_logOutPage;
     DownloadProgressPage *m_downloadProgressPage;
+    UploadOptionsPage *m_uploadOptionsPage;
 };
 
 #endif // HUBWIDGET_H

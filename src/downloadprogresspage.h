@@ -22,6 +22,7 @@ protected:
     void retranslateUi() override;
 signals:
     void goBack();
+    void goNext();
 private slots:
     void onStartProgress(MainObject::Operations op, const QString &description, int max, int min);
     void onUpdateProgress(MainObject::Operations op, int val);

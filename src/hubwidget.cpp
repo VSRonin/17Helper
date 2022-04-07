@@ -23,6 +23,7 @@
 #include "downloadoptionspage.h"
 #include "logoutpage.h"
 #include "downloadprogresspage.h"
+#include "uploadoptionspage.h"
 #include <QPushButton>
 HubWidget::HubWidget(QWidget *parent)
     : TranslatableWidgetInterface(parent)
@@ -47,8 +48,11 @@ HubWidget::HubWidget(QWidget *parent)
     m_downloadProgressPage = new DownloadProgressPage(this);
     m_downloadProgressPage->setMainObject(m_object);
     connect(m_downloadProgressPage, &DownloadProgressPage::goBack, this, &HubWidget::backToDownloadOptions);
+    connect(m_downloadProgressPage, &DownloadProgressPage::goNext, this, &HubWidget::nextToUploadOptions);
     m_stack->addWidget(m_downloadProgressPage);
-
+    m_uploadOptionsPage = new UploadOptionsPage(this);
+    m_uploadOptionsPage->setMainObject(m_object);
+    m_stack->addWidget(m_uploadOptionsPage);
     QVBoxLayout *mainLay = new QVBoxLayout(this);
     mainLay->addWidget(m_stack);
 
@@ -107,7 +111,10 @@ void HubWidget::backToDownloadOptions()
 {
     onCustomRatingsTemplateDown();
 }
-
+void HubWidget::nextToUploadOptions()
+{
+    m_stack->setCurrentIndex(spUploadOptPage);
+}
 void HubWidget::retranslateUi()
 {
     m_object->retranslateModels();

@@ -297,11 +297,86 @@ void MainObject::retranslateModels()
     translatedSLCodes[GEnums::SLnever_drawn_game_count] = tr("Number of Games Not Drawn (%1)");
     translatedSLCodes[GEnums::SLnever_drawn_win_rate] = tr("Games Not Drawn Win Rate (%1)");
     translatedSLCodes[GEnums::SLdrawn_improvement_win_rate] = tr("Improvement When Drawn (%1)");
+
+    QStringList translatedSLTooltips;
+    translatedSLTooltips.reserve(GEnums::SLCount);
+    for (int i = 0; i < GEnums::SLCount; ++i)
+        translatedSLTooltips.append(QString());
+    translatedSLTooltips[GEnums::SLseen_count] = tr(
+            "The number of packs in which a card was seen. Cards that come back around when we see them again \"on the wheel\" are only counted "
+            "once. When we have information about what was picked but not the other cards that are available (as has been the case for P1P1 for most "
+            "of the duration of human drafts and also happens occasionally due to connection errors), we do count that one picked card as being "
+            "\"seen\".\nCaveats: At this time, Arena does not have any duplicates of cards in a pack (unlike paper or MTGO packs that can have "
+            "duplicates due to foils), but if that were to change, two of a card in a single pack would count twice; we do not do any deduplication");
+    translatedSLTooltips[GEnums::SLavg_seen] =
+            tr("The average pick number where this card was last seen in packs. When a card comes back around on the wheel, only the second time "
+               "around counts toward the average.\nCaveats: When P1P1 contents are missing, ALSA is slightly elevated for cards that often do not "
+               "wheel because cards are missing the data from pick 1. Cards that are picked later are less affected because their missing pick 1 "
+               "data is no longer relevant when pick 9 comes around");
+    translatedSLTooltips[GEnums::SLpick_count] = tr("The number of instances of this card picked by 17Lands drafters");
+    translatedSLTooltips[GEnums::SLavg_pick] = tr("The average pick number at which this card was taken by 17Lands drafters");
+    translatedSLTooltips[GEnums::SLgame_count] = tr("The number of games played with this card in the maindeck, multiplied by the number of copies. "
+                                                    "Playing ten copies of a card in a deck has ten times the weight as playing one copy");
+    translatedSLTooltips[GEnums::SLwin_rate] =
+            tr("The win rate of decks with at least one copy of this card in the maindeck, weighted by the number of copies in the deck. Playing ten "
+               "copies of a card in a deck has ten times the weight as playing one copy");
+    translatedSLTooltips[GEnums::SLopening_hand_game_count] =
+            tr("The number of games where an instance of this card was in the opening hand. Each instance of a card is counted, so a game having two "
+               "copies of a card has twice as much weight as an opening hand with only one copy.\nCaveats: Note that an \"opening hand\" is the "
+               "final hand that was kept after any mulligan actions, so a single mulligan will only have 6 cards count towards opening-hand data. "
+               "Cards put on the bottom are ignored, as are the hands that were mulliganed away. Additionally, this metric is biased by the fact "
+               "that some cards - usually expensive or otherwise hard-to-cast ones - are more likely to contribute to a hand being mulliganed or to "
+               "the card being put on the bottom after a mulligan");
+    translatedSLTooltips[GEnums::SLopening_hand_win_rate] =
+            tr("The win rate of games where an instance of this card was in the opening hand. Each instance of a card is counted, so a game having "
+               "two copies of a card has twice as much weight as an opening hand with only one copy.\nCaveats: Note that an \"opening hand\" is the "
+               "final hand that was kept after any mulligan actions, so a single mulligan will only have 6 cards count towards opening-hand data. "
+               "Cards put on the bottom are ignored, as are the hands that were mulliganed away. Additionally, this metric is biased by the fact "
+               "that some cards - usually expensive or otherwise hard-to-cast ones - are more likely to contribute to a hand being mulliganed or to "
+               "the card being put on the bottom after a mulligan");
+    translatedSLTooltips[GEnums::SLdrawn_game_count] =
+            tr("The number of times this card was drawn from the deck into hand, not counting the opening hand. This includes cards that were drawn "
+               "at the start of a turn or due to card drawing abilities. It does not include cards returned to hand from the battlefield or "
+               "graveyard, tutored, or played from exile. Each copy is counted, so a game having two copies of a card drawn has twice as much weight "
+               "as a game with only one copy drawn.\nCaveats: It is possible for the same instance of a card to be counted if it is put back into "
+               "the library and drawn again, so cards that put themselves back in (e.g. Approach of the Second Sun) or are more likely to be "
+               "targeted by effects like Totally Lost have some bias here");
+    translatedSLTooltips[GEnums::SLdrawn_win_rate] =
+            tr("The win rate of games where an instance of this card was drawn from the deck into hand, not counting cards from the opening hand. "
+               "Each instance of a card is counted, so a game drawing two copies of a card has twice as much weight as a game drawing only one "
+               "copy.\nCaveats: It is possible for the same instance of a card to be counted if it is put back into the library and drawn again, so "
+               "cards that put themselves back in (e.g. Approach of the Second Sun) or are more likely to be targeted by effects like Totally Lost "
+               "have some bias here");
+    translatedSLTooltips[GEnums::SLever_drawn_game_count] =
+            tr("The number of times this card was drawn into hand, either in the opening hand or later. Each instance of a card is counted, so a "
+               "game having a copy of a card in the opening hand and then two more copies drawn later has three times as much weight as an opening "
+               "hand with only one copy.\nCaveats: It is possible for the same instance of a card to be counted if it is put back into the library "
+               "and drawn again, so cards that put themselves back in (e.g. Approach of the Second Sun) or are more likely to be targeted by effects "
+               "like Totally Lost have some bias here");
+    translatedSLTooltips[GEnums::SLever_drawn_win_rate] =
+            tr("The win rate of games where an instance of this card was drawn into hand, either in the opening hand or later. Each instance of a "
+               "card is counted, so a game having a copy of a card in the opening hand and then two more copies drawn later has three times as much "
+               "weight as an opening hand with only one copy.\nCaveats: It is possible for the same instance of a card to be counted if it is put "
+               "back into the library and drawn again, so cards that put themselves back in (e.g. Approach of the Second Sun) or are more likely to "
+               "be targeted by effects like Totally Lost have some bias here");
+    translatedSLTooltips[GEnums::SLnever_drawn_game_count] =
+            tr("The copies of a card that were in the maindeck, minus the number of copies that were drawn. If more copies are drawn in a game than "
+               "are in the maindeck, this value is set to 0");
+    translatedSLTooltips[GEnums::SLnever_drawn_win_rate] =
+            tr("The copies of a card that were in the maindeck, minus the number of copies that were drawn. If more copies are drawn in a game than "
+               "are in the maindeck, this value is set to 0. If more copies are drawn in a game than are in the maindeck, this value is set to 0");
+    translatedSLTooltips[GEnums::SLdrawn_improvement_win_rate] =
+            tr("The difference between Games in Hand Win Rate and Games Not Drawn Win Rate.\nCaveats: This metric is a simple difference and does "
+               "not weight by the number of games in each situation, which may overvalue powerful late-game cards");
+
     for (int i = 0; i < GEnums::SLCount; ++i)
         translatedSLCodes[i] = translatedSLCodes.at(i).arg(SLcodes.at(i));
     m_SLratingsModel->setSLcodes(translatedSLCodes);
-    for (int i = 0, iEnd = m_SLMetricsModel->rowCount(); i < iEnd; ++i)
-        m_SLMetricsModel->item(i)->setData(translatedSLCodes.at(i), Qt::DisplayRole);
+    for (int i = 0, iEnd = m_SLMetricsModel->rowCount(); i < iEnd; ++i) {
+        auto item = m_SLMetricsModel->item(i);
+        item->setData(translatedSLCodes.at(i), Qt::DisplayRole);
+        item->setData(translatedSLTooltips.at(i), Qt::ToolTipRole);
+    }
 }
 
 std::pair<QStringList, QStringList> MainObject::getSetsForDownload() const

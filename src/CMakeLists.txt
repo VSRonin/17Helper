@@ -48,6 +48,9 @@ set(ui_SRCS
     downloadprogresspage.h
     downloadprogresspage.cpp
     downloadprogresspage.ui
+    uploadoptionspage.h
+    uploadoptionspage.cpp
+    uploadoptionspage.ui
 )
 set(backend_SRCS
     globals.h
@@ -111,7 +114,7 @@ set(17HelperUi_SRCS
     ${loggingtools_SRCS}
 )
 add_library(17HelperLib STATIC ${17Helper_SRCS} ${17Helper_QM_FILES})
-qt_add_translations(17HelperLib TS_FILES 17Helper_en.ts 17Helper_it.ts QM_FILES_OUTPUT_VARIABLE 17Helper_QM_FILES)
+qt_add_translations(17HelperLib TS_FILES 17Helper_en.ts QM_FILES_OUTPUT_VARIABLE 17Helper_QM_FILES)
 add_library(17HelperLib::17HelperLib ALIAS 17HelperLib)
 target_compile_definitions(17HelperLib PUBLIC QT_NO_CAST_FROM_ASCII QT_NO_CAST_TO_ASCII)
 target_include_directories(17HelperLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
@@ -128,7 +131,7 @@ set_target_properties(17HelperLib PROPERTIES
     VERSION ${VERSION_SHORT}
 )
 add_library(17HelperUiLib STATIC ${17HelperUi_SRCS} ${17HelperUi_QM_FILES})
-qt_add_translations(17HelperUiLib TS_FILES 17HelperUi_en.ts 17HelperUi_it.ts QM_FILES_OUTPUT_VARIABLE 17HelperUi_QM_FILES)
+qt_add_translations(17HelperUiLib TS_FILES 17HelperUi_en.ts QM_FILES_OUTPUT_VARIABLE 17HelperUi_QM_FILES)
 add_library(17HelperUiLib::17HelperUiLib ALIAS 17HelperUiLib)
 target_compile_definitions(17HelperUiLib PUBLIC QT_NO_CAST_FROM_ASCII QT_NO_CAST_TO_ASCII)
 target_include_directories(17HelperUiLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
@@ -168,4 +171,4 @@ install(DIRECTORY "${OPENSSL_ROOT_DIR}/bin/"
     FILES_MATCHING PATTERN "*${CMAKE_SHARED_LIBRARY_SUFFIX}"
 )
 include(windeployqt)
-WinDeployQt(17Helper "en,it" "17Helper")
+WinDeployQt(17Helper "en" "17Helper")

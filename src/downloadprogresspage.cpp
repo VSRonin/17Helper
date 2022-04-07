@@ -11,12 +11,13 @@ DownloadProgressPage::DownloadProgressPage(QWidget *parent)
     ui->noRatingsView->setModel(m_noRatingsModel);
     reset();
     connect(ui->backButton, &QPushButton::clicked, this, &DownloadProgressPage::goBack);
+    connect(ui->nextButton, &QPushButton::clicked, this, &DownloadProgressPage::goNext);
 }
 
 void DownloadProgressPage::reset()
 {
     ui->downloadingLabel->show();
-    ui->downloadProgress->hide();
+    ui->downloadProgress->show();
     ui->backButton->setEnabled(false);
     ui->nextButton->setEnabled(false);
     ui->downloadCompleteLabel->hide();
