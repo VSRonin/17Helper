@@ -11,7 +11,8 @@
    limitations under the License.
 \****************************************************************************/
 #include "ratingsdelegate.h"
-#include <QSpinBox>
+#include "ratingspinbox.h"
+
 RatingsDelegate::RatingsDelegate(QObject *parent)
     : QStyledItemDelegate(parent)
 { }
@@ -20,21 +21,20 @@ QWidget *RatingsDelegate::createEditor(QWidget *parent, const QStyleOptionViewIt
 {
     Q_UNUSED(option)
     Q_UNUSED(index)
-    QSpinBox *result = new QSpinBox(parent);
-    result->setRange(0, 10);
+    RatingSpinBox *result = new RatingSpinBox(parent);
     return result;
 }
 
 void RatingsDelegate::setEditorData(QWidget *editor, const QModelIndex &index) const
 {
-    QSpinBox *spin = qobject_cast<QSpinBox *>(editor);
+    RatingSpinBox *spin = qobject_cast<RatingSpinBox *>(editor);
     Q_ASSERT(spin);
     spin->setValue(index.data().toInt());
 }
 
 void RatingsDelegate::setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const
 {
-    QSpinBox *spin = qobject_cast<QSpinBox *>(editor);
+    RatingSpinBox *spin = qobject_cast<RatingSpinBox *>(editor);
     Q_ASSERT(spin);
     model->setData(index, spin->value());
 }
@@ -43,4 +43,11 @@ void RatingsDelegate::updateEditorGeometry(QWidget *editor, const QStyleOptionVi
 {
     Q_UNUSED(index)
     editor->setGeometry(option.rect);
+}
+
+QString RatingsDelegate::displayText(const QVariant &value, const QLocale &locale) const
+{
+    if (value.isNull() || value.toInt() == -1)
+        return tr("NR", "Not Rated");
+    return QStyledItemDelegate::displayText(value, locale);
 }

@@ -18,6 +18,7 @@
     <widget class="QLabel" name="label_2">
      <property name="font">
       <font>
+       <weight>75</weight>
        <bold>true</bold>
       </font>
      </property>
@@ -297,6 +298,9 @@
        </property>
        <property name="text">
         <string>Download Data</string>
+       </property>
+       <property name="default">
+        <bool>true</bool>
        </property>
       </widget>
      </item>

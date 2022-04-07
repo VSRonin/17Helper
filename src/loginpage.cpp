@@ -102,6 +102,7 @@ void LogInPage::setMainObject(MainObject *newObject)
                                                            connect(m_object, &MainObject::loggedIn, this, &LogInPage::onLogin),
                                                            connect(m_object, &MainObject::loginFalied, this, &LogInPage::onLoginError)};
     checkLoginEnabled();
+    onRememberPass(ui->remembePwdCheck->checkState());
 }
 
 void LogInPage::onRememberPass(int state)

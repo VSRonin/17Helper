@@ -24,6 +24,7 @@
 #include "logoutpage.h"
 #include "downloadprogresspage.h"
 #include "uploadoptionspage.h"
+#include "customratingspage.h"
 #include <QPushButton>
 HubWidget::HubWidget(QWidget *parent)
     : TranslatableWidgetInterface(parent)
@@ -53,6 +54,11 @@ HubWidget::HubWidget(QWidget *parent)
     m_uploadOptionsPage = new UploadOptionsPage(this);
     m_uploadOptionsPage->setMainObject(m_object);
     m_stack->addWidget(m_uploadOptionsPage);
+    connect(m_uploadOptionsPage, &UploadOptionsPage::customiseRatings, this, &HubWidget::onCustomiseRatings);
+    m_customRatingsPage = new CustomRatingsPage(this);
+    m_customRatingsPage->setMainObject(m_object);
+    m_stack->addWidget(m_customRatingsPage);
+    connect(m_customRatingsPage, &CustomRatingsPage::applyCustomRatings, this, &HubWidget::onApplyCustomRatings);
     QVBoxLayout *mainLay = new QVBoxLayout(this);
     mainLay->addWidget(m_stack);
 
@@ -62,6 +68,11 @@ HubWidget::HubWidget(QWidget *parent)
     connect(m_object, &MainObject::customRatingTemplate, this, &HubWidget::onCustomRatingsTemplateDown);
     connect(m_object, &MainObject::startProgress, this, &HubWidget::onStartProgress);
     QMetaObject::invokeMethod(this, &HubWidget::retranslateUi, Qt::QueuedConnection);
+}
+
+void HubWidget::onCustomiseRatings()
+{
+    m_stack->setCurrentIndex(spCustomRatingsPage);
 }
 
 void HubWidget::onSetsMTGAHDownloaded()
@@ -112,6 +123,11 @@ void HubWidget::backToDownloadOptions()
     onCustomRatingsTemplateDown();
 }
 void HubWidget::nextToUploadOptions()
+{
+    m_stack->setCurrentIndex(spUploadOptPage);
+}
+
+void HubWidget::onApplyCustomRatings()
 {
     m_stack->setCurrentIndex(spUploadOptPage);
 }

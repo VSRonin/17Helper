@@ -12,6 +12,19 @@
 \****************************************************************************/
 #include "customratingmodel.h"
 #include "globals.h"
+/****************************************************************************\
+   Copyright 2022 Luca Beldi
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+       http://www.apache.org/licenses/LICENSE-2.0
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+\****************************************************************************/
+
 #include <QSqlQuery>
 #include <QSqlDriver>
 #include <QSqlRecord>
@@ -36,10 +49,14 @@ bool CustomRatingModel::setData(const QModelIndex &index, const QVariant &value,
         return false;
     const QVariant commentVal = index.column() == crmComment ? value : index.sibling(index.row(), crmComment).data();
     const QVariant ratingVal = index.column() == crmRating ? value : index.sibling(index.row(), crmRating).data();
+#ifdef QT_DEBUG
+    qDebug() << commentVal;
+    qDebug() << ratingVal;
+#endif
     const int idArena = index.sibling(index.row(), crmIdArena).data().toInt();
     QSqlDatabase db = openDb(m_databaseName);
     QSqlQuery updateQuery(db);
-    if ((ratingVal.isNull() || ratingVal.toInt() == -1) && commentVal.isNull()) {
+    if ((ratingVal.isNull() || ratingVal.toInt() == -1) && commentVal.toString().isEmpty()) {
         Q_ASSUME(updateQuery.prepare(QStringLiteral("DELETE FROM [CustomRatings] WHERE [id_arena]=:id_arena")));
     } else {
         Q_ASSUME(updateQuery.prepare(
@@ -48,8 +65,7 @@ bool CustomRatingModel::setData(const QModelIndex &index, const QVariant &value,
             updateQuery.bindValue(QStringLiteral(":rating"), QVariant(QMetaType(QMetaType::Int)));
         else
             updateQuery.bindValue(QStringLiteral(":rating"), ratingVal);
-
-        if (commentVal.isNull())
+        if (commentVal.toString().isEmpty())
             updateQuery.bindValue(QStringLiteral(":note"), QVariant(QMetaType(QMetaType::QString)));
         else
             updateQuery.bindValue(QStringLiteral(":note"), commentVal);

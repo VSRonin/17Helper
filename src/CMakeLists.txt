@@ -51,6 +51,11 @@ set(ui_SRCS
     uploadoptionspage.h
     uploadoptionspage.cpp
     uploadoptionspage.ui
+    customratingspage.h
+    customratingspage.cpp
+    customratingspage.ui
+    ratingspinbox.h
+    ratingspinbox.cpp
 )
 set(backend_SRCS
     globals.h
@@ -107,11 +112,11 @@ source_group(LoggingTools FILES ${loggingtools_SRCS})
 set(17Helper_SRCS
     ${backend_SRCS}
     ${models_SRCS}
-    ${delegates_SRCS}
 )
 set(17HelperUi_SRCS
     ${ui_SRCS}
     ${loggingtools_SRCS}
+    ${delegates_SRCS}
 )
 add_library(17HelperLib STATIC ${17Helper_SRCS} ${17Helper_QM_FILES})
 qt_add_translations(17HelperLib TS_FILES 17Helper_en.ts QM_FILES_OUTPUT_VARIABLE 17Helper_QM_FILES)
