@@ -30,6 +30,7 @@ void LogInPage::reset()
 {
     ui->errorLabel->hide();
     ui->savePwdWarningLabel->hide();
+    ui->remembePwdCheck->setChecked(false);
     enableAll(true);
 }
 void LogInPage::onLoadUserPass(const QString &userName, const QString &password)
