@@ -26,6 +26,7 @@ protected:
 private slots:
     void updateRatingsFiler();
     void onSetsFilter(const QModelIndex &, const QModelIndex &, const QVector<int> &roles);
+    void onCustomRatingCleared(const QModelIndex &idx);
 
 private:
     Ui::CustomRatingsPage *ui;

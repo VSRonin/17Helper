@@ -22,9 +22,7 @@ class RatingSpinBox : public QSpinBox
     Q_DISABLE_COPY_MOVE(RatingSpinBox)
 public:
     explicit RatingSpinBox(QWidget *parent = nullptr);
-
-protected:
-    int valueFromText(const QString &text) const override;
+    static QString nonRatedString();
 };
 
 #endif // RATINGSPINBOX_H

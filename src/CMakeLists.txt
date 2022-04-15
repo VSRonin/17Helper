@@ -25,7 +25,6 @@ set(ui_SRCS
     faileduploadsdialog.cpp
     faileduploadsdialog.h
     faileduploadsdialog.ui
-    resources.qrc
     translatablewidgetinterface.h
     translatablewidgetinterface.cpp
     hubwidget.h
@@ -54,8 +53,6 @@ set(ui_SRCS
     customratingspage.h
     customratingspage.cpp
     customratingspage.ui
-    ratingspinbox.h
-    ratingspinbox.cpp
 )
 set(backend_SRCS
     globals.h
@@ -97,6 +94,10 @@ set(delegates_SRCS
     percentagedelegate.cpp
     decimaldelegate.h
     decimaldelegate.cpp
+    customratingdelegate.h
+    customratingdelegate.cpp
+    ratingspinbox.h
+    ratingspinbox.cpp
 )
 set(loggingtools_SRCS
     loggingtools/forceerrorwidget.h
@@ -114,6 +115,7 @@ set(17Helper_SRCS
     ${models_SRCS}
 )
 set(17HelperUi_SRCS
+    resources.qrc
     ${ui_SRCS}
     ${loggingtools_SRCS}
     ${delegates_SRCS}

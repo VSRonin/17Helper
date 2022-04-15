@@ -15,7 +15,7 @@
 #include "ui_customratingspage.h"
 #include <mainobject.h>
 #include <customratingmodel.h>
-#include "ratingsdelegate.h"
+#include "customratingdelegate.h"
 #include <QCompleter>
 CustomRatingsPage::CustomRatingsPage(QWidget *parent)
     : TranslatableWidgetInterface(parent)
@@ -56,12 +56,22 @@ void CustomRatingsPage::setMainObject(MainObject *newObject)
         ui->customRatingView->setColumnHidden(CustomRatingModel::crmIdArena, true);
         ui->customRatingView->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
         ui->customRatingView->sortByColumn(CustomRatingModel::crmName, Qt::AscendingOrder);
-        ui->customRatingView->setItemDelegateForColumn(CustomRatingModel::crmRating, new RatingsDelegate(this));
+        CustomRatingsDelegate *const customRatingsDelegate = new CustomRatingsDelegate(this);
+        ui->customRatingView->setItemDelegateForColumn(CustomRatingModel::crmRating, customRatingsDelegate);
+        connect(customRatingsDelegate, &CustomRatingsDelegate::clicked, this, &CustomRatingsPage::onCustomRatingCleared);
         searchCompleter->setModel(m_object->customRatingsModel());
         m_objectConnections = QVector<QMetaObject::Connection>{
                 connect(m_object->setsModel(), &QAbstractItemModel::dataChanged, this, &CustomRatingsPage::onSetsFilter)};
         updateRatingsFiler();
     }
+}
+
+void CustomRatingsPage::onCustomRatingCleared(const QModelIndex &idx)
+{
+    Q_ASSERT(idx.isValid());
+    Q_ASSERT(idx.model() == m_object->customRatingsModel());
+    Q_ASSERT(idx.column() == CustomRatingModel::crmRating);
+    m_object->customRatingsModel()->setData(idx, QVariant());
 }
 
 void CustomRatingsPage::updateRatingsFiler()

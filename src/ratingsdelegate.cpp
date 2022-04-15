@@ -48,6 +48,6 @@ void RatingsDelegate::updateEditorGeometry(QWidget *editor, const QStyleOptionVi
 QString RatingsDelegate::displayText(const QVariant &value, const QLocale &locale) const
 {
     if (value.isNull() || value.toInt() == -1)
-        return tr("NR", "Not Rated");
+        return RatingSpinBox::nonRatedString();
     return QStyledItemDelegate::displayText(value, locale);
 }

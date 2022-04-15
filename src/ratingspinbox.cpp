@@ -16,15 +16,10 @@
 RatingSpinBox::RatingSpinBox(QWidget *parent)
     : QSpinBox(parent)
 {
-    setCorrectionMode(QAbstractSpinBox::CorrectToNearestValue);
     setButtonSymbols(QAbstractSpinBox::PlusMinus);
-    setRange(-1, 10);
-    setSpecialValueText(tr("NR", "Not Rated"));
+    setRange(0, 10);
 }
-
-int RatingSpinBox::valueFromText(const QString &text) const
+QString RatingSpinBox::nonRatedString()
 {
-    if (text.isEmpty())
-        return -1;
-    return QSpinBox::valueFromText(text);
+    return tr("NR", "No Rating");
 }
