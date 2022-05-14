@@ -10,29 +10,32 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 \****************************************************************************/
-#include <QApplication>
-#include <mainwindow.h>
+
+#ifndef MAINWINDOW_H
+#define MAINWINDOW_H
+#include "17helperuilib_global.h"
+#include <QMainWindow>
 #include <QVector>
-#include <memory>
-#ifdef QT_DEBUG
-#    include <QLocale>
-#    include <forceerrorwidget.h>
-#endif
-int main(int argc, char *argv[])
-{
-    QApplication app(argc, argv);
-#ifdef QT_DEBUG
-    std::unique_ptr<MainWindow> w(nullptr);
-    ForceErrorWidget feW;
-    feW.show();
-    feW.setGeometry(0, 20, feW.width(), feW.height());
-    QObject::connect(&feW, &ForceErrorWidget::start, [&w] {
-        w = std::make_unique<MainWindow>();
-        w->show();
-    });
-#else
-    MainWindow w;
-    w.show();
-#endif
-    return app.exec();
+namespace Ui {
+class MainWindow;
 }
+class QTranslator;
+class SHUILIB_EXPORT MainWindow : public QMainWindow
+{
+    Q_OBJECT
+
+public:
+    explicit MainWindow(QWidget *parent = nullptr);
+    ~MainWindow();
+private slots:
+    void onUpdatedUploadedStatus(const QString &card);
+    void changeLanguage(const QLocale &loc);
+    void onAboutQt();
+    void onChangeLanguageAction(const QLocale &loc);
+
+private:
+    Ui::MainWindow *ui;
+    QVector<std::shared_ptr<QTranslator>> translators;
+};
+
+#endif // MAINWINDOW_H

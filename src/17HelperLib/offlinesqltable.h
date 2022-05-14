@@ -10,29 +10,29 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 \****************************************************************************/
-#include <QApplication>
-#include <mainwindow.h>
+
+#ifndef OFFLINESQLTABLE_H
+#define OFFLINESQLTABLE_H
+#include "offlinesqlquerymodel.h"
+#include <QSqlDatabase>
 #include <QVector>
-#include <memory>
-#ifdef QT_DEBUG
-#    include <QLocale>
-#    include <forceerrorwidget.h>
-#endif
-int main(int argc, char *argv[])
+#include <QVariant>
+class SHLIB_EXPORT OfflineSqlTable : public OfflineSqlQueryModel
 {
-    QApplication app(argc, argv);
-#ifdef QT_DEBUG
-    std::unique_ptr<MainWindow> w(nullptr);
-    ForceErrorWidget feW;
-    feW.show();
-    feW.setGeometry(0, 20, feW.width(), feW.height());
-    QObject::connect(&feW, &ForceErrorWidget::start, [&w] {
-        w = std::make_unique<MainWindow>();
-        w->show();
-    });
-#else
-    MainWindow w;
-    w.show();
+    Q_OBJECT
+    Q_DISABLE_COPY_MOVE(OfflineSqlTable)
+public:
+    explicit OfflineSqlTable(QObject *parent = nullptr);
+    virtual void setTable(const QString &databaseName, const QString &tableName);
+    virtual void setFilter(const QString &filter);
+    bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
+    Qt::ItemFlags flags(const QModelIndex &index) const override;
+
+private:
+    QSqlQuery createQuery() const;
+    QString m_tableName;
+    QString m_databaseName;
+    QString m_filter;
+};
+
 #endif
-    return app.exec();
-}

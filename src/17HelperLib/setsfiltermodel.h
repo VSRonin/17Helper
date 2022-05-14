@@ -10,29 +10,29 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 \****************************************************************************/
-#include <QApplication>
-#include <mainwindow.h>
-#include <QVector>
-#include <memory>
-#ifdef QT_DEBUG
-#    include <QLocale>
-#    include <forceerrorwidget.h>
-#endif
-int main(int argc, char *argv[])
+
+#ifndef SETSFILTERMODEL_H
+#define SETSFILTERMODEL_H
+#include <QSortFilterProxyModel>
+#include "globals.h"
+#include "17helperlib_global.h"
+class SHLIB_EXPORT SetsFilterModel : public QSortFilterProxyModel
 {
-    QApplication app(argc, argv);
-#ifdef QT_DEBUG
-    std::unique_ptr<MainWindow> w(nullptr);
-    ForceErrorWidget feW;
-    feW.show();
-    feW.setGeometry(0, 20, feW.width(), feW.height());
-    QObject::connect(&feW, &ForceErrorWidget::start, [&w] {
-        w = std::make_unique<MainWindow>();
-        w->show();
-    });
-#else
-    MainWindow w;
-    w.show();
+    Q_OBJECT
+    Q_DISABLE_COPY_MOVE(SetsFilterModel)
+    enum { DraftableSet = GEnums::stcore | GEnums::stexpansion | GEnums::stmasters | GEnums::stdraft_innovation };
+
+public:
+    explicit SetsFilterModel(QObject *parent = nullptr);
+    bool filterEnabled() const;
+    void setFilterEnabled(bool newFilterEnabled);
+    bool isDaraftable(int source_row) const;
+
+protected:
+    bool filterAcceptsRow(int source_row, const QModelIndex &source_parent) const override;
+
+private:
+    bool m_filterEnabled;
+};
+
 #endif
-    return app.exec();
-}

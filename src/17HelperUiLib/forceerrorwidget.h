@@ -10,29 +10,21 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 \****************************************************************************/
-#include <QApplication>
-#include <mainwindow.h>
-#include <QVector>
-#include <memory>
+
+#ifndef FORCEERRORWIDGET_H
+#define FORCEERRORWIDGET_H
+#include <QWidget>
 #ifdef QT_DEBUG
-#    include <QLocale>
-#    include <forceerrorwidget.h>
-#endif
-int main(int argc, char *argv[])
+#include "17helperuilib_global.h"
+class SHUILIB_EXPORT ForceErrorWidget : public QWidget
 {
-    QApplication app(argc, argv);
-#ifdef QT_DEBUG
-    std::unique_ptr<MainWindow> w(nullptr);
-    ForceErrorWidget feW;
-    feW.show();
-    feW.setGeometry(0, 20, feW.width(), feW.height());
-    QObject::connect(&feW, &ForceErrorWidget::start, [&w] {
-        w = std::make_unique<MainWindow>();
-        w->show();
-    });
-#else
-    MainWindow w;
-    w.show();
+    Q_OBJECT
+    Q_DISABLE_COPY_MOVE(ForceErrorWidget)
+public:
+    explicit ForceErrorWidget(QWidget *parent = nullptr);
+signals:
+    void start();
+};
+
 #endif
-    return app.exec();
-}
+#endif

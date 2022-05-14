@@ -10,29 +10,29 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 \****************************************************************************/
-#include <QApplication>
-#include <mainwindow.h>
-#include <QVector>
-#include <memory>
-#ifdef QT_DEBUG
-#    include <QLocale>
-#    include <forceerrorwidget.h>
-#endif
-int main(int argc, char *argv[])
+
+#ifndef RATINGSMODEL_H
+#define RATINGSMODEL_H
+#include "offlinesqltable.h"
+class SHLIB_EXPORT RatingsModel : public OfflineSqlTable
 {
-    QApplication app(argc, argv);
-#ifdef QT_DEBUG
-    std::unique_ptr<MainWindow> w(nullptr);
-    ForceErrorWidget feW;
-    feW.show();
-    feW.setGeometry(0, 20, feW.width(), feW.height());
-    QObject::connect(&feW, &ForceErrorWidget::start, [&w] {
-        w = std::make_unique<MainWindow>();
-        w->show();
-    });
-#else
-    MainWindow w;
-    w.show();
+    Q_OBJECT
+    Q_DISABLE_COPY_MOVE(RatingsModel)
+public:
+    enum RatingsModelColumns {
+        rmcSet,
+        rmcName,
+        rmcArenaId,
+        rmcRating,
+        rmcNote,
+
+        rmcCount
+    };
+    int columnCount(const QModelIndex &parent) const override;
+    QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
+    Qt::ItemFlags flags(const QModelIndex &index) const override;
+    explicit RatingsModel(QObject *parent = nullptr);
+    void setTable(const QString &databaseName, const QString &tableName = QString()) override;
+};
+
 #endif
-    return app.exec();
-}

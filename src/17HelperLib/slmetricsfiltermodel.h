@@ -1,5 +1,5 @@
 /****************************************************************************\
-   Copyright 2021 Luca Beldi
+   Copyright 2022 Luca Beldi
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
@@ -10,29 +10,26 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 \****************************************************************************/
-#include <QApplication>
-#include <mainwindow.h>
-#include <QVector>
-#include <memory>
-#ifdef QT_DEBUG
-#    include <QLocale>
-#    include <forceerrorwidget.h>
-#endif
-int main(int argc, char *argv[])
+
+#ifndef SLMETRICSFILTERMODEL_H
+#define SLMETRICSFILTERMODEL_H
+#include <QSortFilterProxyModel>
+#include "17helperlib_global.h"
+class SHLIB_EXPORT SLMetricsFilterModel : public QSortFilterProxyModel
 {
-    QApplication app(argc, argv);
-#ifdef QT_DEBUG
-    std::unique_ptr<MainWindow> w(nullptr);
-    ForceErrorWidget feW;
-    feW.show();
-    feW.setGeometry(0, 20, feW.width(), feW.height());
-    QObject::connect(&feW, &ForceErrorWidget::start, [&w] {
-        w = std::make_unique<MainWindow>();
-        w->show();
-    });
-#else
-    MainWindow w;
-    w.show();
+    Q_OBJECT
+    Q_DISABLE_COPY_MOVE(SLMetricsFilterModel)
+public:
+    explicit SLMetricsFilterModel(QObject *parent = nullptr);
+    bool filterEnabled() const;
+    void setFilterEnabled(bool newFilterEnabled);
+    bool isSLMetricRatio(int source_row) const;
+
+protected:
+    bool filterAcceptsRow(int source_row, const QModelIndex &source_parent) const override;
+
+private:
+    bool m_filterEnabled;
+};
+
 #endif
-    return app.exec();
-}

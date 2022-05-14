@@ -10,29 +10,20 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 \****************************************************************************/
-#include <QApplication>
-#include <mainwindow.h>
-#include <QVector>
-#include <memory>
-#ifdef QT_DEBUG
-#    include <QLocale>
-#    include <forceerrorwidget.h>
-#endif
-int main(int argc, char *argv[])
+
+#ifndef CHECKABLEPROXY_H
+#define CHECKABLEPROXY_H
+#include <RoleMaskProxyModel>
+#include "17helperlib_global.h"
+class SHLIB_EXPORT CheckableProxy : public RoleMaskProxyModel
 {
-    QApplication app(argc, argv);
-#ifdef QT_DEBUG
-    std::unique_ptr<MainWindow> w(nullptr);
-    ForceErrorWidget feW;
-    feW.show();
-    feW.setGeometry(0, 20, feW.width(), feW.height());
-    QObject::connect(&feW, &ForceErrorWidget::start, [&w] {
-        w = std::make_unique<MainWindow>();
-        w->show();
-    });
-#else
-    MainWindow w;
-    w.show();
+    Q_OBJECT
+    Q_DISABLE_COPY_MOVE(CheckableProxy)
+public:
+    explicit CheckableProxy(QObject *parent = nullptr);
+    Qt::ItemFlags flags(const QModelIndex &index) const override;
+    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
+    void multiData(const QModelIndex &index, QModelRoleDataSpan roleDataSpan) const override;
+};
+
 #endif
-    return app.exec();
-}
