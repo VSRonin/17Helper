@@ -395,7 +395,7 @@ void Worker::on17LDownloadFinished(QNetworkReply *reply, const QString &currSet)
             DoubleStatsCount
         };
         std::array<int, IntStatsCount> intVals;
-        std::array<int, DoubleStatsCount> doubleVals;
+        std::array<double, DoubleStatsCount> doubleVals;
         intVals[seen_countVal] = ratingObject[QLatin1String("seen_count")].toInt();
         doubleVals[avg_seenVal] = ratingObject[QLatin1String("avg_seen")].toDouble();
         intVals[pick_countVal] = ratingObject[QLatin1String("pick_count")].toInt();

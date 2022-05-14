@@ -57,7 +57,7 @@ set(loggingtoolsUI_SRCS
     forceerrorwidget.h
     forceerrorwidget.cpp
 )
-source_group(Models FILES ${models_SRCS})
+source_group(UI FILES ${ui_SRCS})
 source_group(Delegates FILES ${delegates_SRCS})
 source_group(LoggingTools FILES ${loggingtoolsUI_SRCS})
 set(17HelperUi_SRCS
